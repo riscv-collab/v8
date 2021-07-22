@@ -308,6 +308,7 @@ class LiftoffAssembler : public TurboAssembler {
     }
 
     void ClearCacheRegister(Register* cache) {
+      DCHECK(cache == &cached_instance || cache == &cached_mem_start);
       if (*cache == no_reg) return;
       int liftoff_code = LiftoffRegister{*cache}.liftoff_code();
       DCHECK_EQ(1, register_use_count[liftoff_code]);
@@ -1457,6 +1458,11 @@ class LiftoffAssembler : public TurboAssembler {
 
   // Set the i32 at address dst to 1 if src is a NaN.
   inline void emit_set_if_nan(Register dst, DoubleRegister src, ValueKind kind);
+
+  // Set the i32 at address dst to a non-zero value if src contains a NaN.
+  inline void emit_s128_set_if_nan(Register dst, DoubleRegister src,
+                                   Register tmp_gp, DoubleRegister tmp_fp,
+                                   ValueKind lane_kind);
 
   ////////////////////////////////////
   // End of platform-specific part. //

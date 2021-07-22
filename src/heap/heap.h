@@ -53,6 +53,7 @@ class TestMemoryAllocatorScope;
 
 namespace third_party_heap {
 class Heap;
+class Impl;
 }  // namespace third_party_heap
 
 class IncrementalMarking;
@@ -576,6 +577,8 @@ class Heap {
                                              int elements_to_trim);
   void RightTrimWeakFixedArray(WeakFixedArray obj, int elements_to_trim);
 
+  void UndoLastAllocationAt(Address addr, int size);
+
   // Converts the given boolean condition to JavaScript boolean value.
   inline Oddball ToBoolean(bool condition);
 
@@ -1023,6 +1026,10 @@ class Heap {
       int flags, GarbageCollectionReason gc_reason,
       const GCCallbackFlags gc_callback_flags = kNoGCCallbackFlags);
 
+  // Performs garbage collection operation for the shared heap.
+  V8_EXPORT_PRIVATE void CollectSharedGarbage(
+      GarbageCollectionReason gc_reason);
+
   // Reports and external memory pressure event, either performs a major GC or
   // completes incremental marking in order to free external resources.
   void ReportExternalMemoryPressure();
@@ -1057,6 +1064,9 @@ class Heap {
 
   // Iterates over the strong roots and the weak roots.
   void IterateRoots(RootVisitor* v, base::EnumSet<SkipRoot> options);
+  void IterateRootsIncludingClients(RootVisitor* v,
+                                    base::EnumSet<SkipRoot> options);
+
   // Iterates over entries in the smi roots list.  Only interesting to the
   // serializer/deserializer, since GC does not care about smis.
   void IterateSmiRoots(RootVisitor* v);
@@ -1125,7 +1135,7 @@ class Heap {
   void CompleteSweepingYoung(GarbageCollector collector);
 
   // Ensures that sweeping is finished for that object's page.
-  void EnsureSweepingCompleted(Handle<HeapObject> object);
+  void EnsureSweepingCompleted(HeapObject object);
 
   IncrementalMarking* incremental_marking() const {
     return incremental_marking_.get();
@@ -1151,6 +1161,9 @@ class Heap {
       HeapObject object, const DisallowGarbageCollection&,
       InvalidateRecordedSlots invalidate_recorded_slots =
           InvalidateRecordedSlots::kYes);
+
+  void NotifyCodeObjectChangeStart(Code code, const DisallowGarbageCollection&);
+  void NotifyCodeObjectChangeEnd(Code code, const DisallowGarbageCollection&);
 
 #ifdef VERIFY_HEAP
   // This function checks that either
@@ -1548,6 +1561,7 @@ class Heap {
   // as uninitialized to background threads.
   // This predicate may be invoked from a background thread.
   inline bool IsPendingAllocation(HeapObject object);
+  inline bool IsPendingAllocation(Object object);
 
   // Notifies that all previously allocated objects are properly initialized
   // and ensures that IsPendingAllocation returns false for them. This function
@@ -1791,6 +1805,10 @@ class Heap {
   size_t PerformGarbageCollection(
       GarbageCollector collector,
       const GCCallbackFlags gc_callback_flags = kNoGCCallbackFlags);
+
+  // Performs garbage collection in the shared heap.
+  void PerformSharedGarbageCollection(Isolate* initiator,
+                                      GarbageCollectionReason gc_reason);
 
   inline void UpdateOldSpaceLimits();
 
@@ -2496,6 +2514,8 @@ class Heap {
   friend class Space;
   friend class Sweeper;
   friend class heap::TestMemoryAllocatorScope;
+  friend class third_party_heap::Heap;
+  friend class third_party_heap::Impl;
 
   // The allocator interface.
   friend class Factory;

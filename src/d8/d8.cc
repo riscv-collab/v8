@@ -655,7 +655,7 @@ bool Shell::ExecuteString(Isolate* isolate, Local<String> source,
     i::UnoptimizedCompileFlags flags =
         i::UnoptimizedCompileFlags::ForToplevelCompile(
             i_isolate, true, i::construct_language_mode(i::FLAG_use_strict),
-            i::REPLMode::kNo);
+            i::REPLMode::kNo, ScriptType::kClassic, i::FLAG_lazy);
 
     if (options.compile_options == v8::ScriptCompiler::kEagerCompile) {
       flags.set_is_eager(true);
@@ -1583,8 +1583,11 @@ void Shell::PerformanceMeasureMemory(
     Local<Object> object = args[0].As<Object>();
     Local<Value> value = TryGetValue(isolate, context, object, "detailed")
                              .FromMaybe(Local<Value>());
-    if (!value.IsEmpty() && value->IsBoolean() &&
-        value->BooleanValue(isolate)) {
+    if (value.IsEmpty()) {
+      // Exception was thrown and scheduled, so return from the callback.
+      return;
+    }
+    if (value->IsBoolean() && value->BooleanValue(isolate)) {
       mode = v8::MeasureMemoryMode::kDetailed;
     }
   }
@@ -2082,11 +2085,14 @@ void Shell::AsyncHooksTriggerAsyncId(
 void Shell::SetPromiseHooks(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Isolate* isolate = args.GetIsolate();
   if (i::FLAG_correctness_fuzzer_suppressions) {
-    // Make sure we have no pending promises if correctness fuzzing is active.
-    // Due to fast-paths we might have not created all intermediate promises
-    // that aren't spec visible. However, the promise hook might expose them
-    // and cause different output.
-    isolate->PerformMicrotaskCheckpoint();
+    // Setting promise hoooks dynamically has unexpected timing side-effects
+    // with certain promise optimizations. We might not get all callbacks for
+    // previously scheduled Promises or optimized code-paths that skip Promise
+    // creation.
+    isolate->ThrowError(
+        "d8.promise.setHooks is disabled with "
+        "--correctness-fuzzer-suppressions");
+    return;
   }
   Local<Context> context = isolate->GetCurrentContext();
   HandleScope handle_scope(isolate);
@@ -4369,6 +4375,14 @@ bool Shell::SetOptions(int argc, char* argv[]) {
 #endif
       argv[i] = nullptr;
 #endif
+#if V8_ENABLE_WEBASSEMBLY
+    } else if (strcmp(argv[i], "--wasm-trap-handler") == 0) {
+      options.wasm_trap_handler = true;
+      argv[i] = nullptr;
+    } else if (strcmp(argv[i], "--no-wasm-trap-handler") == 0) {
+      options.wasm_trap_handler = false;
+      argv[i] = nullptr;
+#endif  // V8_ENABLE_WEBASSEMBLY
     }
   }
 
@@ -5074,9 +5088,9 @@ int Shell::Main(int argc, char* argv[]) {
   }
 
 #if V8_ENABLE_WEBASSEMBLY
-  if (V8_TRAP_HANDLER_SUPPORTED && i::FLAG_wasm_trap_handler) {
-    constexpr bool use_default_trap_handler = true;
-    if (!v8::V8::EnableWebAssemblyTrapHandler(use_default_trap_handler)) {
+  if (V8_TRAP_HANDLER_SUPPORTED && options.wasm_trap_handler) {
+    constexpr bool kUseDefaultTrapHandler = true;
+    if (!v8::V8::EnableWebAssemblyTrapHandler(kUseDefaultTrapHandler)) {
       FATAL("Could not register trap handler");
     }
   }

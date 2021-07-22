@@ -12,6 +12,7 @@
 #include "src/heap/cppgc/heap-object-header.h"
 #include "src/heap/cppgc/heap-space.h"
 #include "src/heap/cppgc/heap.h"
+#include "src/heap/cppgc/memory.h"
 #include "src/heap/cppgc/object-start-bitmap.h"
 #include "src/heap/cppgc/page-memory.h"
 #include "src/heap/cppgc/raw-heap.h"
@@ -44,6 +45,13 @@ const BasePage* BasePage::FromInnerAddress(const HeapBase* heap,
 
 // static
 void BasePage::Destroy(BasePage* page) {
+  if (page->discarded_memory()) {
+    page->space()
+        .raw_heap()
+        ->heap()
+        ->stats_collector()
+        ->DecrementDiscardedMemory(page->discarded_memory());
+  }
   if (page->is_large()) {
     LargePage::Destroy(LargePage::From(page));
   } else {
@@ -118,6 +126,25 @@ NormalPage* NormalPage::Create(PageBackend& page_backend,
   auto* normal_page = new (memory) NormalPage(*space.raw_heap()->heap(), space);
   normal_page->SynchronizedStore();
   normal_page->heap().stats_collector()->NotifyAllocatedMemory(kPageSize);
+  // Memory is zero initialized as
+  // a) memory retrieved from the OS is zeroed;
+  // b) memory retrieved from the page pool was swept and thus is zeroed except
+  //    for the first header which will anyways serve as header again.
+  //
+  // The following is a subset of SetMemoryInaccessible() to establish the
+  // invariant that memory is in the same state as it would be after sweeping.
+  // This allows to return newly allocated pages to go into that LAB and back
+  // into the free list.
+  Address begin = normal_page->PayloadStart() + sizeof(HeapObjectHeader);
+  const size_t size = normal_page->PayloadSize() - sizeof(HeapObjectHeader);
+#if defined(V8_USE_MEMORY_SANITIZER)
+  MSAN_ALLOCATED_UNINITIALIZED_MEMORY(begin, size);
+#elif defined(V8_USE_ADDRESS_SANITIZER)
+  ASAN_POISON_MEMORY_REGION(begin, size);
+#elif DEBUG
+  cppgc::internal::ZapMemory(begin, size);
+#endif  // Release builds.
+  CheckMemoryIsInaccessible(begin, size);
   return normal_page;
 }
 

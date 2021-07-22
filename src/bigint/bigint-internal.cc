@@ -31,7 +31,13 @@ void ProcessorImpl::Multiply(RWDigits Z, Digits X, Digits Y) {
   if (X.len() < Y.len()) std::swap(X, Y);
   if (Y.len() == 1) return MultiplySingle(Z, X, Y[0]);
   if (Y.len() < kKaratsubaThreshold) return MultiplySchoolbook(Z, X, Y);
+#if !V8_ADVANCED_BIGINT_ALGORITHMS
   return MultiplyKaratsuba(Z, X, Y);
+#else
+  if (Y.len() < kToomThreshold) return MultiplyKaratsuba(Z, X, Y);
+  if (Y.len() < kFftThreshold) return MultiplyToomCook(Z, X, Y);
+  return MultiplyFFT(Z, X, Y);
+#endif
 }
 
 void ProcessorImpl::Divide(RWDigits Q, Digits A, Digits B) {
@@ -96,13 +102,6 @@ Status Processor::Divide(RWDigits Q, Digits A, Digits B) {
 Status Processor::Modulo(RWDigits R, Digits A, Digits B) {
   ProcessorImpl* impl = static_cast<ProcessorImpl*>(this);
   impl->Modulo(R, A, B);
-  return impl->get_and_clear_status();
-}
-
-Status Processor::ToString(char* out, int* out_length, Digits X, int radix,
-                           bool sign) {
-  ProcessorImpl* impl = static_cast<ProcessorImpl*>(this);
-  impl->ToString(out, out_length, X, radix, sign);
   return impl->get_and_clear_status();
 }
 

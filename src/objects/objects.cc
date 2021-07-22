@@ -221,12 +221,13 @@ Handle<Object> Object::NewStorageFor(Isolate* isolate, Handle<Object> object,
   if (!representation.IsDouble()) return object;
   auto result = isolate->factory()->NewHeapNumberWithHoleNaN();
   if (object->IsUninitialized(isolate)) {
-    result->set_value_as_bits(kHoleNanInt64);
+    result->set_value_as_bits(kHoleNanInt64, kRelaxedStore);
   } else if (object->IsHeapNumber()) {
     // Ensure that all bits of the double value are preserved.
-    result->set_value_as_bits(HeapNumber::cast(*object).value_as_bits());
+    result->set_value_as_bits(
+        HeapNumber::cast(*object).value_as_bits(kRelaxedLoad), kRelaxedStore);
   } else {
-    result->set_value(object->Number());
+    result->set_value(object->Number(), kRelaxedStore);
   }
   return result;
 }
@@ -240,7 +241,7 @@ Handle<Object> Object::WrapForRead(IsolateT* isolate, Handle<Object> object,
     return object;
   }
   return isolate->factory()->template NewHeapNumberFromBits<allocation_type>(
-      HeapNumber::cast(*object).value_as_bits());
+      HeapNumber::cast(*object).value_as_bits(kRelaxedLoad));
 }
 
 template Handle<Object> Object::WrapForRead<AllocationType::kYoung>(
@@ -463,8 +464,8 @@ Handle<String> NoSideEffectsErrorToString(Isolate* isolate,
 }  // namespace
 
 // static
-Handle<String> Object::NoSideEffectsToString(Isolate* isolate,
-                                             Handle<Object> input) {
+MaybeHandle<String> Object::NoSideEffectsToMaybeString(Isolate* isolate,
+                                                       Handle<Object> input) {
   DisallowJavascriptExecution no_js(isolate);
 
   if (input->IsString() || input->IsNumber() || input->IsOddball()) {
@@ -560,6 +561,20 @@ Handle<String> Object::NoSideEffectsToString(Isolate* isolate,
         }
       }
     }
+  }
+  return MaybeHandle<String>(kNullMaybeHandle);
+}
+
+// static
+Handle<String> Object::NoSideEffectsToString(Isolate* isolate,
+                                             Handle<Object> input) {
+  DisallowJavascriptExecution no_js(isolate);
+
+  // Try to convert input to a meaningful string.
+  MaybeHandle<String> maybe_string = NoSideEffectsToMaybeString(isolate, input);
+  Handle<String> string_handle;
+  if (maybe_string.ToHandle(&string_handle)) {
+    return string_handle;
   }
 
   // At this point, input is either none of the above or a JSReceiver.
@@ -2346,7 +2361,6 @@ bool HeapObject::CanBeRehashed() const {
     default:
       return false;
   }
-  return false;
 }
 
 void HeapObject::RehashBasedOnMap(Isolate* isolate) {
@@ -4716,7 +4730,7 @@ void Oddball::Initialize(Isolate* isolate, Handle<Oddball> oddball,
       isolate->factory()->InternalizeUtf8String(type_of);
   if (to_number->IsHeapNumber()) {
     oddball->set_to_number_raw_as_bits(
-        Handle<HeapNumber>::cast(to_number)->value_as_bits());
+        Handle<HeapNumber>::cast(to_number)->value_as_bits(kRelaxedLoad));
   } else {
     oddball->set_to_number_raw(to_number->Number());
   }
@@ -5216,7 +5230,6 @@ const char* AllocationSite::PretenureDecisionName(PretenureDecision decision) {
     default:
       UNREACHABLE();
   }
-  return nullptr;
 }
 
 // static
@@ -5862,6 +5875,37 @@ template <typename Derived, typename Shape>
 InternalIndex HashTable<Derived, Shape>::FindInsertionEntry(Isolate* isolate,
                                                             uint32_t hash) {
   return FindInsertionEntry(isolate, ReadOnlyRoots(isolate), hash);
+}
+
+base::Optional<PropertyCell>
+GlobalDictionary::TryFindPropertyCellForConcurrentLookupIterator(
+    Isolate* isolate, Handle<Name> name, RelaxedLoadTag tag) {
+  // This reimplements HashTable::FindEntry for use in a concurrent setting.
+  // 1) Atomic loads.
+  // 2) IsPendingAllocation checks.
+  // 3) Return the PropertyCell value instead of the InternalIndex to avoid a
+  //   repeated load (unsafe with concurrent modifications).
+
+  DisallowGarbageCollection no_gc;
+  PtrComprCageBase cage_base{isolate};
+  ReadOnlyRoots roots(isolate);
+  const int32_t hash = ShapeT::Hash(roots, name);
+  const uint32_t capacity = Capacity();
+  uint32_t count = 1;
+  Object undefined = roots.undefined_value();
+  Object the_hole = roots.the_hole_value();
+  // EnsureCapacity will guarantee the hash table is never full.
+  for (InternalIndex entry = FirstProbe(hash, capacity);;
+       entry = NextProbe(entry, count++, capacity)) {
+    Object element = KeyAt(cage_base, entry, kRelaxedLoad);
+    if (isolate->heap()->IsPendingAllocation(element)) return {};
+    if (element == undefined) return {};
+    if (ShapeT::kMatchNeedsHoleCheck && element == the_hole) continue;
+    if (!ShapeT::IsMatch(name, element)) continue;
+    CHECK(element.IsPropertyCell(cage_base));
+    return PropertyCell::cast(element);
+  }
+  return {};
 }
 
 Handle<StringSet> StringSet::New(Isolate* isolate) {

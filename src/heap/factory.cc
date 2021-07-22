@@ -148,13 +148,11 @@ MaybeHandle<Code> Factory::CodeBuilder::BuildInternal(
     DisallowGarbageCollection no_gc;
 
     if (code_is_on_heap) {
-      // TODO(victorgomes): we must notify the GC that code layout will change.
-      heap->EnsureSweepingCompleted(code);
+      heap->NotifyCodeObjectChangeStart(raw_code, no_gc);
     }
 
     raw_code.set_raw_instruction_size(code_desc_.instruction_size());
     raw_code.set_raw_metadata_size(code_desc_.metadata_size());
-    raw_code.set_relocation_info(*reloc_info);
     raw_code.initialize_flags(kind_, is_turbofanned_, stack_slots_,
                               kIsNotOffHeapTrampoline);
     raw_code.set_builtin_id(builtin_);
@@ -202,7 +200,7 @@ MaybeHandle<Code> Factory::CodeBuilder::BuildInternal(
     }
 
     if (code_is_on_heap) {
-      FinalizeOnHeapCode(code);
+      FinalizeOnHeapCode(code, *reloc_info);
     } else {
       // Migrate generated code.
       // The generated code can contain embedded objects (typically from
@@ -210,10 +208,19 @@ MaybeHandle<Code> Factory::CodeBuilder::BuildInternal(
       // like a handle) that are dereferenced during the copy to point directly
       // to the actual heap objects. These pointers can include references to
       // the code object itself, through the self_reference parameter.
-      raw_code.CopyFromNoFlush(heap, code_desc_);
+      raw_code.CopyFromNoFlush(*reloc_info, heap, code_desc_);
     }
 
     raw_code.clear_padding();
+
+    if (code_is_on_heap) {
+      raw_code.set_relocation_info(*reloc_info, kReleaseStore);
+      // Now that object is properly initialized, the GC needs to revisit this
+      // object if marking is on.
+      heap->NotifyCodeObjectChangeEnd(raw_code, no_gc);
+    } else {
+      raw_code.set_relocation_info(*reloc_info);
+    }
 
     if (V8_EXTERNAL_CODE_SPACE_BOOL) {
       data_container->SetCodeAndEntryPoint(isolate_, raw_code);
@@ -281,30 +288,25 @@ MaybeHandle<Code> Factory::CodeBuilder::AllocateCode(
   return code;
 }
 
-void Factory::CodeBuilder::FinalizeOnHeapCode(Handle<Code> code) {
+void Factory::CodeBuilder::FinalizeOnHeapCode(Handle<Code> code,
+                                              ByteArray reloc_info) {
   Heap* heap = isolate_->heap();
 
-  code->CopyRelocInfoToByteArray(code->unchecked_relocation_info(), code_desc_);
-  code->RelocateFromDesc(heap, code_desc_);
+  // We cannot trim the Code object in CODE_LO_SPACE.
+  DCHECK(!heap->code_lo_space()->Contains(*code));
 
-  int buffer_size = code_desc_.origin->buffer_size();
-  if (heap->code_lo_space()->Contains(*code)) {
-    // We cannot trim the Code object in CODE_LO_SPACE, so we update the
-    // metadata size to contain the extra bits.
-    code->set_raw_metadata_size(buffer_size - code_desc_.instruction_size());
-  } else {
-    // TODO(v8:11883): add a hook to GC to check if the filler is just before
-    // the current LAB, and if it is, immediately give back the memory.
-    int old_object_size = Code::SizeFor(buffer_size);
-    int new_object_size = Code::SizeFor(code_desc_.instruction_size() +
-                                        code_desc_.metadata_size());
-    int size_to_trim = old_object_size - new_object_size;
-    DCHECK_GE(size_to_trim, 0);
-    if (size_to_trim > 0) {
-      heap->CreateFillerObjectAt(code->address() + new_object_size,
-                                 size_to_trim, ClearRecordedSlots::kNo);
-    }
-  }
+  code->CopyRelocInfoToByteArray(reloc_info, code_desc_);
+
+#ifdef VERIFY_HEAP
+  code->VerifyRelocInfo(isolate_, reloc_info);
+#endif
+
+  int old_object_size = Code::SizeFor(code_desc_.origin->buffer_size());
+  int new_object_size =
+      Code::SizeFor(code_desc_.instruction_size() + code_desc_.metadata_size());
+  int size_to_trim = old_object_size - new_object_size;
+  DCHECK_GE(size_to_trim, 0);
+  heap->UndoLastAllocationAt(code->address() + new_object_size, size_to_trim);
 }
 
 MaybeHandle<Code> Factory::NewEmptyCode(CodeKind kind, int buffer_size) {
@@ -323,8 +325,14 @@ MaybeHandle<Code> Factory::NewEmptyCode(CodeKind kind, int buffer_size) {
   constexpr bool kIsNotOffHeapTrampoline = false;
   raw_code.set_raw_instruction_size(0);
   raw_code.set_raw_metadata_size(buffer_size);
-  raw_code.set_relocation_info(*empty_byte_array());
+  raw_code.set_relocation_info_or_undefined(*undefined_value());
   raw_code.initialize_flags(kind, false, 0, kIsNotOffHeapTrampoline);
+  raw_code.set_builtin_id(Builtin::kNoBuiltinId);
+  auto code_data_container =
+      Handle<CodeDataContainer>::cast(trampoline_trivial_code_data_container());
+  raw_code.set_code_data_container(*code_data_container, kReleaseStore);
+  raw_code.set_deoptimization_data(*DeoptimizationData::Empty(isolate()));
+  raw_code.set_bytecode_offset_table(*empty_byte_array());
   raw_code.set_handler_table_offset(0);
   raw_code.set_constant_pool_offset(0);
   raw_code.set_code_comments_offset(0);
@@ -336,6 +344,7 @@ MaybeHandle<Code> Factory::NewEmptyCode(CodeKind kind, int buffer_size) {
       !V8_ENABLE_THIRD_PARTY_HEAP_BOOL && !heap->code_region().is_empty(),
       heap->code_region().contains(code->address()));
 
+  DCHECK(heap->code_space()->Contains(raw_code));
   return code;
 }
 
@@ -2038,19 +2047,6 @@ Handle<FixedArray> Factory::CopyFixedArrayUpTo(Handle<FixedArray> array,
 Handle<FixedArray> Factory::CopyFixedArray(Handle<FixedArray> array) {
   if (array->length() == 0) return array;
   return CopyArrayWithMap(array, handle(array->map(), isolate()));
-}
-
-Handle<FixedArray> Factory::CopyAndTenureFixedCOWArray(
-    Handle<FixedArray> array) {
-  DCHECK(Heap::InYoungGeneration(*array));
-  Handle<FixedArray> result =
-      CopyFixedArrayUpTo(array, array->length(), AllocationType::kOld);
-
-  // TODO(mvstanton): The map is set twice because of protection against calling
-  // set() on a COW FixedArray. Issue v8:3221 created to track this, and
-  // we might then be able to remove this whole method.
-  result->set_map_after_allocation(*fixed_cow_array_map(), SKIP_WRITE_BARRIER);
-  return result;
 }
 
 Handle<FixedDoubleArray> Factory::CopyFixedDoubleArray(

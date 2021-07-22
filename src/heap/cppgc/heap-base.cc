@@ -147,14 +147,16 @@ HeapStatistics HeapBase::CollectStatistics(
     HeapStatistics::DetailLevel detail_level) {
   if (detail_level == HeapStatistics::DetailLevel::kBrief) {
     return {stats_collector_->allocated_memory_size(),
+            stats_collector_->resident_memory_size(),
             stats_collector_->allocated_object_size(),
             HeapStatistics::DetailLevel::kBrief,
+            {},
             {}};
   }
 
   sweeper_.FinishIfRunning();
   object_allocator_.ResetLinearAllocationBuffers();
-  return HeapStatisticsCollector().CollectStatistics(this);
+  return HeapStatisticsCollector().CollectDetailedStatistics(this);
 }
 
 }  // namespace internal

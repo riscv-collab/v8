@@ -74,8 +74,6 @@ static v8::CodeEventType GetCodeEventTypeForTag(
   }
   // The execution should never pass here
   UNREACHABLE();
-  // NOTE(mmarchini): Workaround to fix a compiler failure on GCC 4.9
-  return v8::CodeEventType::kUnknownType;
 }
 #define CALL_CODE_EVENT_HANDLER(Call) \
   if (listener_) {                    \
@@ -1031,7 +1029,7 @@ Logger::~Logger() = default;
 const LogSeparator Logger::kNext = LogSeparator::kSeparator;
 
 int64_t Logger::Time() {
-  if (V8_UNLIKELY(FLAG_verify_predictable)) {
+  if (FLAG_verify_predictable) {
     return isolate_->heap()->MonotonicallyIncreasingTimeInMs() * 1000;
   }
   return timer_.Elapsed().InMicroseconds();

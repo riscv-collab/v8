@@ -253,17 +253,18 @@ std::unique_ptr<AssemblerBuffer> AllocateBuffer(
     DisallowHeapAllocation no_gc;
     estimated_size = BaselineCompiler::EstimateInstructionSize(*bytecodes);
   }
+  Heap* heap = isolate->heap();
   // TODO(victorgomes): When compiling on heap, we allocate whatever is left
   // over on the page with a minimum of the estimated_size.
-  switch (code_location) {
-    case BaselineCompiler::kOffHeap:
-      return NewAssemblerBuffer(RoundUp(estimated_size, 4 * KB));
-    case BaselineCompiler::kOnHeap:
-      // TODO(victorgomes): We're currently underestimating the size of the
-      // buffer, since we don't know how big the reloc info will be. We could
-      // use a separate zone vector for the RelocInfo.
-      return NewOnHeapAssemblerBuffer(isolate, estimated_size);
+  if (code_location == BaselineCompiler::kOnHeap &&
+      Code::SizeFor(estimated_size) <
+          heap->MaxRegularHeapObjectSize(AllocationType::kCode)) {
+    // TODO(victorgomes): We're currently underestimating the size of the
+    // buffer, since we don't know how big the reloc info will be. We could
+    // use a separate zone vector for the RelocInfo.
+    return NewOnHeapAssemblerBuffer(isolate, estimated_size);
   }
+  return NewAssemblerBuffer(RoundUp(estimated_size, 4 * KB));
 }
 }  // namespace
 
@@ -1131,26 +1132,20 @@ constexpr Builtin ConvertReceiverModeToCompactBuiltin(
   switch (mode) {
     case ConvertReceiverMode::kAny:
       return Builtin::kCall_ReceiverIsAny_Baseline_Compact;
-      break;
     case ConvertReceiverMode::kNullOrUndefined:
       return Builtin::kCall_ReceiverIsNullOrUndefined_Baseline_Compact;
-      break;
     case ConvertReceiverMode::kNotNullOrUndefined:
       return Builtin::kCall_ReceiverIsNotNullOrUndefined_Baseline_Compact;
-      break;
   }
 }
 constexpr Builtin ConvertReceiverModeToBuiltin(ConvertReceiverMode mode) {
   switch (mode) {
     case ConvertReceiverMode::kAny:
       return Builtin::kCall_ReceiverIsAny_Baseline;
-      break;
     case ConvertReceiverMode::kNullOrUndefined:
       return Builtin::kCall_ReceiverIsNullOrUndefined_Baseline;
-      break;
     case ConvertReceiverMode::kNotNullOrUndefined:
       return Builtin::kCall_ReceiverIsNotNullOrUndefined_Baseline;
-      break;
   }
 }
 }  // namespace

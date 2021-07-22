@@ -1070,7 +1070,6 @@ std::ostream& operator<<(std::ostream& os, VariableAllocationInfo var_info) {
       return os << "UNUSED";
   }
   UNREACHABLE();
-  return os;
 }
 
 template <typename IsolateT>
@@ -1128,7 +1127,8 @@ Handle<SourceTextModuleInfo> SourceTextModuleInfo::New(
     IsolateT* isolate, Zone* zone, SourceTextModuleDescriptor* descr) {
   // Serialize module requests.
   int size = static_cast<int>(descr->module_requests().size());
-  Handle<FixedArray> module_requests = isolate->factory()->NewFixedArray(size);
+  Handle<FixedArray> module_requests =
+      isolate->factory()->NewFixedArray(size, AllocationType::kOld);
   for (const auto& elem : descr->module_requests()) {
     Handle<ModuleRequest> serialized_module_request = elem->Serialize(isolate);
     module_requests->set(elem->index(), *serialized_module_request);
@@ -1136,7 +1136,7 @@ Handle<SourceTextModuleInfo> SourceTextModuleInfo::New(
 
   // Serialize special exports.
   Handle<FixedArray> special_exports = isolate->factory()->NewFixedArray(
-      static_cast<int>(descr->special_exports().size()));
+      static_cast<int>(descr->special_exports().size()), AllocationType::kOld);
   {
     int i = 0;
     for (auto entry : descr->special_exports()) {
@@ -1148,7 +1148,8 @@ Handle<SourceTextModuleInfo> SourceTextModuleInfo::New(
 
   // Serialize namespace imports.
   Handle<FixedArray> namespace_imports = isolate->factory()->NewFixedArray(
-      static_cast<int>(descr->namespace_imports().size()));
+      static_cast<int>(descr->namespace_imports().size()),
+      AllocationType::kOld);
   {
     int i = 0;
     for (auto entry : descr->namespace_imports()) {
@@ -1164,7 +1165,7 @@ Handle<SourceTextModuleInfo> SourceTextModuleInfo::New(
 
   // Serialize regular imports.
   Handle<FixedArray> regular_imports = isolate->factory()->NewFixedArray(
-      static_cast<int>(descr->regular_imports().size()));
+      static_cast<int>(descr->regular_imports().size()), AllocationType::kOld);
   {
     int i = 0;
     for (const auto& elem : descr->regular_imports()) {

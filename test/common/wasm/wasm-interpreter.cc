@@ -1426,7 +1426,6 @@ class WasmInterpreterInternals {
         case kI8:
         case kI16:
           UNREACHABLE();
-          break;
       }
       Push(val);
     }
@@ -1968,7 +1967,6 @@ class WasmInterpreterInternals {
             WasmOpcodes::OpcodeName(static_cast<WasmOpcode>(code->start[pc])));
         UNREACHABLE();
     }
-    return false;
   }
 
   template <typename type, typename op_type, typename func>
@@ -2230,7 +2228,6 @@ class WasmInterpreterInternals {
       }
       default:
         UNREACHABLE();
-        return false;
     }
     return true;
   }
@@ -3156,6 +3153,9 @@ class WasmInterpreterInternals {
           switch (sig->GetParam(i).heap_representation()) {
             case HeapType::kExtern:
             case HeapType::kFunc:
+            case HeapType::kEq:
+            case HeapType::kData:
+            case HeapType::kI31:
             case HeapType::kAny: {
               Handle<Object> ref = value.to_ref();
               encoded_values->set(encoded_index++, *ref);
@@ -3163,13 +3163,9 @@ class WasmInterpreterInternals {
             }
             case HeapType::kBottom:
               UNREACHABLE();
-            case HeapType::kEq:
-            case HeapType::kData:
-            case HeapType::kI31:
             default:
               // TODO(7748): Implement these.
               UNIMPLEMENTED();
-              break;
           }
           break;
         }
@@ -3278,6 +3274,9 @@ class WasmInterpreterInternals {
           switch (sig->GetParam(i).heap_representation()) {
             case HeapType::kExtern:
             case HeapType::kFunc:
+            case HeapType::kEq:
+            case HeapType::kData:
+            case HeapType::kI31:
             case HeapType::kAny: {
               Handle<Object> ref(encoded_values->get(encoded_index++),
                                  isolate_);
@@ -3287,7 +3286,6 @@ class WasmInterpreterInternals {
             default:
               // TODO(7748): Implement these.
               UNIMPLEMENTED();
-              break;
           }
           break;
         }
@@ -3570,7 +3568,7 @@ class WasmInterpreterInternals {
           if (!DoCall(&decoder, &target, &pc, &limit)) return;
           code = target;
           continue;  // Do not bump pc.
-        } break;
+        }
 
         case kExprCallIndirect: {
           CallIndirectImmediate<Decoder::kNoValidation> imm(&decoder,
@@ -3606,7 +3604,7 @@ class WasmInterpreterInternals {
           if (!DoReturnCall(&decoder, target, &pc, &limit)) return;
           code = target;
           continue;  // Do not bump pc.
-        } break;
+        }
 
         case kExprReturnCallIndirect: {
           // Make return calls more expensive, so that return call recursions
@@ -4098,7 +4096,6 @@ class WasmInterpreterInternals {
         case kI16:
         case kBottom:
           UNREACHABLE();
-          break;
       }
     }
 #endif  // DEBUG

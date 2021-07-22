@@ -123,7 +123,6 @@ void Verifier::Visitor::CheckSwitch(Node* node, const AllNodes& all) {
       default: {
         FATAL("Switch #%d illegally used by #%d:%s", node->id(), use->id(),
               use->op()->mnemonic());
-        break;
       }
     }
   }
@@ -951,6 +950,7 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
     case IrOpcode::kSpeculativeNumberAdd:
     case IrOpcode::kSpeculativeNumberSubtract:
     case IrOpcode::kSpeculativeNumberMultiply:
+    case IrOpcode::kSpeculativeNumberPow:
     case IrOpcode::kSpeculativeNumberDivide:
     case IrOpcode::kSpeculativeNumberModulus:
       CheckTypeIs(node, Type::Number());
@@ -1627,9 +1627,8 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
       CheckTypeIs(node, Type::BigInt());
       break;
     case IrOpcode::kFastApiCall:
-      CHECK_GE(value_count, 2);
-      CheckValueInputIs(node, 0, Type::ExternalPointer());  // callee
-      CheckValueInputIs(node, 1, Type::Any());              // receiver
+      CHECK_GE(value_count, 1);
+      CheckValueInputIs(node, 0, Type::Any());  // receiver
       break;
 #if V8_ENABLE_WEBASSEMBLY
     case IrOpcode::kJSWasmCall:

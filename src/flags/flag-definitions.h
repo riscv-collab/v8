@@ -711,9 +711,6 @@ DEFINE_WEAK_VALUE_IMPLICATION(stress_concurrent_inlining, interrupt_budget,
 DEFINE_BOOL(
     turbo_concurrent_get_property_access_info, false,
     "concurrently call GetPropertyAccessInfo (only with --concurrent-inlining)")
-DEFINE_BOOL(turbo_concurrent_inlining_check_ispendingallocation, true,
-            "when --concurrent-inlining is enabled, check IsPendingAllocation "
-            "in Ref construction")
 DEFINE_INT(max_serializer_nesting, 25,
            "maximum levels for nesting child serializers")
 DEFINE_WEAK_IMPLICATION(future, concurrent_inlining)
@@ -944,9 +941,6 @@ DEFINE_DEBUG_BOOL(trace_wasm_interpreter, false,
                   "trace interpretation of wasm code")
 DEFINE_DEBUG_BOOL(trace_wasm_streaming, false,
                   "trace streaming compilation of wasm code")
-DEFINE_INT(trace_wasm_ast_start, 0,
-           "start function for wasm AST trace (inclusive)")
-DEFINE_INT(trace_wasm_ast_end, 0, "end function for wasm AST trace (exclusive)")
 DEFINE_BOOL(liftoff, true,
             "enable Liftoff, the baseline compiler for WebAssembly")
 DEFINE_BOOL(liftoff_only, false,
@@ -954,8 +948,6 @@ DEFINE_BOOL(liftoff_only, false,
 DEFINE_IMPLICATION(liftoff_only, liftoff)
 DEFINE_NEG_IMPLICATION(liftoff_only, wasm_tier_up)
 DEFINE_NEG_IMPLICATION(fuzzing, liftoff_only)
-DEFINE_BOOL(experimental_liftoff_extern_ref, true,
-            "enable support for externref in Liftoff")
 DEFINE_DEBUG_BOOL(
     enable_testing_opcode_in_wasm, false,
     "enables a testing opcode in wasm that is only implemented in TurboFan")
@@ -1021,16 +1013,16 @@ DEFINE_BOOL(
     "enable bounds checks (disable for performance testing only)")
 DEFINE_BOOL(wasm_stack_checks, true,
             "enable stack checks (disable for performance testing only)")
+DEFINE_BOOL(
+    wasm_enforce_bounds_checks, false,
+    "enforce explicit bounds check even if the trap handler is available")
+// "no bounds checks" implies "no enforced bounds checks".
+DEFINE_NEG_NEG_IMPLICATION(wasm_bounds_checks, wasm_enforce_bounds_checks)
 DEFINE_BOOL(wasm_math_intrinsics, true,
             "intrinsify some Math imports into wasm")
 
 DEFINE_BOOL(wasm_loop_unrolling, true,
             "enable loop unrolling for wasm functions")
-DEFINE_BOOL(wasm_trap_handler, true,
-            "use signal handlers to catch out of bounds memory access in wasm"
-            " (currently Linux x86_64 only)")
-// "no bounds checks" implies "no trap handlers".
-DEFINE_NEG_NEG_IMPLICATION(wasm_bounds_checks, wasm_trap_handler)
 DEFINE_BOOL(wasm_fuzzer_gen_test, false,
             "generate a test case when running a wasm fuzzer")
 DEFINE_IMPLICATION(wasm_fuzzer_gen_test, single_threaded)
@@ -1453,6 +1445,9 @@ DEFINE_BOOL(trace, false, "trace javascript function calls")
 
 // codegen.cc
 DEFINE_BOOL(lazy, true, "use lazy compilation")
+DEFINE_BOOL(lazy_eval, true, "use lazy compilation during eval")
+DEFINE_BOOL(lazy_streaming, true,
+            "use lazy compilation during streaming compilation")
 DEFINE_BOOL(max_lazy, false, "ignore eager compilation hints")
 DEFINE_IMPLICATION(max_lazy, lazy)
 DEFINE_BOOL(trace_opt, false, "trace optimized compilation")
@@ -1674,6 +1669,8 @@ DEFINE_BOOL(rcs_cpu_time, false,
 DEFINE_IMPLICATION(rcs_cpu_time, rcs)
 
 // snapshot-common.cc
+DEFINE_BOOL(skip_snapshot_checksum, false,
+            "Skip snapshot checksum calculation when deserializing an Isolate.")
 DEFINE_BOOL(profile_deserialization, false,
             "Print the time it takes to deserialize the snapshot.")
 DEFINE_BOOL(serialization_statistics, false,

@@ -534,7 +534,6 @@ void JSObject::PrintElements(std::ostream& os) {
     case WASM_ARRAY_ELEMENTS:
       // WasmArrayPrint() should be called intead.
       UNREACHABLE();
-      break;
     case NO_ELEMENTS:
       break;
   }
@@ -677,6 +676,7 @@ void JSPromise::JSPromisePrint(std::ostream& os) {
   }
   os << "\n - has_handler: " << has_handler();
   os << "\n - handled_hint: " << handled_hint();
+  os << "\n - is_silent: " << is_silent();
   JSObjectPrintBody(os, *this);
 }
 
@@ -1012,7 +1012,6 @@ void SwissNameDictionary::SwissNameDictionaryPrint(std::ostream& os) {
     switch (ctrl) {
       case Ctrl::kEmpty:
         UNREACHABLE();
-        break;
       case Ctrl::kDeleted:
         print_hex_byte(os, ctrl);
         os << " (= kDeleted)";

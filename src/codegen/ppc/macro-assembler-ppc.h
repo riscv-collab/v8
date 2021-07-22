@@ -61,6 +61,8 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
  public:
   using TurboAssemblerBase::TurboAssemblerBase;
 
+  void Popcnt32(Register dst, Register src);
+  void Popcnt64(Register dst, Register src);
   // Converts the integer (untagged smi) in |src| to a double, storing
   // the result to |dst|
   void ConvertIntToDouble(Register src, DoubleRegister dst);
@@ -112,7 +114,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void AllocateStackSpace(int bytes) {
     DCHECK_GE(bytes, 0);
     if (bytes == 0) return;
-    Add(sp, sp, -bytes, r0);
+    AddS64(sp, sp, Operand(-bytes), r0);
   }
 
   // Push a fixed frame, consisting of lr, fp, constant pool.
@@ -150,26 +152,40 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void LoadPC(Register dst);
   void ComputeCodeStartAddress(Register dst);
 
-  void Cmpi(Register src1, const Operand& src2, Register scratch,
-            CRegister cr = cr7);
-  void Cmpli(Register src1, const Operand& src2, Register scratch,
-             CRegister cr = cr7);
-  void Cmpwi(Register src1, const Operand& src2, Register scratch,
-             CRegister cr = cr7);
+  void CmpS64(Register src1, const Operand& src2, Register scratch,
+              CRegister cr = cr7);
+  void CmpS64(Register src1, Register src2, CRegister cr = cr7);
+  void CmpU64(Register src1, const Operand& src2, Register scratch,
+              CRegister cr = cr7);
+  void CmpU64(Register src1, Register src2, CRegister cr = cr7);
+  void CmpS32(Register src1, const Operand& src2, Register scratch,
+              CRegister cr = cr7);
+  void CmpS32(Register src1, Register src2, CRegister cr = cr7);
+  void CmpU32(Register src1, const Operand& src2, Register scratch,
+              CRegister cr = cr7);
+  void CmpU32(Register src1, Register src2, CRegister cr = cr7);
   void CompareTagged(Register src1, Register src2, CRegister cr = cr7) {
     if (COMPRESS_POINTERS_BOOL) {
-      cmpw(src1, src2, cr);
+      CmpS32(src1, src2, cr);
     } else {
-      cmp(src1, src2, cr);
+      CmpS64(src1, src2, cr);
     }
   }
+
+  void MinF64(DoubleRegister dst, DoubleRegister lhs, DoubleRegister rhs,
+              DoubleRegister scratch = kScratchDoubleReg);
+  void MaxF64(DoubleRegister dst, DoubleRegister lhs, DoubleRegister rhs,
+              DoubleRegister scratch = kScratchDoubleReg);
 
   // Set new rounding mode RN to FPSCR
   void SetRoundingMode(FPRoundingMode RN);
 
   // reset rounding mode to default (kRoundToNearest)
   void ResetRoundingMode();
-  void Add(Register dst, Register src, intptr_t value, Register scratch);
+
+  void AddS64(Register dst, Register src, const Operand& value,
+              Register scratch = r0);
+  void AddS64(Register dst, Register src, Register value);
 
   void Push(Register src) { push(src); }
   // Push a handle.
@@ -587,14 +603,14 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
                           CRegister cr = cr7) {
     // High bits must be identical to fit into an 32-bit integer
     extsw(scratch, value);
-    cmp(scratch, value, cr);
+    CmpS64(scratch, value, cr);
   }
 #else
   inline void TestIfInt32(Register hi_word, Register lo_word, Register scratch,
                           CRegister cr = cr7) {
     // High bits must be identical to fit into an 32-bit integer
     srawi(scratch, lo_word, 31);
-    cmp(scratch, hi_word, cr);
+    CmpS64(scratch, hi_word, cr);
   }
 #endif
 
@@ -815,8 +831,6 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
 
   // load a literal double value <value> to FPR <result>
 
-  void Cmplwi(Register src1, const Operand& src2, Register scratch,
-              CRegister cr = cr7);
   void And(Register ra, Register rs, const Operand& rb, RCBit rc = LeaveRC);
   void Or(Register ra, Register rs, const Operand& rb, RCBit rc = LeaveRC);
   void Xor(Register ra, Register rs, const Operand& rb, RCBit rc = LeaveRC);

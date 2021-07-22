@@ -255,6 +255,11 @@ bool ShouldUseMegamorphicLoadBuiltin(FeedbackSource const& source,
     return feedback.AsNamedAccess().maps().empty();
   } else if (feedback.kind() == ProcessedFeedback::kInsufficient) {
     return false;
+  } else if (feedback.kind() == ProcessedFeedback::kMinimorphicPropertyAccess) {
+    // MinimorphicPropertyAccess is used for dynamic map checks and the IC state
+    // is either monomorphic or polymorphic. So it will still benefit from
+    // collecting feedback, so don't use megamorphic builtin.
+    return false;
   }
   UNREACHABLE();
 }
@@ -278,7 +283,7 @@ void JSGenericLowering::LowerJSLoadProperty(Node* node) {
   JSLoadPropertyNode n(node);
   const PropertyAccess& p = n.Parameters();
   FrameState frame_state = n.frame_state();
-  FrameState outer_state = frame_state.outer_frame_state();
+  Node* outer_state = frame_state.outer_frame_state();
   STATIC_ASSERT(n.FeedbackVectorIndex() == 2);
   if (outer_state->opcode() != IrOpcode::kFrameState) {
     n->RemoveInput(n.FeedbackVectorIndex());
@@ -302,7 +307,7 @@ void JSGenericLowering::LowerJSLoadNamed(Node* node) {
   JSLoadNamedNode n(node);
   NamedAccess const& p = n.Parameters();
   FrameState frame_state = n.frame_state();
-  FrameState outer_state = frame_state.outer_frame_state();
+  Node* outer_state = frame_state.outer_frame_state();
   STATIC_ASSERT(n.FeedbackVectorIndex() == 1);
   if (!p.feedback().IsValid()) {
     n->RemoveInput(n.FeedbackVectorIndex());
@@ -360,7 +365,7 @@ void JSGenericLowering::LowerJSLoadGlobal(Node* node) {
   const LoadGlobalParameters& p = n.Parameters();
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
   FrameState frame_state = n.frame_state();
-  FrameState outer_state = frame_state.outer_frame_state();
+  Node* outer_state = frame_state.outer_frame_state();
   STATIC_ASSERT(n.FeedbackVectorIndex() == 0);
   if (outer_state->opcode() != IrOpcode::kFrameState) {
     n->RemoveInput(n.FeedbackVectorIndex());
@@ -407,7 +412,7 @@ void JSGenericLowering::LowerJSStoreProperty(Node* node) {
   JSStorePropertyNode n(node);
   const PropertyAccess& p = n.Parameters();
   FrameState frame_state = n.frame_state();
-  FrameState outer_state = frame_state.outer_frame_state();
+  Node* outer_state = frame_state.outer_frame_state();
   STATIC_ASSERT(n.FeedbackVectorIndex() == 3);
   if (outer_state->opcode() != IrOpcode::kFrameState) {
     n->RemoveInput(n.FeedbackVectorIndex());
@@ -425,7 +430,7 @@ void JSGenericLowering::LowerJSStoreNamed(Node* node) {
   JSStoreNamedNode n(node);
   NamedAccess const& p = n.Parameters();
   FrameState frame_state = n.frame_state();
-  FrameState outer_state = frame_state.outer_frame_state();
+  Node* outer_state = frame_state.outer_frame_state();
   STATIC_ASSERT(n.FeedbackVectorIndex() == 2);
   if (!p.feedback().IsValid()) {
     n->RemoveInput(n.FeedbackVectorIndex());
@@ -450,7 +455,7 @@ void JSGenericLowering::LowerJSStoreNamedOwn(Node* node) {
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
   StoreNamedOwnParameters const& p = n.Parameters();
   FrameState frame_state = n.frame_state();
-  FrameState outer_state = frame_state.outer_frame_state();
+  Node* outer_state = frame_state.outer_frame_state();
   STATIC_ASSERT(n.FeedbackVectorIndex() == 2);
   if (outer_state->opcode() != IrOpcode::kFrameState) {
     n->RemoveInput(n.FeedbackVectorIndex());
@@ -472,7 +477,7 @@ void JSGenericLowering::LowerJSStoreGlobal(Node* node) {
   JSStoreGlobalNode n(node);
   const StoreGlobalParameters& p = n.Parameters();
   FrameState frame_state = n.frame_state();
-  FrameState outer_state = frame_state.outer_frame_state();
+  Node* outer_state = frame_state.outer_frame_state();
   STATIC_ASSERT(n.FeedbackVectorIndex() == 1);
   if (outer_state->opcode() != IrOpcode::kFrameState) {
     n->RemoveInput(n.FeedbackVectorIndex());

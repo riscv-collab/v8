@@ -22,6 +22,17 @@
 namespace v8 {
 namespace bigint {
 
+// If Karatsuba is the best supported algorithm, then it must check for
+// termination requests. If there are more advanced algorithms available
+// for larger inputs, then Karatsuba will only be used for sufficiently
+// small chunks that checking for termination requests is not necessary.
+#if V8_ADVANCED_BIGINT_ALGORITHMS
+#define MAYBE_TERMINATE
+#else
+#define MAYBE_TERMINATE \
+  if (should_terminate()) return;
+#endif
+
 namespace {
 
 // The Karatsuba algorithm sometimes finishes more quickly when the
@@ -92,7 +103,7 @@ void ProcessorImpl::MultiplyKaratsuba(RWDigits Z, Digits X, Digits Y) {
 void ProcessorImpl::KaratsubaStart(RWDigits Z, Digits X, Digits Y,
                                    RWDigits scratch, int k) {
   KaratsubaMain(Z, X, Y, scratch, k);
-  if (should_terminate()) return;
+  MAYBE_TERMINATE
   for (int i = 2 * k; i < Z.len(); i++) Z[i] = 0;
   if (k < Y.len() || X.len() != Y.len()) {
     ScratchDigits T(2 * k);
@@ -101,8 +112,8 @@ void ProcessorImpl::KaratsubaStart(RWDigits Z, Digits X, Digits Y,
     Digits Y1 = Y + std::min(k, Y.len());
     if (Y1.len() > 0) {
       KaratsubaChunk(T, X0, Y1, scratch);
-      if (should_terminate()) return;
-      AddAt(Z + k, T);
+      MAYBE_TERMINATE
+      AddAndReturnOverflow(Z + k, T);  // Can't overflow.
     }
 
     // Add Xi * Y0 << i and Xi * Y1 * b << (i + k).
@@ -110,12 +121,12 @@ void ProcessorImpl::KaratsubaStart(RWDigits Z, Digits X, Digits Y,
     for (int i = k; i < X.len(); i += k) {
       Digits Xi(X, i, k);
       KaratsubaChunk(T, Xi, Y0, scratch);
-      if (should_terminate()) return;
-      AddAt(Z + i, T);
+      MAYBE_TERMINATE
+      AddAndReturnOverflow(Z + i, T);  // Can't overflow.
       if (Y1.len() > 0) {
         KaratsubaChunk(T, Xi, Y1, scratch);
-        if (should_terminate()) return;
-        AddAt(Z + (i + k), T);
+        MAYBE_TERMINATE
+        AddAndReturnOverflow(Z + (i + k), T);  // Can't overflow.
       }
     }
   }
@@ -158,19 +169,21 @@ void ProcessorImpl::KaratsubaMain(RWDigits Z, Digits X, Digits Y,
   RWDigits scratch_for_recursion(scratch, 2 * n, 2 * n);
   RWDigits P0(scratch, 0, n);
   KaratsubaMain(P0, X0, Y0, scratch_for_recursion, n2);
-  if (should_terminate()) return;
+  MAYBE_TERMINATE
   for (int i = 0; i < n; i++) Z[i] = P0[i];
   RWDigits P2(scratch, n, n);
   KaratsubaMain(P2, X1, Y1, scratch_for_recursion, n2);
-  if (should_terminate()) return;
-  RWDigits Z1 = Z + n;
-  int end = std::min(Z1.len(), P2.len());
-  for (int i = 0; i < end; i++) Z1[i] = P2[i];
+  MAYBE_TERMINATE
+  RWDigits Z2 = Z + n;
+  int end = std::min(Z2.len(), P2.len());
+  for (int i = 0; i < end; i++) Z2[i] = P2[i];
   for (int i = end; i < n; i++) {
     DCHECK(P2[i] == 0);  // NOLINT(readability/check)
   }
-  AddAt(Z + n2, P0);
-  AddAt(Z + n2, P2);
+  // The intermediate result can be one digit too large; the subtraction
+  // below will fix this.
+  digit_t overflow = AddAndReturnOverflow(Z + n2, P0);
+  overflow += AddAndReturnOverflow(Z + n2, P2);
   RWDigits X_diff(scratch, 0, n2);
   RWDigits Y_diff(scratch, n2, n2);
   int sign = 1;
@@ -179,10 +192,13 @@ void ProcessorImpl::KaratsubaMain(RWDigits Z, Digits X, Digits Y,
   RWDigits P1(scratch, n, n);
   KaratsubaMain(P1, X_diff, Y_diff, scratch_for_recursion, n2);
   if (sign > 0) {
-    AddAt(Z + n2, P1);
+    overflow += AddAndReturnOverflow(Z + n2, P1);
   } else {
-    SubAt(Z + n2, P1);
+    overflow -= SubAndReturnBorrow(Z + n2, P1);
   }
+  // The intermediate result may have been bigger, but the final result fits.
+  DCHECK(overflow == 0);  // NOLINT(readability/check)
+  USE(overflow);
 }
 
 }  // namespace bigint

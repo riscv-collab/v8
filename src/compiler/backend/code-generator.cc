@@ -211,8 +211,15 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
 
   DeoptimizeKind deopt_kind = exit->kind();
   DeoptimizeReason deoptimization_reason = exit->reason();
-  Label* jump_deoptimization_entry_label =
-      &jump_deoptimization_entry_labels_[static_cast<int>(deopt_kind)];
+  Label* jump_deoptimization_entry_label;
+  if (deopt_kind == DeoptimizeKind::kEagerWithResume) {
+    jump_deoptimization_entry_label =
+        &jump_deoptimization_or_resume_entry_labels_[static_cast<int>(
+            deoptimization_reason)];
+  } else {
+    jump_deoptimization_entry_label =
+        &jump_deoptimization_entry_labels_[static_cast<int>(deopt_kind)];
+  }
   if (info()->source_positions()) {
     tasm()->RecordDeoptReason(deoptimization_reason, exit->pos(),
                               deoptimization_id);
@@ -976,10 +983,6 @@ Handle<PodArray<InliningPosition>> CreateInliningPositions(
     OptimizedCompilationInfo* info, Isolate* isolate) {
   const OptimizedCompilationInfo::InlinedFunctionList& inlined_functions =
       info->inlined_functions();
-  if (inlined_functions.size() == 0) {
-    return Handle<PodArray<InliningPosition>>::cast(
-        isolate->factory()->empty_byte_array());
-  }
   Handle<PodArray<InliningPosition>> inl_positions =
       PodArray<InliningPosition>::New(
           isolate, static_cast<int>(inlined_functions.size()),

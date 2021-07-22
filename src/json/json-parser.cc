@@ -599,7 +599,7 @@ Handle<Object> JsonParser<Char>::BuildJsonObject(
 
           HeapObject hn = HeapObject::FromAddress(mutable_double_address);
           hn.set_map_after_allocation(*factory()->heap_number_map());
-          HeapNumber::cast(hn).set_value_as_bits(bits);
+          HeapNumber::cast(hn).set_value_as_bits(bits, kRelaxedStore);
           value = hn;
           mutable_double_address += kMutableDoubleSize;
         } else {
@@ -627,7 +627,7 @@ Handle<Object> JsonParser<Char>::BuildJsonObject(
       // must ensure that the sweeper is not running or has already swept the
       // object's page. Otherwise the GC can add the contents of
       // mutable_double_buffer to the free list.
-      isolate()->heap()->EnsureSweepingCompleted(mutable_double_buffer);
+      isolate()->heap()->EnsureSweepingCompleted(*mutable_double_buffer);
       mutable_double_buffer->set_length(0);
     }
   }

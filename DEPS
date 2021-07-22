@@ -49,10 +49,10 @@ vars = {
   'reclient_version': 're_client_version:0.33.0.3e223d5',
 
   # GN CIPD package version.
-  'gn_version': 'git_revision:4d207c94eab41f09c9a8505eb47f3d2919e47943',
+  'gn_version': 'git_revision:24e2f7df92641de0351a96096fb2c490b2436bb8',
 
   # luci-go CIPD package version.
-  'luci_go': 'git_revision:8ed83b4afa51020c8900d121bb57624b35882dec',
+  'luci_go': 'git_revision:2f836b4882d2fa8c7a44c8ac8881c3a17fad6a86',
 
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling android_sdk_build-tools_version
@@ -92,9 +92,9 @@ deps = {
   'base/trace_event/common':
     Var('chromium_url') + '/chromium/src/base/trace_event/common.git' + '@' + 'd5bb24e5d9802c8c917fcaa4375d5239a586c168',
   'build':
-    Var('chromium_url') + '/chromium/src/build.git' + '@' + '73a9443ed413fe73017dc981ab013d39fadb420d',
+    Var('chromium_url') + '/chromium/src/build.git' + '@' + '70f58488ed32737e217005596833f5c0cc919f43',
   'buildtools':
-    Var('chromium_url') + '/chromium/src/buildtools.git' + '@' + '82a4d6022067726fc72f261cb64a1dfa3b97af86',
+    Var('chromium_url') + '/chromium/src/buildtools.git' + '@' + '2500c1d8f3a20a66a7cbafe3f69079a2edb742dd',
   'buildtools/clang_format/script':
     Var('chromium_url') + '/external/github.com/llvm/llvm-project/clang/tools/clang-format.git' + '@' + '99803d74e35962f63a775f29477882afd4d57d94',
   'buildtools/linux64': {
@@ -120,9 +120,9 @@ deps = {
   'buildtools/third_party/libc++/trunk':
     Var('chromium_url') + '/external/github.com/llvm/llvm-project/libcxx.git' + '@' + '79a2e924d96e2fc1e4b937c42efd08898fa472d7',
   'buildtools/third_party/libc++abi/trunk':
-    Var('chromium_url') + '/external/github.com/llvm/llvm-project/libcxxabi.git' + '@' + '73e74043c02f4675f960fcfcfc0a89d7cffdcc73',
+    Var('chromium_url') + '/external/github.com/llvm/llvm-project/libcxxabi.git' + '@' + 'cb34896ebd62f93f708ff9aad26159cf11dde6f4',
   'buildtools/third_party/libunwind/trunk':
-    Var('chromium_url') + '/external/github.com/llvm/llvm-project/libunwind.git' + '@' + 'a38ef11ab68f975bb4fe5356aff5f0e3dabe9f23',
+    Var('chromium_url') + '/external/github.com/llvm/llvm-project/libunwind.git' + '@' + 'e7ac0f84fc2f2f8bd2ad151a7348e7120d77648a',
   'buildtools/win': {
     'packages': [
       {
@@ -155,7 +155,7 @@ deps = {
       'packages': [
           {
               'package': 'fuchsia/third_party/aemu/linux-amd64',
-              'version': 'A1XxYDWVeZi3lNSg1lZdcmGtIB2fA0XTIPYdevon60YC'
+              'version': 'QunhZeUueNJF63FP9uXIb-TVJNazpdKD5TQAi_D7ZLEC'
           },
       ],
       'condition': 'host_os == "linux" and checkout_fuchsia',
@@ -218,7 +218,7 @@ deps = {
       'dep_type': 'cipd',
   },
   'third_party/catapult': {
-    'url': Var('chromium_url') + '/catapult.git' + '@' + '11a2ddfb3eec783642856c3e1a8aec88993ac9ad',
+    'url': Var('chromium_url') + '/catapult.git' + '@' + 'f691b8d997327a09824881810cf1edaeb53d7579',
     'condition': 'checkout_android',
   },
   'third_party/colorama/src': {
@@ -228,16 +228,16 @@ deps = {
   'third_party/depot_tools':
     Var('chromium_url') + '/chromium/tools/depot_tools.git' + '@' + 'a806594b95a39141fdbf1f359087a44ffb2deaaf',
   'third_party/fuchsia-sdk': {
-    'url': Var('chromium_url') + '/chromium/src/third_party/fuchsia-sdk.git' + '@' + '1ea7a15f7eb3752f134afaf42c40e5b1aa159c07',
+    'url': Var('chromium_url') + '/chromium/src/third_party/fuchsia-sdk.git' + '@' + '18896843130c33372c455c153ad07d2217bd2085',
     'condition': 'checkout_fuchsia',
   },
   'third_party/google_benchmark/src': {
-    'url': Var('chromium_url') + '/external/github.com/google/benchmark.git' + '@' + '94f845ec4f602356e0744f8d602f279c622ea919',
+    'url': Var('chromium_url') + '/external/github.com/google/benchmark.git' + '@' + 'e451e50e9b8af453f076dec10bd6890847f1624e',
   },
   'third_party/googletest/src':
-    Var('chromium_url') + '/external/github.com/google/googletest.git' + '@' + '355d57d90d9744c41ac7c99f1e960778f1c63040',
+    Var('chromium_url') + '/external/github.com/google/googletest.git' + '@' + '4ec4cd23f486bf70efcc5d2caa40f24368f752e3',
   'third_party/icu':
-    Var('chromium_url') + '/chromium/deps/icu.git' + '@' + 'a0718d4f121727e30b8d52c7a189ebf5ab52421f',
+    Var('chromium_url') + '/chromium/deps/icu.git' + '@' + 'b9dfc58bf9b02ea0365509244aca13841322feb0',
   'third_party/instrumented_libraries':
     Var('chromium_url') + '/chromium/src/third_party/instrumented_libraries.git' + '@' + '4ae2535e8e894c3cd81d46aacdaf151b5df30709',
   'third_party/ittapi': {
@@ -247,13 +247,13 @@ deps = {
     'condition': "checkout_ittapi or check_v8_header_includes",
   },
   'third_party/jinja2':
-    Var('chromium_url') + '/chromium/src/third_party/jinja2.git' + '@' + '6906af9d94ae10e895af4b7d07a34206e8de1424',
+    Var('chromium_url') + '/chromium/src/third_party/jinja2.git' + '@' + '7c54c1f227727e0c4c1d3dc19dd71cd601a2db95',
   'third_party/jsoncpp/source':
     Var('chromium_url') + '/external/github.com/open-source-parsers/jsoncpp.git'+ '@' + '9059f5cad030ba11d37818847443a53918c327b1',
   'third_party/logdog/logdog':
-    Var('chromium_url') + '/infra/luci/luci-py/client/libs/logdog' + '@' + '9a84af84d3fa62b230569cf1d3abf69cc7c576e2',
+    Var('chromium_url') + '/infra/luci/luci-py/client/libs/logdog' + '@' + '794d09a24c10401953880c253d0c7e267234ab75',
   'third_party/markupsafe':
-    Var('chromium_url') + '/chromium/src/third_party/markupsafe.git' + '@' + '0944e71f4b2cb9a871bcbe353f95e889b64a611a',
+    Var('chromium_url') + '/chromium/src/third_party/markupsafe.git' + '@' + '1b882ef6372b58bfd55a3285f37ed801be9137cd',
   'third_party/perfetto':
     Var('android_url') + '/platform/external/perfetto.git' + '@' + 'aa4385bc5997ecad4c633885e1b331b1115012fb',
   'third_party/protobuf':
@@ -283,9 +283,9 @@ deps = {
       'condition': 'checkout_android',
   },
   'third_party/zlib':
-    Var('chromium_url') + '/chromium/src/third_party/zlib.git'+ '@' + '00ade15d946d72f75c786dc2e66c419a9d99e2ad',
+    Var('chromium_url') + '/chromium/src/third_party/zlib.git'+ '@' + '199485df6c234895961519df0e5a150e48026705',
   'tools/clang':
-    Var('chromium_url') + '/chromium/src/tools/clang.git' + '@' + '04e2c7e789a1a8aa5a2a68f85a60c888bca02793',
+    Var('chromium_url') + '/chromium/src/tools/clang.git' + '@' + '3fa819890a6300277c3c7aa0b1f79dc46da40e36',
   'tools/clang/dsymutil': {
     'packages': [
       {
@@ -565,17 +565,6 @@ hooks = [
       'build/fuchsia/update_images.py',
       '--boot-images={checkout_fuchsia_boot_images}',
     ],
-  },
-  {
-    # Mac doesn't use lld so it's not included in the default clang bundle
-    # there. However, lld is need in Fuchsia cross builds, so
-    # download it there.
-    # Should run after the clang hook.
-    'name': 'lld/mac',
-    'pattern': '.',
-    'condition': 'host_os == "mac" and checkout_fuchsia',
-    'action': ['python', 'tools/clang/scripts/update.py',
-               '--package=lld_mac'],
   },
   {
       # Mac does not have llvm-objdump, download it for cross builds in Fuchsia.

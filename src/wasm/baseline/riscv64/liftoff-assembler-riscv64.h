@@ -1250,7 +1250,7 @@ void LiftoffAssembler::emit_f32_max(DoubleRegister dst, DoubleRegister lhs,
 
 void LiftoffAssembler::emit_f32_copysign(DoubleRegister dst, DoubleRegister lhs,
                                          DoubleRegister rhs) {
-  bailout(kComplexOperation, "f32_copysign");
+  fsgnj_s(dst, lhs, rhs);
 }
 
 void LiftoffAssembler::emit_f64_min(DoubleRegister dst, DoubleRegister lhs,
@@ -1265,7 +1265,7 @@ void LiftoffAssembler::emit_f64_max(DoubleRegister dst, DoubleRegister lhs,
 
 void LiftoffAssembler::emit_f64_copysign(DoubleRegister dst, DoubleRegister lhs,
                                          DoubleRegister rhs) {
-  bailout(kComplexOperation, "f64_copysign");
+  fsgnj_d(dst, lhs, rhs);
 }
 
 #define FP_BINOP(name, instruction)                                          \
@@ -1362,7 +1362,9 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
       }
 
       // Checking if trap.
-      TurboAssembler::Branch(trap, eq, kScratchReg, Operand(zero_reg));
+      if (trap != nullptr) {
+        TurboAssembler::Branch(trap, eq, kScratchReg, Operand(zero_reg));
+      }
 
       return true;
     }
@@ -1401,30 +1403,46 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
     case kExprF64ReinterpretI64:
       fmv_d_x(dst.fp(), src.gp());
       return true;
-    case kExprI32SConvertSatF32:
-      bailout(kNonTrappingFloatToInt, "kExprI32SConvertSatF32");
+    case kExprI32SConvertSatF32: {
+      fcvt_w_s(dst.gp(), src.fp(), RTZ);
+      Clear_if_nan_s(dst.gp(), src.fp());
       return true;
-    case kExprI32UConvertSatF32:
-      bailout(kNonTrappingFloatToInt, "kExprI32UConvertSatF32");
+    }
+    case kExprI32UConvertSatF32: {
+      fcvt_wu_s(dst.gp(), src.fp(), RTZ);
+      Clear_if_nan_s(dst.gp(), src.fp());
       return true;
-    case kExprI32SConvertSatF64:
-      bailout(kNonTrappingFloatToInt, "kExprI32SConvertSatF64");
+    }
+    case kExprI32SConvertSatF64: {
+      fcvt_w_d(dst.gp(), src.fp(), RTZ);
+      Clear_if_nan_d(dst.gp(), src.fp());
       return true;
-    case kExprI32UConvertSatF64:
-      bailout(kNonTrappingFloatToInt, "kExprI32UConvertSatF64");
+    }
+    case kExprI32UConvertSatF64: {
+      fcvt_wu_d(dst.gp(), src.fp(), RTZ);
+      Clear_if_nan_d(dst.gp(), src.fp());
       return true;
-    case kExprI64SConvertSatF32:
-      bailout(kNonTrappingFloatToInt, "kExprI64SConvertSatF32");
+    }
+    case kExprI64SConvertSatF32: {
+      fcvt_l_s(dst.gp(), src.fp(), RTZ);
+      Clear_if_nan_s(dst.gp(), src.fp());
       return true;
-    case kExprI64UConvertSatF32:
-      bailout(kNonTrappingFloatToInt, "kExprI64UConvertSatF32");
+    }
+    case kExprI64UConvertSatF32: {
+      fcvt_lu_s(dst.gp(), src.fp(), RTZ);
+      Clear_if_nan_s(dst.gp(), src.fp());
       return true;
-    case kExprI64SConvertSatF64:
-      bailout(kNonTrappingFloatToInt, "kExprI64SConvertSatF64");
+    }
+    case kExprI64SConvertSatF64: {
+      fcvt_l_d(dst.gp(), src.fp(), RTZ);
+      Clear_if_nan_d(dst.gp(), src.fp());
       return true;
-    case kExprI64UConvertSatF64:
-      bailout(kNonTrappingFloatToInt, "kExprI64UConvertSatF64");
+    }
+    case kExprI64UConvertSatF64: {
+      fcvt_lu_d(dst.gp(), src.fp(), RTZ);
+      Clear_if_nan_d(dst.gp(), src.fp());
       return true;
+    }
     default:
       return false;
   }
@@ -2654,6 +2672,13 @@ void LiftoffAssembler::emit_f64x2_replace_lane(LiftoffRegister dst,
   bailout(kSimd, "emit_f64x2_replace_lane");
 }
 
+void LiftoffAssembler::emit_s128_set_if_nan(Register dst, DoubleRegister src,
+                                            Register tmp_gp,
+                                            DoubleRegister tmp_fp,
+                                            ValueKind lane_kind) {
+  bailout(kSimd, "emit_s128_set_if_nan");
+}
+
 void LiftoffAssembler::StackCheck(Label* ool_code, Register limit_address) {
   TurboAssembler::Uld(limit_address, MemOperand(limit_address));
   TurboAssembler::Branch(ool_code, ule, sp, Operand(limit_address));
@@ -2842,7 +2867,6 @@ void LiftoffAssembler::emit_set_if_nan(Register dst, FPURegister src,
   not_(scratch, scratch);
   Sd(scratch, MemOperand(dst));
 }
-
 
 void LiftoffStackSlots::Construct(int param_slots) {
   DCHECK_LT(0, slots_.size());

@@ -638,6 +638,8 @@ Builtin Deoptimizer::GetDeoptWithResumeBuiltin(DeoptimizeReason reason) {
   switch (reason) {
     case DeoptimizeReason::kDynamicCheckMaps:
       return Builtin::kDynamicCheckMapsTrampoline;
+    case DeoptimizeReason::kDynamicCheckMapsInlined:
+      return Builtin::kDynamicCheckMapsWithFeedbackVectorTrampoline;
     default:
       UNREACHABLE();
   }
@@ -959,7 +961,6 @@ void Deoptimizer::DoComputeOutputFrames() {
         break;
       case TranslatedFrame::kInvalid:
         FATAL("invalid frame");
-        break;
     }
     total_output_frame_size += output_[frame_index]->GetFrameSize();
   }

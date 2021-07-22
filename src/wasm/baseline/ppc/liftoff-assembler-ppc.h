@@ -656,7 +656,30 @@ void LiftoffAssembler::Spill(int offset, WasmValue value) {
 }
 
 void LiftoffAssembler::Fill(LiftoffRegister reg, int offset, ValueKind kind) {
-  bailout(kUnsupportedArchitecture, "Fill");
+  switch (kind) {
+    case kI32:
+      LoadS32(reg.gp(), liftoff::GetStackSlot(offset + stack_bias), r0);
+      break;
+    case kI64:
+    case kRef:
+    case kOptRef:
+    case kRtt:
+    case kRttWithDepth:
+      LoadU64(reg.gp(), liftoff::GetStackSlot(offset), r0);
+      break;
+    case kF32:
+      LoadF32(reg.fp(), liftoff::GetStackSlot(offset + stack_bias), r0);
+      break;
+    case kF64:
+      LoadF64(reg.fp(), liftoff::GetStackSlot(offset), r0);
+      break;
+    case kS128: {
+      bailout(kSimd, "simd op");
+      break;
+    }
+    default:
+      UNREACHABLE();
+  }
 }
 
 void LiftoffAssembler::FillI64Half(Register, int offset, RegPairHalf) {
@@ -691,7 +714,7 @@ void LiftoffAssembler::FillStackSlotsWithZero(int start, int size) {
     bind(&loop);
     StoreU64(r0, MemOperand(r0));
     addi(r0, r0, Operand(kSystemPointerSize));
-    cmp(r4, r5);
+    CmpS64(r4, r5);
     bne(&loop);
 
     pop(r4);
@@ -769,7 +792,6 @@ UNIMPLEMENTED_I32_BINOP_I(i32_xor)
 UNIMPLEMENTED_I32_SHIFTOP(i32_shl)
 UNIMPLEMENTED_I32_SHIFTOP(i32_sar)
 UNIMPLEMENTED_I32_SHIFTOP(i32_shr)
-UNIMPLEMENTED_I64_BINOP(i64_add)
 UNIMPLEMENTED_I64_BINOP(i64_sub)
 UNIMPLEMENTED_I64_BINOP(i64_mul)
 #ifdef V8_TARGET_ARCH_PPC64
@@ -786,8 +808,6 @@ UNIMPLEMENTED_FP_BINOP(f32_add)
 UNIMPLEMENTED_FP_BINOP(f32_sub)
 UNIMPLEMENTED_FP_BINOP(f32_mul)
 UNIMPLEMENTED_FP_BINOP(f32_div)
-UNIMPLEMENTED_FP_BINOP(f32_min)
-UNIMPLEMENTED_FP_BINOP(f32_max)
 UNIMPLEMENTED_FP_BINOP(f32_copysign)
 UNIMPLEMENTED_FP_UNOP(f32_abs)
 UNIMPLEMENTED_FP_UNOP(f32_neg)
@@ -800,8 +820,6 @@ UNIMPLEMENTED_FP_BINOP(f64_add)
 UNIMPLEMENTED_FP_BINOP(f64_sub)
 UNIMPLEMENTED_FP_BINOP(f64_mul)
 UNIMPLEMENTED_FP_BINOP(f64_div)
-UNIMPLEMENTED_FP_BINOP(f64_min)
-UNIMPLEMENTED_FP_BINOP(f64_max)
 UNIMPLEMENTED_FP_BINOP(f64_copysign)
 UNIMPLEMENTED_FP_UNOP(f64_abs)
 UNIMPLEMENTED_FP_UNOP(f64_neg)
@@ -822,21 +840,70 @@ UNIMPLEMENTED_FP_UNOP(f64_sqrt)
 #undef UNIMPLEMENTED_I32_SHIFTOP
 #undef UNIMPLEMENTED_I64_SHIFTOP
 
-bool LiftoffAssembler::emit_i32_popcnt(Register dst, Register src) {
-  bailout(kUnsupportedArchitecture, "i32_popcnt");
-  return true;
-}
+#define SIGN_EXT(r) extsw(r, r)
+#define INT32_AND_WITH_1F(x) Operand(x & 0x1f)
+#define REGISTER_AND_WITH_1F    \
+  ([&](Register rhs) {          \
+    andi(r0, rhs, Operand(31)); \
+    return r0;                  \
+  })
 
-bool LiftoffAssembler::emit_i64_popcnt(LiftoffRegister dst,
-                                       LiftoffRegister src) {
-  bailout(kUnsupportedArchitecture, "i64_popcnt");
-  return true;
-}
+#define LFR_TO_REG(reg) reg.gp()
 
-void LiftoffAssembler::emit_i64_addi(LiftoffRegister dst, LiftoffRegister lhs,
-                                     int64_t imm) {
-  bailout(kUnsupportedArchitecture, "i64_addi");
-}
+// V(name, instr, dtype, stype, dcast, scast, rcast, return_val, return_type)
+#define UNOP_LIST(V)                                                    \
+  V(i32_popcnt, Popcnt32, Register, Register, , , USE, true, bool)      \
+  V(i64_popcnt, Popcnt64, LiftoffRegister, LiftoffRegister, LFR_TO_REG, \
+    LFR_TO_REG, USE, true, bool)
+
+#define EMIT_UNOP_FUNCTION(name, instr, dtype, stype, dcast, scast, rcast, \
+                           ret, return_type)                               \
+  return_type LiftoffAssembler::emit_##name(dtype dst, stype src) {        \
+    auto _dst = dcast(dst);                                                \
+    auto _src = scast(src);                                                \
+    instr(_dst, _src);                                                     \
+    rcast(_dst);                                                           \
+    return ret;                                                            \
+  }
+UNOP_LIST(EMIT_UNOP_FUNCTION)
+#undef EMIT_UNOP_FUNCTION
+#undef UNOP_LIST
+
+// V(name, instr, dtype, stype1, stype2, dcast, scast1, scast2, rcast,
+// return_val, return_type)
+#define BINOP_LIST(V)                                                        \
+  V(f32_min, MinF64, DoubleRegister, DoubleRegister, DoubleRegister, , , ,   \
+    USE, , void)                                                             \
+  V(f32_max, MaxF64, DoubleRegister, DoubleRegister, DoubleRegister, , , ,   \
+    USE, , void)                                                             \
+  V(f64_min, MinF64, DoubleRegister, DoubleRegister, DoubleRegister, , , ,   \
+    USE, , void)                                                             \
+  V(f64_max, MaxF64, DoubleRegister, DoubleRegister, DoubleRegister, , , ,   \
+    USE, , void)                                                             \
+  V(i64_add, AddS64, LiftoffRegister, LiftoffRegister, LiftoffRegister,      \
+    LFR_TO_REG, LFR_TO_REG, LFR_TO_REG, USE, , void)                         \
+  V(i64_addi, AddS64, LiftoffRegister, LiftoffRegister, int64_t, LFR_TO_REG, \
+    LFR_TO_REG, Operand, USE, , void)
+
+#define EMIT_BINOP_FUNCTION(name, instr, dtype, stype1, stype2, dcast, scast1, \
+                            scast2, rcast, ret, return_type)                   \
+  return_type LiftoffAssembler::emit_##name(dtype dst, stype1 lhs,             \
+                                            stype2 rhs) {                      \
+    auto _dst = dcast(dst);                                                    \
+    auto _lhs = scast1(lhs);                                                   \
+    auto _rhs = scast2(rhs);                                                   \
+    instr(_dst, _lhs, _rhs);                                                   \
+    rcast(_dst);                                                               \
+    return ret;                                                                \
+  }
+
+BINOP_LIST(EMIT_BINOP_FUNCTION)
+#undef BINOP_LIST
+#undef EMIT_BINOP_FUNCTION
+#undef SIGN_EXT
+#undef INT32_AND_WITH_1F
+#undef REGISTER_AND_WITH_1F
+#undef LFR_TO_REG
 
 void LiftoffAssembler::emit_i32_divs(Register dst, Register lhs, Register rhs,
                                      Label* trap_div_by_zero,
@@ -948,9 +1015,9 @@ void LiftoffAssembler::emit_cond_jump(LiftoffCondition liftoff_cond,
     switch (kind) {
       case kI32:
         if (use_signed) {
-          cmpw(lhs, rhs);
+          CmpS32(lhs, rhs);
         } else {
-          cmplw(lhs, rhs);
+          CmpU32(lhs, rhs);
         }
         break;
       case kRef:
@@ -961,9 +1028,9 @@ void LiftoffAssembler::emit_cond_jump(LiftoffCondition liftoff_cond,
         V8_FALLTHROUGH;
       case kI64:
         if (use_signed) {
-          cmp(lhs, rhs);
+          CmpS64(lhs, rhs);
         } else {
-          cmpl(lhs, rhs);
+          CmpU64(lhs, rhs);
         }
         break;
       default:
@@ -972,7 +1039,7 @@ void LiftoffAssembler::emit_cond_jump(LiftoffCondition liftoff_cond,
   } else {
     DCHECK_EQ(kind, kI32);
     CHECK(use_signed);
-    cmpwi(lhs, Operand::Zero());
+    CmpS32(lhs, Operand::Zero(), r0);
   }
 
   b(cond, label);
@@ -982,13 +1049,13 @@ void LiftoffAssembler::emit_i32_cond_jumpi(LiftoffCondition liftoff_cond,
                                            Label* label, Register lhs,
                                            int32_t imm) {
   Condition cond = liftoff::ToCondition(liftoff_cond);
-  Cmpwi(lhs, Operand(imm), r0);
+  CmpS32(lhs, Operand(imm), r0);
   b(cond, label);
 }
 
 void LiftoffAssembler::emit_i32_eqz(Register dst, Register src) {
   Label done;
-  cmpwi(src, Operand(0));
+  CmpS32(src, Operand(0), r0);
   mov(dst, Operand(1));
   beq(&done);
   mov(dst, Operand::Zero());
@@ -1000,9 +1067,9 @@ void LiftoffAssembler::emit_i32_set_cond(LiftoffCondition liftoff_cond,
                                          Register rhs) {
   bool use_signed = liftoff::UseSignedOp(liftoff_cond);
   if (use_signed) {
-    cmpw(lhs, rhs);
+    CmpS32(lhs, rhs);
   } else {
-    cmplw(lhs, rhs);
+    CmpU32(lhs, rhs);
   }
   Label done;
   mov(dst, Operand(1));
@@ -1025,9 +1092,9 @@ void LiftoffAssembler::emit_i64_set_cond(LiftoffCondition liftoff_cond,
                                          LiftoffRegister rhs) {
   bool use_signed = liftoff::UseSignedOp(liftoff_cond);
   if (use_signed) {
-    cmp(lhs.gp(), rhs.gp());
+    CmpS64(lhs.gp(), rhs.gp());
   } else {
-    cmpl(lhs.gp(), rhs.gp());
+    CmpU64(lhs.gp(), rhs.gp());
   }
   Label done;
   mov(dst, Operand(1));
@@ -2282,6 +2349,13 @@ void LiftoffAssembler::MaybeOSR() {}
 
 void LiftoffAssembler::emit_set_if_nan(Register dst, DoubleRegister src,
                                        ValueKind kind) {
+  UNIMPLEMENTED();
+}
+
+void LiftoffAssembler::emit_s128_set_if_nan(Register dst, DoubleRegister src,
+                                            Register tmp_gp,
+                                            DoubleRegister tmp_fp,
+                                            ValueKind lane_kind) {
   UNIMPLEMENTED();
 }
 

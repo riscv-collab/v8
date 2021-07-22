@@ -529,7 +529,6 @@ int DisassemblerX64::PrintRightOperandHelper(
         AppendToBuffer("[%s]", NameOfCPURegister(rm));
         return 1;
       }
-      break;
     case 1:  // fall through
     case 2:
       if ((rm & 7) == 4) {
@@ -557,7 +556,6 @@ int DisassemblerX64::PrintRightOperandHelper(
         }
         return (mod == 2) ? 5 : 2;
       }
-      break;
     case 3:
       AppendToBuffer("%s", (this->*register_name)(rm));
       return 1;
@@ -2801,7 +2799,8 @@ int DisassemblerX64::InstructionDecode(v8::base::Vector<char> out_buffer,
   for (byte* bp = instr; bp < data; bp++) {
     outp += v8::base::SNPrintF(out_buffer + outp, "%02x", *bp);
   }
-  for (int i = 6 - instr_len; i >= 0; i--) {
+  // Indent instruction, leaving space for 7 bytes, i.e. 14 characters in hex.
+  while (outp < 14) {
     outp += v8::base::SNPrintF(out_buffer + outp, "  ");
   }
 

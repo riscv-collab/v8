@@ -82,8 +82,7 @@ class TestModuleBuilder {
     mod.origin = origin;
   }
   byte AddGlobal(ValueType type, bool mutability = true) {
-    mod.globals.push_back(
-        {type, mutability, WasmInitExpr(), {0}, false, false});
+    mod.globals.push_back({type, mutability, {}, {0}, false, false});
     CHECK_LE(mod.globals.size(), kMaxByteSizedLeb128);
     return static_cast<byte>(mod.globals.size() - 1);
   }
@@ -162,16 +161,16 @@ class TestModuleBuilder {
     auto& init = mod.elem_segments.back();
     // Add 5 empty elements.
     for (uint32_t j = 0; j < 5; j++) {
-      init.entries.push_back(
-          WasmInitExpr::RefNullConst(type.heap_representation()));
+      init.entries.push_back(WasmElemSegment::Entry(
+          WasmElemSegment::Entry::kRefNullEntry, type.heap_representation()));
     }
     return static_cast<byte>(mod.elem_segments.size() - 1);
   }
 
   byte AddDeclarativeElementSegment() {
     mod.elem_segments.emplace_back(kWasmFuncRef, true);
-    mod.elem_segments.back().entries.push_back(
-        WasmInitExpr::RefNullConst(HeapType::kFunc));
+    mod.elem_segments.back().entries.push_back(WasmElemSegment::Entry(
+        WasmElemSegment::Entry::kRefNullEntry, HeapType::kFunc));
     return static_cast<byte>(mod.elem_segments.size() - 1);
   }
 
@@ -3674,6 +3673,41 @@ TEST_F(FunctionBodyDecoderTest, NonDefaultableLocal) {
                 "Cannot define function-level local of non-defaultable type");
 }
 
+TEST_F(FunctionBodyDecoderTest, AllowingNonDefaultableLocals) {
+  WASM_FEATURE_SCOPE(typed_funcref);
+  WASM_FEATURE_SCOPE(reftypes);
+  WASM_FEATURE_SCOPE(nn_locals);
+  byte struct_type_index = builder.AddStruct({F(kWasmI32, true)});
+  ValueType rep = ref(struct_type_index);
+  FunctionSig sig(0, 1, &rep);
+  AddLocals(rep, 2);
+  // Declaring non-defaultable locals is fine.
+  ExpectValidates(&sig, {});
+  // Loading from an uninitialized non-defaultable local fails.
+  ExpectFailure(&sig, {WASM_LOCAL_GET(1), WASM_DROP}, kAppendEnd,
+                "uninitialized non-defaultable local: 1");
+  // Loading from an initialized local is fine.
+  ExpectValidates(&sig, {WASM_LOCAL_SET(1, WASM_LOCAL_GET(0)),
+                         WASM_LOCAL_GET(1), WASM_DROP});
+  ExpectValidates(&sig, {WASM_LOCAL_TEE(1, WASM_LOCAL_GET(0)),
+                         WASM_LOCAL_GET(1), WASM_DROP, WASM_DROP});
+  // Non-nullable locals must be initialized with non-null values.
+  ExpectFailure(&sig, {WASM_LOCAL_SET(1, WASM_REF_NULL(struct_type_index))},
+                kAppendEnd,
+                "expected type (ref 0), found ref.null of type (ref null 0)");
+  // Initialization status is propagated into inner blocks.
+  ExpectValidates(&sig, {WASM_LOCAL_SET(1, WASM_LOCAL_GET(0)),
+                         WASM_BLOCK(WASM_LOCAL_GET(1), WASM_DROP),
+                         WASM_LOCAL_GET(1), WASM_DROP});
+  // Initialization status is forgotten at the end of a block.
+  ExpectFailure(&sig,
+                {WASM_LOCAL_SET(1, WASM_LOCAL_GET(0)),
+                 WASM_BLOCK(WASM_LOCAL_SET(2, WASM_LOCAL_GET(0))),
+                 WASM_LOCAL_GET(1), WASM_DROP,   // OK
+                 WASM_LOCAL_GET(2), WASM_DROP},  // Error
+                kAppendEnd, "uninitialized non-defaultable local: 2");
+}
+
 TEST_F(FunctionBodyDecoderTest, RefEq) {
   WASM_FEATURE_SCOPE(reftypes);
   WASM_FEATURE_SCOPE(eh);
@@ -3681,8 +3715,6 @@ TEST_F(FunctionBodyDecoderTest, RefEq) {
   WASM_FEATURE_SCOPE(simd);
   WASM_FEATURE_SCOPE(gc);
 
-  TestModuleBuilder builder;
-  module = builder.module();
   byte struct_type_index = builder.AddStruct({F(kWasmI32, true)});
   ValueType eqref_subtypes[] = {kWasmEqRef,
                                 kWasmI31Ref,

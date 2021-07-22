@@ -375,7 +375,7 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
 
   __ Move(scratch, debug_suspended_generator);
   __ LoadU64(scratch, MemOperand(scratch));
-  __ cmp(scratch, r4);
+  __ CmpS64(scratch, r4);
   __ beq(&prepare_step_in_suspended_generator);
   __ bind(&stepping_prepared);
 
@@ -383,7 +383,7 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   // (i.e. debug break and preemption) here, so check the "real stack limit".
   Label stack_overflow;
   __ LoadStackLimit(scratch, StackLimitKind::kRealStackLimit);
-  __ cmpl(sp, scratch);
+  __ CmpU64(sp, scratch);
   __ blt(&stack_overflow);
 
   // ----------- S t a t e -------------
@@ -828,7 +828,7 @@ static void LeaveInterpreterFrame(MacroAssembler* masm, Register scratch1,
   // If actual is bigger than formal, then we should use it to free up the stack
   // arguments.
   Label corrected_args_count;
-  __ cmp(params_size, actual_params_size);
+  __ CmpS64(params_size, actual_params_size);
   __ bge(&corrected_args_count);
   __ mr(params_size, actual_params_size);
   __ bind(&corrected_args_count);
@@ -1155,7 +1155,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     // Do a stack check to ensure we don't go over the limit.
     __ sub(r8, sp, r5);
     __ LoadStackLimit(r0, StackLimitKind::kRealStackLimit);
-    __ cmpl(r8, r0);
+    __ CmpU64(r8, r0);
     __ blt(&stack_overflow);
 
     // If ok, push undefined as the initial value for all register file entries.
@@ -1189,7 +1189,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // TODO(solanes): Merge with the real stack limit check above.
   Label stack_check_interrupt, after_stack_check_interrupt;
   __ LoadStackLimit(r0, StackLimitKind::kInterruptStackLimit);
-  __ cmpl(sp, r0);
+  __ CmpU64(sp, r0);
   __ blt(&stack_check_interrupt);
   __ bind(&after_stack_check_interrupt);
 
@@ -2183,7 +2183,7 @@ void Generate_PushBoundArguments(MacroAssembler* masm) {
       // limit".
       {
         __ LoadStackLimit(scratch, StackLimitKind::kRealStackLimit);
-        __ cmpl(r0, scratch);
+        __ CmpU64(r0, scratch);
       }
       __ bgt(&done);  // Signed comparison.
       {
@@ -2881,13 +2881,13 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ StoreU64(r14, MemOperand(r17, kNextOffset));
   if (FLAG_debug_code) {
     __ lwz(r4, MemOperand(r17, kLevelOffset));
-    __ cmp(r4, r16);
+    __ CmpS64(r4, r16);
     __ Check(eq, AbortReason::kUnexpectedLevelAfterReturnFromApiCall);
   }
   __ subi(r16, r16, Operand(1));
   __ stw(r16, MemOperand(r17, kLevelOffset));
   __ LoadU64(r0, MemOperand(r17, kLimitOffset));
-  __ cmp(r15, r0);
+  __ CmpS64(r15, r0);
   __ bne(&delete_allocated_handles);
 
   // Leave the API exit frame.
@@ -2904,7 +2904,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ LoadRoot(r14, RootIndex::kTheHoleValue);
   __ Move(r15, ExternalReference::scheduled_exception_address(isolate));
   __ LoadU64(r15, MemOperand(r15));
-  __ cmp(r14, r15);
+  __ CmpS64(r14, r15);
   __ bne(&promote_scheduled_exception);
 
   __ blr();
@@ -3304,7 +3304,7 @@ void Generate_DeoptimizationEntry(MacroAssembler* masm,
   __ StoreU64(r7, MemOperand(r6, 0));
   __ addi(r6, r6, Operand(kSystemPointerSize));
   __ bind(&pop_loop_header);
-  __ cmp(r5, sp);
+  __ CmpS64(r5, sp);
   __ bne(&pop_loop);
 
   // Compute the output frame in the deoptimizer.
@@ -3349,7 +3349,7 @@ void Generate_DeoptimizationEntry(MacroAssembler* masm,
 
   __ addi(r7, r7, Operand(kSystemPointerSize));
   __ bind(&outer_loop_header);
-  __ cmp(r7, r4);
+  __ CmpS64(r7, r4);
   __ blt(&outer_push_loop);
 
   __ LoadU64(r4, MemOperand(r3, Deoptimizer::input_offset()));
@@ -3437,11 +3437,25 @@ void Builtins::Generate_InterpreterOnStackReplacement_ToBaseline(
 }
 
 void Builtins::Generate_DynamicCheckMapsTrampoline(MacroAssembler* masm) {
+  Generate_DynamicCheckMapsTrampoline<DynamicCheckMapsDescriptor>(
+      masm, BUILTIN_CODE(masm->isolate(), DynamicCheckMaps));
+}
+
+void Builtins::Generate_DynamicCheckMapsWithFeedbackVectorTrampoline(
+    MacroAssembler* masm) {
+  Generate_DynamicCheckMapsTrampoline<
+      DynamicCheckMapsWithFeedbackVectorDescriptor>(
+      masm, BUILTIN_CODE(masm->isolate(), DynamicCheckMapsWithFeedbackVector));
+}
+
+template <class Descriptor>
+void Builtins::Generate_DynamicCheckMapsTrampoline(
+    MacroAssembler* masm, Handle<Code> builtin_target) {
   FrameScope scope(masm, StackFrame::MANUAL);
   __ EnterFrame(StackFrame::INTERNAL);
 
   // Only save the registers that the DynamicCheckMaps builtin can clobber.
-  DynamicCheckMapsDescriptor descriptor;
+  Descriptor descriptor;
   RegList registers = descriptor.allocatable_registers();
   // FLAG_debug_code is enabled CSA checks will call C function and so we need
   // to save all CallerSaved registers too.
@@ -3449,10 +3463,8 @@ void Builtins::Generate_DynamicCheckMapsTrampoline(MacroAssembler* masm) {
   __ MaybeSaveRegisters(registers);
 
   // Load the immediate arguments from the deopt exit to pass to the builtin.
-  Register slot_arg =
-      descriptor.GetRegisterParameter(DynamicCheckMapsDescriptor::kSlot);
-  Register handler_arg =
-      descriptor.GetRegisterParameter(DynamicCheckMapsDescriptor::kHandler);
+  Register slot_arg = descriptor.GetRegisterParameter(Descriptor::kSlot);
+  Register handler_arg = descriptor.GetRegisterParameter(Descriptor::kHandler);
   __ LoadU64(handler_arg,
              MemOperand(fp, CommonFrameConstants::kCallerPCOffset));
   __ LoadU64(
@@ -3462,8 +3474,7 @@ void Builtins::Generate_DynamicCheckMapsTrampoline(MacroAssembler* masm) {
       handler_arg,
       MemOperand(handler_arg, Deoptimizer::kEagerWithResumeImmedArgs2PcOffset));
 
-  __ Call(BUILTIN_CODE(masm->isolate(), DynamicCheckMaps),
-          RelocInfo::CODE_TARGET);
+  __ Call(builtin_target, RelocInfo::CODE_TARGET);
 
   Label deopt, bailout;
   __ cmpi(r3, Operand(static_cast<int>(DynamicCheckMapsStatus::kSuccess)));

@@ -948,7 +948,7 @@ bool LookupIterator::IsConstFieldValueEqualTo(Object value) const {
     uint64_t bits;
     Object current_value = holder->RawFastPropertyAt(isolate_, field_index);
     DCHECK(current_value.IsHeapNumber(isolate_));
-    bits = HeapNumber::cast(current_value).value_as_bits();
+    bits = HeapNumber::cast(current_value).value_as_bits(kRelaxedLoad);
     // Use bit representation of double to check for hole double, since
     // manipulating the signaling NaN used for the hole in C++, e.g. with
     // bit_cast or value(), will change its value on ia32 (the x87 stack is
@@ -1509,6 +1509,44 @@ ConcurrentLookupIterator::TryGetOwnConstantElement(
   }
 
   UNREACHABLE();
+}
+
+// static
+base::Optional<PropertyCell> ConcurrentLookupIterator::TryGetPropertyCell(
+    Isolate* isolate, LocalIsolate* local_isolate,
+    Handle<JSGlobalObject> holder, Handle<Name> name) {
+  DisallowGarbageCollection no_gc;
+
+  Map holder_map = holder->map();
+  CHECK(!holder_map.is_access_check_needed());
+  CHECK(!holder_map.has_named_interceptor());
+
+  GlobalDictionary dict = holder->global_dictionary(kAcquireLoad);
+  base::Optional<PropertyCell> cell =
+      dict.TryFindPropertyCellForConcurrentLookupIterator(isolate, name,
+                                                          kRelaxedLoad);
+  if (!cell.has_value()) return {};
+
+  if (cell->property_details(kAcquireLoad).kind() == kAccessor) {
+    Object maybe_accessor_pair = cell->value(kAcquireLoad);
+    if (!maybe_accessor_pair.IsAccessorPair()) return {};
+
+    base::Optional<Name> maybe_cached_property_name =
+        FunctionTemplateInfo::TryGetCachedPropertyName(
+            isolate, AccessorPair::cast(maybe_accessor_pair)
+                         .getter(isolate, kRelaxedLoad));
+    if (!maybe_cached_property_name.has_value()) return {};
+
+    cell = dict.TryFindPropertyCellForConcurrentLookupIterator(
+        isolate, handle(*maybe_cached_property_name, local_isolate),
+        kRelaxedLoad);
+    if (!cell.has_value()) return {};
+    if (cell->property_details(kAcquireLoad).kind() != kData) return {};
+  }
+
+  DCHECK(cell.has_value());
+  DCHECK_EQ(cell->property_details(kAcquireLoad).kind(), kData);
+  return cell;
 }
 
 }  // namespace internal

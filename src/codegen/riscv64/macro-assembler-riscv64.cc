@@ -1727,6 +1727,22 @@ void TurboAssembler::RoundFloatingPointToInteger(Register rd, FPURegister fs,
   }
 }
 
+void TurboAssembler::Clear_if_nan_d(Register rd, FPURegister fs) {
+  Label no_nan;
+  feq_d(kScratchReg, fs, fs);
+  bnez(kScratchReg, &no_nan);
+  Move(rd, zero_reg);
+  bind(&no_nan);
+}
+
+void TurboAssembler::Clear_if_nan_s(Register rd, FPURegister fs) {
+  Label no_nan;
+  feq_s(kScratchReg, fs, fs);
+  bnez(kScratchReg, &no_nan);
+  Move(rd, zero_reg);
+  bind(&no_nan);
+}
+
 void TurboAssembler::Trunc_uw_d(Register rd, FPURegister fs, Register result) {
   RoundFloatingPointToInteger(
       rd, fs, result, [](TurboAssembler* tasm, Register dst, FPURegister src) {
@@ -2559,7 +2575,7 @@ void TurboAssembler::Branch(int32_t offset) {
 }
 
 void TurboAssembler::Branch(int32_t offset, Condition cond, Register rs,
-                            const Operand& rt) {
+                            const Operand& rt, Label::Distance near_jump) {
   bool is_near = BranchShortCheck(offset, nullptr, cond, rs, rt);
   DCHECK(is_near);
   USE(is_near);
@@ -2582,7 +2598,7 @@ void TurboAssembler::Branch(Label* L) {
 }
 
 void TurboAssembler::Branch(Label* L, Condition cond, Register rs,
-                            const Operand& rt) {
+                            const Operand& rt, Label::Distance near_jump) {
   if (L->is_bound()) {
     if (!BranchShortCheck(0, L, cond, rs, rt)) {
       if (cond != cc_always) {

@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <atomic>
 #include <vector>
 
 #include "include/cppgc/platform.h"
@@ -293,6 +294,12 @@ class V8_EXPORT_PRIVATE StatsCollector final {
   void NotifyAllocatedMemory(int64_t);
   void NotifyFreedMemory(int64_t);
 
+  void IncrementDiscardedMemory(size_t);
+  void DecrementDiscardedMemory(size_t);
+  void ResetDiscardedMemory();
+  size_t discarded_memory_size() const;
+  size_t resident_memory_size() const;
+
   void SetMetricRecorder(std::unique_ptr<MetricRecorder> histogram_recorder) {
     metric_recorder_ = std::move(histogram_recorder);
   }
@@ -331,6 +338,7 @@ class V8_EXPORT_PRIVATE StatsCollector final {
 
   int64_t memory_allocated_bytes_ = 0;
   int64_t memory_freed_bytes_since_end_of_marking_ = 0;
+  std::atomic<size_t> discarded_bytes_{0};
 
   // vector to allow fast iteration of observers. Register/Unregisters only
   // happens on startup/teardown.

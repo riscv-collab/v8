@@ -578,8 +578,6 @@ Handle<String> Isolate::StackTraceString() {
     return factory()->empty_string();
   } else {
     base::OS::Abort();
-    // Unreachable
-    return factory()->empty_string();
   }
 }
 
@@ -1944,7 +1942,7 @@ Object Isolate::UnwindAndFindHandler() {
         Code code = js_frame->LookupCode();
         return FoundHandler(Context(), code.InstructionStart(), 0,
                             code.constant_pool(), return_sp, frame->fp());
-      } break;
+      }
 
       default:
         // All other types can not handle exception.
@@ -2007,8 +2005,6 @@ Isolate::CatchType ToCatchType(HandlerTable::CatchPrediction prediction) {
       return Isolate::CAUGHT_BY_JAVASCRIPT;
     case HandlerTable::PROMISE:
       return Isolate::CAUGHT_BY_PROMISE;
-    case HandlerTable::DESUGARING:
-      return Isolate::CAUGHT_BY_DESUGARING;
     case HandlerTable::UNCAUGHT_ASYNC_AWAIT:
     case HandlerTable::ASYNC_AWAIT:
       return Isolate::CAUGHT_BY_ASYNC_AWAIT;
@@ -2050,7 +2046,7 @@ Isolate::CatchType Isolate::PredictExceptionCatcher() {
         Isolate::CatchType prediction = ToCatchType(PredictException(js_frame));
         if (prediction == NOT_CAUGHT) break;
         return prediction;
-      } break;
+      }
 
       case StackFrame::STUB: {
         Handle<Code> code(frame->LookupCode(), this);
@@ -2527,7 +2523,6 @@ Handle<Object> Isolate::GetPromiseOnStackOnThrow() {
       case HandlerTable::UNCAUGHT:
         continue;
       case HandlerTable::CAUGHT:
-      case HandlerTable::DESUGARING:
         if (retval->IsJSPromise()) {
           // Caught the result of an inner async/await invocation.
           // Mark the inner promise as caught in the "synchronous case" so
@@ -2906,6 +2901,7 @@ Isolate* Isolate::New() { return Isolate::Allocate(false); }
 
 // static
 Isolate* Isolate::NewShared(const v8::Isolate::CreateParams& params) {
+  DCHECK(ReadOnlyHeap::IsReadOnlySpaceShared());
   Isolate* isolate = Isolate::Allocate(true);
   v8::Isolate::Initialize(reinterpret_cast<v8::Isolate*>(isolate), params);
   return isolate;
@@ -3689,7 +3685,6 @@ bool Isolate::Init(SnapshotData* startup_snapshot_data,
 
   if (!setup_delegate_->SetupHeap(&heap_)) {
     V8::FatalProcessOutOfMemory(this, "heap object creation");
-    return false;
   }
 
   if (create_heap_objects) {

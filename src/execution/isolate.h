@@ -935,7 +935,6 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
     NOT_CAUGHT,
     CAUGHT_BY_JAVASCRIPT,
     CAUGHT_BY_EXTERNAL,
-    CAUGHT_BY_DESUGARING,
     CAUGHT_BY_PROMISE,
     CAUGHT_BY_ASYNC_AWAIT
   };
@@ -1802,6 +1801,16 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
   void DetachFromSharedIsolate();
 
   bool HasClientIsolates() const { return client_isolate_head_; }
+
+  template <typename Callback>
+  void IterateClientIsolates(Callback callback) {
+    for (Isolate* current = client_isolate_head_; current;
+         current = current->next_client_isolate_) {
+      callback(current);
+    }
+  }
+
+  base::Mutex* client_isolate_mutex() { return &client_isolate_mutex_; }
 
  private:
   explicit Isolate(std::unique_ptr<IsolateAllocator> isolate_allocator,

@@ -24,13 +24,14 @@ namespace wasm {
 TestingModuleBuilder::TestingModuleBuilder(
     Zone* zone, ManuallyImportedJSFunction* maybe_import,
     TestExecutionTier tier, RuntimeExceptionSupport exception_support,
-    Isolate* isolate)
+    TestingModuleMemoryType mem_type, Isolate* isolate)
     : test_module_(std::make_shared<WasmModule>()),
       isolate_(isolate ? isolate : CcTest::InitIsolateOnce()),
       enabled_features_(WasmFeatures::FromIsolate(isolate_)),
       execution_tier_(tier),
       runtime_exception_support_(exception_support) {
   WasmJs::Install(isolate_, true);
+  test_module_->is_memory64 = mem_type == kMemory64;
   test_module_->untagged_globals_buffer_size = kMaxGlobalsSize;
   memset(globals_data_, 0, sizeof(globals_data_));
 
@@ -302,7 +303,8 @@ uint32_t TestingModuleBuilder::AddPassiveElementSegment(
   test_module_->elem_segments.emplace_back(kWasmFuncRef, false);
   auto& elem_segment = test_module_->elem_segments.back();
   for (uint32_t entry : entries) {
-    elem_segment.entries.push_back(WasmInitExpr::RefFuncConst(entry));
+    elem_segment.entries.push_back(
+        WasmElemSegment::Entry(WasmElemSegment::Entry::kRefFuncEntry, entry));
   }
 
   // The vector pointers may have moved, so update the instance object.
@@ -312,12 +314,7 @@ uint32_t TestingModuleBuilder::AddPassiveElementSegment(
 }
 
 CompilationEnv TestingModuleBuilder::CreateCompilationEnv() {
-  // This is a hack so we don't need to call
-  // trap_handler::IsTrapHandlerEnabled().
-  const bool is_trap_handler_enabled =
-      V8_TRAP_HANDLER_SUPPORTED && i::FLAG_wasm_trap_handler;
-  return {test_module_.get(),
-          is_trap_handler_enabled ? kUseTrapHandler : kNoTrapHandler,
+  return {test_module_.get(), native_module_->bounds_checks(),
           runtime_exception_support_, enabled_features_};
 }
 
@@ -325,7 +322,7 @@ const WasmGlobal* TestingModuleBuilder::AddGlobal(ValueType type) {
   byte size = type.element_size_bytes();
   global_offset = (global_offset + size - 1) & ~(size - 1);  // align
   test_module_->globals.push_back(
-      {type, true, WasmInitExpr(), {global_offset}, false, false});
+      {type, true, {}, {global_offset}, false, false});
   global_offset += size;
   // limit number of globals.
   CHECK_LT(global_offset, kMaxGlobalsSize);

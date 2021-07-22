@@ -133,10 +133,16 @@ inline MemOperand GetMemOp(LiftoffAssembler* assm,
       return i64_offset ? MemOperand(addr.X(), offset.X())
                         : MemOperand(addr.X(), offset.W(), UXTW);
     }
-    Register tmp = temps->AcquireX();
     DCHECK_GE(kMaxUInt32, offset_imm);
-    assm->Add(tmp, offset.X(), offset_imm);
-    return MemOperand(addr.X(), tmp);
+    if (i64_offset) {
+      Register tmp = temps->AcquireX();
+      assm->Add(tmp, offset.X(), offset_imm);
+      return MemOperand(addr.X(), tmp);
+    } else {
+      Register tmp = temps->AcquireW();
+      assm->Add(tmp, offset.W(), offset_imm);
+      return MemOperand(addr.X(), tmp, UXTW);
+    }
   }
   return MemOperand(addr.X(), offset_imm);
 }
@@ -3233,6 +3239,13 @@ void LiftoffAssembler::MaybeOSR() {}
 
 void LiftoffAssembler::emit_set_if_nan(Register dst, DoubleRegister src,
                                        ValueKind kind) {
+  UNIMPLEMENTED();
+}
+
+void LiftoffAssembler::emit_s128_set_if_nan(Register dst, DoubleRegister src,
+                                            Register tmp_gp,
+                                            DoubleRegister tmp_fp,
+                                            ValueKind lane_kind) {
   UNIMPLEMENTED();
 }
 

@@ -58,6 +58,8 @@ static_assert(
                  std::underlying_type<TestExecutionTier>::type>::value,
     "enum types match");
 
+enum TestingModuleMemoryType { kMemory32, kMemory64 };
+
 using base::ReadLittleEndianValue;
 using base::WriteLittleEndianValue;
 
@@ -101,7 +103,8 @@ struct ManuallyImportedJSFunction {
 class TestingModuleBuilder {
  public:
   TestingModuleBuilder(Zone*, ManuallyImportedJSFunction*, TestExecutionTier,
-                       RuntimeExceptionSupport, Isolate* isolate = nullptr);
+                       RuntimeExceptionSupport, TestingModuleMemoryType,
+                       Isolate* isolate);
   ~TestingModuleBuilder();
 
   void ChangeOriginToAsmjs() { test_module_->origin = kAsmJsSloppyOrigin; }
@@ -190,8 +193,6 @@ class TestingModuleBuilder {
 
   void SetHasSharedMemory() { test_module_->has_shared_memory = true; }
 
-  void SetMemory64() { test_module_->is_memory64 = true; }
-
   enum FunctionType { kImport, kWasm };
   uint32_t AddFunction(const FunctionSig* sig, const char* name,
                        FunctionType type);
@@ -264,8 +265,8 @@ class TestingModuleBuilder {
 
   void set_max_steps(int n) { max_steps_ = n; }
   int* max_steps_ptr() { return &max_steps_; }
-  bool nondeterminism() { return nondeterminism_; }
-  bool* non_determinism_ptr() { return &nondeterminism_; }
+  int32_t nondeterminism() { return nondeterminism_; }
+  int32_t* non_determinism_ptr() { return &nondeterminism_; }
 
   void EnableFeature(WasmFeature feature) { enabled_features_.Add(feature); }
 
@@ -282,8 +283,8 @@ class TestingModuleBuilder {
   Handle<WasmInstanceObject> instance_object_;
   NativeModule* native_module_ = nullptr;
   RuntimeExceptionSupport runtime_exception_support_;
-  int max_steps_ = kMaxNumSteps;
-  bool nondeterminism_ = false;
+  int32_t max_steps_ = kMaxNumSteps;
+  int32_t nondeterminism_ = 0;
 
   // Data segment arrays that are normally allocated on the instance.
   std::vector<byte> data_segment_data_;
@@ -396,12 +397,14 @@ class WasmRunnerBase : public InitializedHandleScope {
  public:
   WasmRunnerBase(ManuallyImportedJSFunction* maybe_import,
                  TestExecutionTier execution_tier, int num_params,
-                 RuntimeExceptionSupport runtime_exception_support,
+                 RuntimeExceptionSupport runtime_exception_support =
+                     kNoRuntimeExceptionSupport,
+                 TestingModuleMemoryType mem_type = kMemory32,
                  Isolate* isolate = nullptr)
       : InitializedHandleScope(isolate),
         zone_(&allocator_, ZONE_NAME, kCompressGraphZone),
         builder_(&zone_, maybe_import, execution_tier,
-                 runtime_exception_support, isolate),
+                 runtime_exception_support, mem_type, isolate),
         wrapper_(&zone_, num_params) {}
 
   static void SetUpTrapCallback() {
@@ -563,9 +566,10 @@ class WasmRunner : public WasmRunnerBase {
              const char* main_fn_name = "main",
              RuntimeExceptionSupport runtime_exception_support =
                  kNoRuntimeExceptionSupport,
+             TestingModuleMemoryType mem_type = kMemory32,
              Isolate* isolate = nullptr)
       : WasmRunnerBase(maybe_import, execution_tier, sizeof...(ParamTypes),
-                       runtime_exception_support, isolate) {
+                       runtime_exception_support, mem_type, isolate) {
     WasmFunctionCompiler& main_fn =
         NewFunction<ReturnType, ParamTypes...>(main_fn_name);
     // Non-zero if there is an import.

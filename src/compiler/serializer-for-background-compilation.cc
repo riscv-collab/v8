@@ -1498,13 +1498,11 @@ void SerializerForBackgroundCompilation::VisitInvokeIntrinsic(
     case Runtime::kInlineGetImportMetaObject: {
       Hints const& context_hints = environment()->current_context_hints();
       for (auto x : context_hints.constants()) {
-        MakeRef(broker(), Handle<Context>::cast(x))
-            .GetModule(SerializationPolicy::kSerializeIfNeeded)
-            .Serialize();
+        MakeRef(broker(), Handle<Context>::cast(x)).GetModule().Serialize();
       }
       for (auto x : context_hints.virtual_contexts()) {
         MakeRef(broker(), Handle<Context>::cast(x.context))
-            .GetModule(SerializationPolicy::kSerializeIfNeeded)
+            .GetModule()
             .Serialize();
       }
       break;
@@ -1546,8 +1544,7 @@ void SerializerForBackgroundCompilation::ProcessImmutableLoad(
     ContextRef const& context_ref, int slot, ContextProcessingMode mode,
     Hints* result_hints) {
   DCHECK_EQ(mode, kSerializeSlot);
-  base::Optional<ObjectRef> slot_value =
-      context_ref.get(slot, SerializationPolicy::kSerializeIfNeeded);
+  base::Optional<ObjectRef> slot_value = context_ref.get(slot);
 
   // If requested, record the object as a hint for the result value.
   if (result_hints != nullptr && slot_value.has_value()) {
@@ -1568,8 +1565,7 @@ void SerializerForBackgroundCompilation::ProcessContextAccess(
       // Walk this context to the given depth and serialize the slot found.
       ContextRef context_ref = MakeRef(broker(), Handle<Context>::cast(x));
       size_t remaining_depth = depth;
-      context_ref = context_ref.previous(
-          &remaining_depth, SerializationPolicy::kSerializeIfNeeded);
+      context_ref = context_ref.previous(&remaining_depth);
       if (remaining_depth == 0 && mode != kIgnoreSlot) {
         ProcessImmutableLoad(context_ref, slot, mode, result_hints);
       }
@@ -1580,8 +1576,7 @@ void SerializerForBackgroundCompilation::ProcessContextAccess(
       ContextRef context_ref =
           MakeRef(broker(), Handle<Context>::cast(x.context));
       size_t remaining_depth = depth - x.distance;
-      context_ref = context_ref.previous(
-          &remaining_depth, SerializationPolicy::kSerializeIfNeeded);
+      context_ref = context_ref.previous(&remaining_depth);
       if (remaining_depth == 0 && mode != kIgnoreSlot) {
         ProcessImmutableLoad(context_ref, slot, mode, result_hints);
       }
@@ -1788,12 +1783,6 @@ void SerializerForBackgroundCompilation::VisitForInPrepare(
 
 void SerializerForBackgroundCompilation::ProcessCreateContext(
     interpreter::BytecodeArrayIterator* iterator, int scopeinfo_operand_index) {
-  Handle<ScopeInfo> scope_info =
-      Handle<ScopeInfo>::cast(iterator->GetConstantForIndexOperand(
-          scopeinfo_operand_index, broker()->isolate()));
-  ScopeInfoRef scope_info_ref = MakeRef(broker(), scope_info);
-  scope_info_ref.SerializeScopeInfoChain();
-
   Hints const& current_context_hints = environment()->current_context_hints();
   Hints result_hints;
 
@@ -1994,10 +1983,7 @@ void SerializerForBackgroundCompilation::VisitCallJSRuntime(
     BytecodeArrayIterator* iterator) {
   const int runtime_index = iterator->GetNativeContextIndexOperand(0);
   ObjectRef constant =
-      broker()
-          ->target_native_context()
-          .get(runtime_index, SerializationPolicy::kSerializeIfNeeded)
-          .value();
+      broker()->target_native_context().get(runtime_index).value();
   Hints const callee = Hints::SingleConstant(constant.object(), zone());
   interpreter::Register first_reg = iterator->GetRegisterOperand(1);
   int reg_count = static_cast<int>(iterator->GetRegisterCountOperand(2));
@@ -2060,7 +2046,7 @@ JSReceiverRef UnrollBoundFunction(JSBoundFunctionRef const& bound_function,
   JSReceiverRef target = bound_function.AsJSReceiver();
   HintsVector reversed_bound_arguments(zone);
   for (; target.IsJSBoundFunction();
-       target = target.AsJSBoundFunction().bound_target_function()) {
+       target = target.AsJSBoundFunction().bound_target_function().value()) {
     for (int i = target.AsJSBoundFunction().bound_arguments().length() - 1;
          i >= 0; --i) {
       Hints const arg = Hints::SingleConstant(
@@ -2068,7 +2054,7 @@ JSReceiverRef UnrollBoundFunction(JSBoundFunctionRef const& bound_function,
       reversed_bound_arguments.push_back(arg);
     }
     Hints const arg = Hints::SingleConstant(
-        target.AsJSBoundFunction().bound_this().object(), zone);
+        target.AsJSBoundFunction().bound_this().value().object(), zone);
     reversed_bound_arguments.push_back(arg);
   }
 
@@ -2252,9 +2238,6 @@ void SerializerForBackgroundCompilation::ProcessApiCall(
               FunctionTemplateInfo::cast(target->function_data(kAcquireLoad)));
   if (!target_template_info.has_call_code()) return;
   target_template_info.SerializeCallCode();
-
-  SharedFunctionInfoRef target_ref = MakeRef(broker(), target);
-  target_ref.SerializeFunctionTemplateInfo();
 
   if (target_template_info.accept_any_receiver() &&
       target_template_info.is_signature_undefined()) {
@@ -2901,8 +2884,6 @@ void SerializerForBackgroundCompilation::ProcessCheckContextExtensions(
     ProcessContextAccess(context_hints, Context::EXTENSION_INDEX, i,
                          kSerializeSlot);
   }
-  SharedFunctionInfoRef shared = MakeRef(broker(), function().shared());
-  shared.SerializeScopeInfoChain();
 }
 
 void SerializerForBackgroundCompilation::ProcessLdaLookupGlobalSlot(
@@ -3011,10 +2992,13 @@ void SerializerForBackgroundCompilation::ProcessMapForNamedPropertyAccess(
   if (lookup_start_object_map.equals(global_proxy.map())) {
     base::Optional<PropertyCellRef> cell = global_object.GetPropertyCell(
         name, SerializationPolicy::kSerializeIfNeeded);
-    if (access_mode == AccessMode::kLoad && cell.has_value()) {
-      result_hints->AddConstant(
-          handle(cell->object()->value(), broker()->isolate()), zone(),
-          broker());
+    if (cell.has_value()) {
+      CHECK(cell->Serialize());
+      if (access_mode == AccessMode::kLoad) {
+        result_hints->AddConstant(
+            handle(cell->object()->value(), broker()->isolate()), zone(),
+            broker());
+      }
     }
   }
 
@@ -3421,7 +3405,7 @@ void SerializerForBackgroundCompilation::ProcessConstantForOrdinaryHasInstance(
   if (constructor.IsJSBoundFunction()) {
     constructor.AsJSBoundFunction().Serialize();
     ProcessConstantForInstanceOf(
-        constructor.AsJSBoundFunction().bound_target_function(),
+        constructor.AsJSBoundFunction().bound_target_function().value(),
         walk_prototypes);
   } else if (constructor.IsJSFunction()) {
     constructor.AsJSFunction().Serialize();

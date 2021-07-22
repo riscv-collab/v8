@@ -363,11 +363,13 @@ void WasmCode::Disassemble(const char* name, std::ostream& os,
   if (name) os << "name: " << name << "\n";
   if (!IsAnonymous()) os << "index: " << index() << "\n";
   os << "kind: " << GetWasmCodeKindAsString(kind()) << "\n";
-  DCHECK(is_liftoff() || tier() == ExecutionTier::kTurbofan);
-  const char* compiler = is_liftoff()
-                             ? (for_debugging() ? "Liftoff (debug)" : "Liftoff")
-                             : "TurboFan";
-  os << "compiler: " << compiler << "\n";
+  if (kind() == kFunction) {
+    DCHECK(is_liftoff() || tier() == ExecutionTier::kTurbofan);
+    const char* compiler =
+        is_liftoff() ? (for_debugging() ? "Liftoff (debug)" : "Liftoff")
+                     : "TurboFan";
+    os << "compiler: " << compiler << "\n";
+  }
   size_t padding = instructions().size() - unpadded_binary_size_;
   os << "Body (size = " << instructions().size() << " = "
      << unpadded_binary_size_ << " + " << padding << " padding)\n";
@@ -835,6 +837,17 @@ size_t WasmCodeAllocator::GetNumCodeSpaces() const {
 // static
 constexpr base::AddressRegion WasmCodeAllocator::kUnrestrictedRegion;
 
+namespace {
+BoundsCheckStrategy GetBoundsChecks(const WasmModule* module) {
+  if (!FLAG_wasm_bounds_checks) return kNoBoundsChecks;
+  if (FLAG_wasm_enforce_bounds_checks) return kExplicitBoundsChecks;
+  // We do not have trap handler support for memory64 yet.
+  if (module->is_memory64) return kExplicitBoundsChecks;
+  if (trap_handler::IsTrapHandlerEnabled()) return kTrapHandler;
+  return kExplicitBoundsChecks;
+}
+}  // namespace
+
 NativeModule::NativeModule(const WasmFeatures& enabled,
                            VirtualMemory code_space,
                            std::shared_ptr<const WasmModule> module,
@@ -847,8 +860,7 @@ NativeModule::NativeModule(const WasmFeatures& enabled,
       module_(std::move(module)),
       import_wrapper_cache_(std::unique_ptr<WasmImportWrapperCache>(
           new WasmImportWrapperCache())),
-      use_trap_handler_(trap_handler::IsTrapHandlerEnabled() ? kUseTrapHandler
-                                                             : kNoTrapHandler) {
+      bounds_checks_(GetBoundsChecks(module_.get())) {
   DCHECK(engine_scope_);
   // We receive a pointer to an empty {std::shared_ptr}, and install ourselve
   // there.
@@ -925,7 +937,7 @@ void NativeModule::LogWasmCodes(Isolate* isolate, Script script) {
 }
 
 CompilationEnv NativeModule::CreateCompilationEnv() const {
-  return {module(), use_trap_handler_, kRuntimeExceptionSupport,
+  return {module(), bounds_checks_, kRuntimeExceptionSupport,
           enabled_features_};
 }
 
@@ -1735,7 +1747,7 @@ bool WasmCodeManager::CanRegisterUnwindInfoForNonABICompliantCodeRange() {
 
 void WasmCodeManager::Commit(base::AddressRegion region) {
   // TODO(v8:8462): Remove eager commit once perf supports remapping.
-  if (V8_UNLIKELY(FLAG_perf_prof)) return;
+  if (FLAG_perf_prof) return;
   DCHECK(IsAligned(region.begin(), CommitPageSize()));
   DCHECK(IsAligned(region.size(), CommitPageSize()));
   // Reserve the size. Use CAS loop to avoid overflow on
@@ -1794,7 +1806,7 @@ void WasmCodeManager::Commit(base::AddressRegion region) {
 
 void WasmCodeManager::Decommit(base::AddressRegion region) {
   // TODO(v8:8462): Remove this once perf supports remapping.
-  if (V8_UNLIKELY(FLAG_perf_prof)) return;
+  if (FLAG_perf_prof) return;
   PageAllocator* allocator = GetPlatformPageAllocator();
   DCHECK(IsAligned(region.begin(), allocator->CommitPageSize()));
   DCHECK(IsAligned(region.size(), allocator->CommitPageSize()));

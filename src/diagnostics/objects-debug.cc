@@ -1025,20 +1025,23 @@ void Code::CodeVerify(Isolate* isolate) {
   // CodeVerify is called halfway through constructing the trampoline and so not
   // everything is set up.
   // CHECK_EQ(ReadOnlyHeap::Contains(*this), !IsExecutable());
-  relocation_info().ObjectVerify(isolate);
+  HeapObject relocation_info = relocation_info_or_undefined();
+  if (!relocation_info.IsUndefined()) {
+    ByteArray::cast(relocation_info).ObjectVerify(isolate);
+    Address last_gc_pc = kNullAddress;
+    for (RelocIterator it(*this); !it.done(); it.next()) {
+      it.rinfo()->Verify(isolate);
+      // Ensure that GC will not iterate twice over the same pointer.
+      if (RelocInfo::IsGCRelocMode(it.rinfo()->rmode())) {
+        CHECK(it.rinfo()->pc() != last_gc_pc);
+        last_gc_pc = it.rinfo()->pc();
+      }
+    }
+  }
+
   CHECK(V8_ENABLE_THIRD_PARTY_HEAP_BOOL ||
         CodeSize() <= MemoryChunkLayout::MaxRegularCodeObjectSize() ||
         isolate->heap()->InSpace(*this, CODE_LO_SPACE));
-  Address last_gc_pc = kNullAddress;
-
-  for (RelocIterator it(*this); !it.done(); it.next()) {
-    it.rinfo()->Verify(isolate);
-    // Ensure that GC will not iterate twice over the same pointer.
-    if (RelocInfo::IsGCRelocMode(it.rinfo()->rmode())) {
-      CHECK(it.rinfo()->pc() != last_gc_pc);
-      last_gc_pc = it.rinfo()->pc();
-    }
-  }
 }
 
 void JSArray::JSArrayVerify(Isolate* isolate) {
@@ -1636,7 +1639,6 @@ void ObjectBoilerplateDescription::ObjectBoilerplateDescriptionVerify(
 }
 
 #if V8_ENABLE_WEBASSEMBLY
-USE_TORQUE_VERIFIER(AsmWasmData)
 
 void WasmInstanceObject::WasmInstanceObjectVerify(Isolate* isolate) {
   JSObjectVerify(isolate);
@@ -1656,8 +1658,6 @@ void WasmValueObject::WasmValueObjectVerify(Isolate* isolate) {
   CHECK(IsWasmValueObject());
 }
 
-USE_TORQUE_VERIFIER(WasmObject)
-
 void WasmExportedFunctionData::WasmExportedFunctionDataVerify(
     Isolate* isolate) {
   TorqueGeneratedClassVerifiers::WasmExportedFunctionDataVerify(*this, isolate);
@@ -1667,20 +1667,6 @@ void WasmExportedFunctionData::WasmExportedFunctionDataVerify(
          wrapper_code().builtin_id() == Builtin::kGenericJSToWasmWrapper));
 }
 
-USE_TORQUE_VERIFIER(WasmModuleObject)
-
-USE_TORQUE_VERIFIER(WasmTableObject)
-
-USE_TORQUE_VERIFIER(WasmMemoryObject)
-
-USE_TORQUE_VERIFIER(WasmGlobalObject)
-
-USE_TORQUE_VERIFIER(WasmExceptionObject)
-
-USE_TORQUE_VERIFIER(WasmCapiFunctionData)
-USE_TORQUE_VERIFIER(WasmJSFunctionData)
-
-USE_TORQUE_VERIFIER(WasmIndirectFunctionTable)
 #endif  // V8_ENABLE_WEBASSEMBLY
 
 void DataHandler::DataHandlerVerify(Isolate* isolate) {

@@ -34,11 +34,17 @@ void StaticCallInterfaceDescriptor<DerivedDescriptor>::
 
 // static
 constexpr auto WriteBarrierDescriptor::registers() {
-  return RegisterArray(a1, a2, a0, v0, a3);
+  return RegisterArray(a1, v0, a0, a2, a3);
 }
 
 // static
 constexpr auto DynamicCheckMapsDescriptor::registers() {
+  STATIC_ASSERT(kReturnRegister0 == v0);
+  return RegisterArray(kReturnRegister0, a0, a1, a2, cp);
+}
+
+// static
+constexpr auto DynamicCheckMapsWithFeedbackVectorDescriptor::registers() {
   STATIC_ASSERT(kReturnRegister0 == v0);
   return RegisterArray(kReturnRegister0, a0, a1, a2, cp);
 }

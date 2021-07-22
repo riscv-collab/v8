@@ -25,8 +25,6 @@ CompilationDependencies::CompilationDependencies(JSHeapBroker* broker,
 
 class InitialMapDependency final : public CompilationDependency {
  public:
-  // TODO(neis): Once the concurrent compiler frontend is always-on, we no
-  // longer need to explicitly store the initial map.
   InitialMapDependency(const JSFunctionRef& function, const MapRef& initial_map)
       : function_(function), initial_map_(initial_map) {
     DCHECK(function_.has_initial_map());
@@ -53,8 +51,6 @@ class InitialMapDependency final : public CompilationDependency {
 
 class PrototypePropertyDependency final : public CompilationDependency {
  public:
-  // TODO(neis): Once the concurrent compiler frontend is always-on, we no
-  // longer need to explicitly store the prototype.
   PrototypePropertyDependency(const JSFunctionRef& function,
                               const ObjectRef& prototype)
       : function_(function), prototype_(prototype) {
@@ -92,11 +88,14 @@ class PrototypePropertyDependency final : public CompilationDependency {
 
 class StableMapDependency final : public CompilationDependency {
  public:
-  explicit StableMapDependency(const MapRef& map) : map_(map) {
-    DCHECK(map_.is_stable());
-  }
+  explicit StableMapDependency(const MapRef& map) : map_(map) {}
 
-  bool IsValid() const override { return map_.object()->is_stable(); }
+  bool IsValid() const override {
+    // TODO(v8:11670): Consider turn this back into a CHECK inside the
+    // constructor and DependOnStableMap, if possible in light of concurrent
+    // heap state modifications.
+    return !map_.object()->is_dictionary_map() && map_.object()->is_stable();
+  }
 
   void Install(Handle<Code> code) const override {
     SLOW_DCHECK(IsValid());
@@ -256,8 +255,8 @@ class OwnConstantDataPropertyDependency final : public CompilationDependency {
     if (representation_.IsDouble()) {
       // Compare doubles by bit pattern.
       if (!current_value.IsHeapNumber() || !used_value.IsHeapNumber() ||
-          HeapNumber::cast(current_value).value_as_bits() !=
-              HeapNumber::cast(used_value).value_as_bits()) {
+          HeapNumber::cast(current_value).value_as_bits(kRelaxedLoad) !=
+              HeapNumber::cast(used_value).value_as_bits(kRelaxedLoad)) {
         TRACE_BROKER_MISSING(broker_,
                              "Constant Double property value changed in "
                                  << holder_.object() << " at FieldIndex "
@@ -359,13 +358,9 @@ class TransitionDependency final : public CompilationDependency {
 
 class PretenureModeDependency final : public CompilationDependency {
  public:
-  // TODO(neis): Once the concurrent compiler frontend is always-on, we no
-  // longer need to explicitly store the mode.
   PretenureModeDependency(const AllocationSiteRef& site,
                           AllocationType allocation)
-      : site_(site), allocation_(allocation) {
-    DCHECK_EQ(allocation, site_.GetAllocationType());
-  }
+      : site_(site), allocation_(allocation) {}
 
   bool IsValid() const override {
     return allocation_ == site_.object()->GetAllocationType();
@@ -389,22 +384,24 @@ class PretenureModeDependency final : public CompilationDependency {
 
 class FieldRepresentationDependency final : public CompilationDependency {
  public:
-  // TODO(neis): Once the concurrent compiler frontend is always-on, we no
-  // longer need to explicitly store the representation.
   FieldRepresentationDependency(const MapRef& owner, InternalIndex descriptor,
                                 Representation representation)
       : owner_(owner),
         descriptor_(descriptor),
         representation_(representation) {
-    CHECK(owner_.equals(owner_.FindFieldOwner(descriptor_)));
-    CHECK(representation_.Equals(
-        owner_.GetPropertyDetails(descriptor_).representation()));
   }
 
   bool IsValid() const override {
     DisallowGarbageCollection no_heap_allocation;
     Handle<Map> owner = owner_.object();
-    return representation_.Equals(owner->instance_descriptors(owner_.isolate())
+    Isolate* isolate = owner_.isolate();
+
+    // TODO(v8:11670): Consider turn this back into a CHECK inside the
+    // constructor, if possible in light of concurrent heap state
+    // modifications.
+    if (owner->FindFieldOwner(isolate, descriptor_) != *owner) return false;
+
+    return representation_.Equals(owner->instance_descriptors(isolate)
                                       .GetDetails(descriptor_)
                                       .representation());
   }
@@ -430,21 +427,23 @@ class FieldRepresentationDependency final : public CompilationDependency {
 
 class FieldTypeDependency final : public CompilationDependency {
  public:
-  // TODO(neis): Once the concurrent compiler frontend is always-on, we no
-  // longer need to explicitly store the type.
   FieldTypeDependency(const MapRef& owner, InternalIndex descriptor,
                       const ObjectRef& type)
-      : owner_(owner), descriptor_(descriptor), type_(type) {
-    CHECK(owner_.equals(owner_.FindFieldOwner(descriptor_)));
-    CHECK(type_.equals(owner_.GetFieldType(descriptor_)));
-  }
+      : owner_(owner), descriptor_(descriptor), type_(type) {}
 
   bool IsValid() const override {
     DisallowGarbageCollection no_heap_allocation;
     Handle<Map> owner = owner_.object();
+    Isolate* isolate = owner_.isolate();
+
+    // TODO(v8:11670): Consider turn this back into a CHECK inside the
+    // constructor, if possible in light of concurrent heap state
+    // modifications.
+    if (owner->FindFieldOwner(isolate, descriptor_) != *owner) return false;
+
     Handle<Object> type = type_.object();
-    return *type == owner->instance_descriptors(owner_.isolate())
-                        .GetFieldType(descriptor_);
+    return *type ==
+           owner->instance_descriptors(isolate).GetFieldType(descriptor_);
   }
 
   void Install(Handle<Code> code) const override {
@@ -462,19 +461,21 @@ class FieldTypeDependency final : public CompilationDependency {
 class FieldConstnessDependency final : public CompilationDependency {
  public:
   FieldConstnessDependency(const MapRef& owner, InternalIndex descriptor)
-      : owner_(owner), descriptor_(descriptor) {
-    CHECK(owner_.equals(owner_.FindFieldOwner(descriptor_)));
-    CHECK_EQ(PropertyConstness::kConst,
-             owner_.GetPropertyDetails(descriptor_).constness());
-  }
+      : owner_(owner), descriptor_(descriptor) {}
 
   bool IsValid() const override {
     DisallowGarbageCollection no_heap_allocation;
     Handle<Map> owner = owner_.object();
-    return PropertyConstness::kConst ==
-           owner->instance_descriptors(owner_.isolate())
-               .GetDetails(descriptor_)
-               .constness();
+    Isolate* isolate = owner_.isolate();
+
+    // TODO(v8:11670): Consider turn this back into a CHECK inside the
+    // constructor, if possible in light of concurrent heap state
+    // modifications.
+    if (owner->FindFieldOwner(isolate, descriptor_) != *owner) return false;
+
+    return PropertyConstness::kConst == owner->instance_descriptors(isolate)
+                                            .GetDetails(descriptor_)
+                                            .constness();
   }
 
   void Install(Handle<Code> code) const override {
@@ -543,14 +544,9 @@ class ProtectorDependency final : public CompilationDependency {
 
 class ElementsKindDependency final : public CompilationDependency {
  public:
-  // TODO(neis): Once the concurrent compiler frontend is always-on, we no
-  // longer need to explicitly store the elements kind.
   ElementsKindDependency(const AllocationSiteRef& site, ElementsKind kind)
       : site_(site), kind_(kind) {
     DCHECK(AllocationSite::ShouldTrack(kind_));
-    DCHECK_EQ(kind_, site_.PointsToLiteral()
-                         ? site_.boilerplate().value().map().elements_kind()
-                         : site_.GetElementsKind());
   }
 
   bool IsValid() const override {
@@ -658,12 +654,9 @@ ObjectRef CompilationDependencies::DependOnPrototypeProperty(
 }
 
 void CompilationDependencies::DependOnStableMap(const MapRef& map) {
-  DCHECK(!map.is_dictionary_map());
   DCHECK(!map.IsNeverSerializedHeapObject());
   if (map.CanTransition()) {
     RecordDependency(zone_->New<StableMapDependency>(map));
-  } else {
-    DCHECK(map.is_stable());
   }
 }
 
@@ -676,7 +669,7 @@ void CompilationDependencies::DependOnConstantInDictionaryPrototypeChain(
 
 AllocationType CompilationDependencies::DependOnPretenureMode(
     const AllocationSiteRef& site) {
-  DCHECK(!site.IsNeverSerializedHeapObject());
+  if (!FLAG_allocation_site_pretenuring) return AllocationType::kYoung;
   AllocationType allocation = site.GetAllocationType();
   RecordDependency(zone_->New<PretenureModeDependency>(site, allocation));
   return allocation;
@@ -759,8 +752,6 @@ bool CompilationDependencies::DependOnPromiseThenProtector() {
 
 void CompilationDependencies::DependOnElementsKind(
     const AllocationSiteRef& site) {
-  DCHECK(!site.IsNeverSerializedHeapObject());
-  // Do nothing if the object doesn't have any useful element transitions left.
   ElementsKind kind = site.PointsToLiteral()
                           ? site.boilerplate().value().map().elements_kind()
                           : site.GetElementsKind();

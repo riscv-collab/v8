@@ -97,15 +97,6 @@ class MutableBigInt : public FreshlyAllocatedBigInt {
                                                      Handle<BigInt> x,
                                                      bool result_sign);
 
-  static MaybeHandle<BigInt> AbsoluteAdd(Isolate* isolate, Handle<BigInt> x,
-                                         Handle<BigInt> y, bool result_sign);
-
-  static void AbsoluteAdd(MutableBigInt result, BigInt x, BigInt y);
-
-  static Handle<BigInt> AbsoluteSub(Isolate* isolate, Handle<BigInt> x,
-                                    Handle<BigInt> y, bool result_sign);
-  static void AbsoluteSub(MutableBigInt result, BigInt x, BigInt y);
-
   static MaybeHandle<MutableBigInt> AbsoluteAddOne(
       Isolate* isolate, Handle<BigIntBase> x, bool sign,
       MutableBigInt result_storage = MutableBigInt());
@@ -585,34 +576,42 @@ MaybeHandle<BigInt> BigInt::Remainder(Isolate* isolate, Handle<BigInt> x,
 
 MaybeHandle<BigInt> BigInt::Add(Isolate* isolate, Handle<BigInt> x,
                                 Handle<BigInt> y) {
+  if (x->is_zero()) return y;
+  if (y->is_zero()) return x;
   bool xsign = x->sign();
-  if (xsign == y->sign()) {
-    // x + y == x + y
-    // -x + -y == -(x + y)
-    return MutableBigInt::AbsoluteAdd(isolate, x, y, xsign);
+  bool ysign = y->sign();
+  int result_length =
+      bigint::AddSignedResultLength(x->length(), y->length(), xsign == ysign);
+  Handle<MutableBigInt> result;
+  if (!MutableBigInt::New(isolate, result_length).ToHandle(&result)) {
+    // Allocation fails when {result_length} exceeds the max BigInt size.
+    return {};
   }
-  // x + -y == x - y == -(y - x)
-  // -x + y == y - x == -(x - y)
-  if (bigint::Compare(GetDigits(x), GetDigits(y)) >= 0) {
-    return MutableBigInt::AbsoluteSub(isolate, x, y, xsign);
-  }
-  return MutableBigInt::AbsoluteSub(isolate, y, x, !xsign);
+  DisallowGarbageCollection no_gc;
+  bool result_sign = bigint::AddSigned(GetRWDigits(result), GetDigits(x), xsign,
+                                       GetDigits(y), ysign);
+  result->set_sign(result_sign);
+  return MutableBigInt::MakeImmutable(result);
 }
 
 MaybeHandle<BigInt> BigInt::Subtract(Isolate* isolate, Handle<BigInt> x,
                                      Handle<BigInt> y) {
+  if (y->is_zero()) return x;
+  if (x->is_zero()) return UnaryMinus(isolate, y);
   bool xsign = x->sign();
-  if (xsign != y->sign()) {
-    // x - (-y) == x + y
-    // (-x) - y == -(x + y)
-    return MutableBigInt::AbsoluteAdd(isolate, x, y, xsign);
+  bool ysign = y->sign();
+  int result_length = bigint::SubtractSignedResultLength(
+      x->length(), y->length(), xsign == ysign);
+  Handle<MutableBigInt> result;
+  if (!MutableBigInt::New(isolate, result_length).ToHandle(&result)) {
+    // Allocation fails when {result_length} exceeds the max BigInt size.
+    return {};
   }
-  // x - y == -(y - x)
-  // (-x) - (-y) == y - x == -(x - y)
-  if (bigint::Compare(GetDigits(x), GetDigits(y)) >= 0) {
-    return MutableBigInt::AbsoluteSub(isolate, x, y, xsign);
-  }
-  return MutableBigInt::AbsoluteSub(isolate, y, x, !xsign);
+  DisallowGarbageCollection no_gc;
+  bool result_sign = bigint::SubtractSigned(GetRWDigits(result), GetDigits(x),
+                                            xsign, GetDigits(y), ysign);
+  result->set_sign(result_sign);
+  return MutableBigInt::MakeImmutable(result);
 }
 
 MaybeHandle<BigInt> BigInt::LeftShift(Isolate* isolate, Handle<BigInt> x,
@@ -988,35 +987,77 @@ MaybeHandle<String> BigInt::ToString(Isolate* isolate, Handle<BigInt> bigint,
   if (bigint->is_zero()) {
     return isolate->factory()->zero_string();
   }
-  DCHECK(radix >= 2 && radix <= 36);
   const bool sign = bigint->sign();
-  int size = bigint::ToStringResultLength(GetDigits(bigint), radix, sign);
-  if (size > String::kMaxLength) {
-    if (should_throw == kThrowOnError) {
-      THROW_NEW_ERROR(isolate, NewInvalidStringLengthError(), String);
+  int chars_allocated;
+  int chars_written;
+  Handle<SeqOneByteString> result;
+  if (bigint->length() == 1 && radix == 10) {
+    // Fast path for the most common case, to avoid call/dispatch overhead.
+    // The logic is the same as what the full implementation does below,
+    // just inlined and specialized for the preconditions.
+    // Microbenchmarks rejoice!
+    digit_t digit = bigint->digit(0);
+    int bit_length = kDigitBits - base::bits::CountLeadingZeros(digit);
+    constexpr int kShift = 7;
+    // This is Math.log2(10) * (1 << kShift), scaled just far enough to
+    // make the computations below always precise (after rounding).
+    constexpr int kShiftedBitsPerChar = 425;
+    chars_allocated = (bit_length << kShift) / kShiftedBitsPerChar + 1 + sign;
+    result = isolate->factory()
+                 ->NewRawOneByteString(chars_allocated)
+                 .ToHandleChecked();
+    DisallowGarbageCollection no_gc;
+    uint8_t* start = result->GetChars(no_gc);
+    uint8_t* out = start + chars_allocated;
+    while (digit != 0) {
+      *(--out) = '0' + (digit % 10);
+      digit /= 10;
+    }
+    if (sign) *(--out) = '-';
+    if (out == start) {
+      chars_written = chars_allocated;
     } else {
+      DCHECK_LT(start, out);
+      // The result is one character shorter than predicted. This is
+      // unavoidable, e.g. a 4-bit BigInt can be as big as "10" or as small as
+      // "9", so we must allocate 2 characters for it, and will only later find
+      // out whether all characters were used.
+      chars_written = chars_allocated - static_cast<int>(out - start);
+      std::memmove(start, out, chars_written);
+    }
+  } else {
+    // Generic path, handles anything.
+    DCHECK(radix >= 2 && radix <= 36);
+    chars_allocated =
+        bigint::ToStringResultLength(GetDigits(bigint), radix, sign);
+    if (chars_allocated > String::kMaxLength) {
+      if (should_throw == kThrowOnError) {
+        THROW_NEW_ERROR(isolate, NewInvalidStringLengthError(), String);
+      } else {
+        return {};
+      }
+    }
+    result = isolate->factory()
+                 ->NewRawOneByteString(chars_allocated)
+                 .ToHandleChecked();
+    chars_written = chars_allocated;
+    DisallowGarbageCollection no_gc;
+    char* characters = reinterpret_cast<char*>(result->GetChars(no_gc));
+    bigint::Status status = isolate->bigint_processor()->ToString(
+        characters, &chars_written, GetDigits(bigint), radix, sign);
+    if (status == bigint::Status::kInterrupted) {
+      AllowGarbageCollection terminating_anyway;
+      isolate->TerminateExecution();
       return {};
     }
   }
-  Handle<SeqOneByteString> result =
-      isolate->factory()->NewRawOneByteString(size).ToHandleChecked();
-  int allocated_size = size;
-  DisallowGarbageCollection no_gc;
-  char* characters = reinterpret_cast<char*>(result->GetChars(no_gc));
-  bigint::Status status = isolate->bigint_processor()->ToString(
-      characters, &size, GetDigits(bigint), radix, sign);
-  if (status == bigint::Status::kInterrupted) {
-    AllowGarbageCollection terminating_anyway;
-    isolate->TerminateExecution();
-    return {};
-  }
 
-  // Rigth-trim any over-allocation (which can happen due to conservative
+  // Right-trim any over-allocation (which can happen due to conservative
   // estimates).
-  if (size < allocated_size) {
-    result->set_length(size, kReleaseStore);
-    int string_size = SeqOneByteString::SizeFor(allocated_size);
-    int needed_size = SeqOneByteString::SizeFor(size);
+  if (chars_written < chars_allocated) {
+    result->set_length(chars_written, kReleaseStore);
+    int string_size = SeqOneByteString::SizeFor(chars_allocated);
+    int needed_size = SeqOneByteString::SizeFor(chars_written);
     if (needed_size < string_size && !isolate->heap()->IsLargeObject(*result)) {
       Address new_end = result->address() + needed_size;
       isolate->heap()->CreateFillerObjectAt(
@@ -1025,9 +1066,11 @@ MaybeHandle<String> BigInt::ToString(Isolate* isolate, Handle<BigInt> bigint,
   }
 #if DEBUG
   // Verify that all characters have been written.
-  DCHECK(result->length() == size);
-  for (int i = 0; i < size; i++) {
-    DCHECK_NE(characters[i], bigint::kStringZapValue);
+  DCHECK(result->length() == chars_written);
+  DisallowGarbageCollection no_gc;
+  uint8_t* chars = result->GetChars(no_gc);
+  for (int i = 0; i < chars_written; i++) {
+    DCHECK_NE(chars[i], bigint::kStringZapValue);
   }
 #endif
   return result;
@@ -1193,88 +1236,6 @@ void BigInt::BigIntShortPrint(std::ostream& os) {
 }
 
 // Internal helpers.
-
-void MutableBigInt::AbsoluteAdd(MutableBigInt result, BigInt x, BigInt y) {
-  DisallowGarbageCollection no_gc;
-  digit_t carry = 0;
-  int i = 0;
-  for (; i < y.length(); i++) {
-    digit_t new_carry = 0;
-    digit_t sum = digit_add(x.digit(i), y.digit(i), &new_carry);
-    sum = digit_add(sum, carry, &new_carry);
-    result.set_digit(i, sum);
-    carry = new_carry;
-  }
-  for (; i < x.length(); i++) {
-    digit_t new_carry = 0;
-    digit_t sum = digit_add(x.digit(i), carry, &new_carry);
-    result.set_digit(i, sum);
-    carry = new_carry;
-  }
-  result.set_digit(i, carry);
-}
-
-MaybeHandle<BigInt> MutableBigInt::AbsoluteAdd(Isolate* isolate,
-                                               Handle<BigInt> x,
-                                               Handle<BigInt> y,
-                                               bool result_sign) {
-  if (x->length() < y->length()) return AbsoluteAdd(isolate, y, x, result_sign);
-  if (x->is_zero()) {
-    DCHECK(y->is_zero());
-    return x;
-  }
-  if (y->is_zero()) {
-    return result_sign == x->sign() ? x : BigInt::UnaryMinus(isolate, x);
-  }
-  Handle<MutableBigInt> result;
-  if (!New(isolate, x->length() + 1).ToHandle(&result)) {
-    return MaybeHandle<BigInt>();
-  }
-
-  AbsoluteAdd(*result, *x, *y);
-
-  result->set_sign(result_sign);
-  return MakeImmutable(result);
-}
-
-Handle<BigInt> MutableBigInt::AbsoluteSub(Isolate* isolate, Handle<BigInt> x,
-                                          Handle<BigInt> y, bool result_sign) {
-  DCHECK(x->length() >= y->length());
-  SLOW_DCHECK(bigint::Compare(GetDigits(x), GetDigits(y)) >= 0);
-  if (x->is_zero()) {
-    DCHECK(y->is_zero());
-    return x;
-  }
-  if (y->is_zero()) {
-    return result_sign == x->sign() ? x : BigInt::UnaryMinus(isolate, x);
-  }
-  Handle<MutableBigInt> result = New(isolate, x->length()).ToHandleChecked();
-
-  AbsoluteSub(*result, *x, *y);
-
-  result->set_sign(result_sign);
-  return MakeImmutable(result);
-}
-
-void MutableBigInt::AbsoluteSub(MutableBigInt result, BigInt x, BigInt y) {
-  DisallowGarbageCollection no_gc;
-  digit_t borrow = 0;
-  int i = 0;
-  for (; i < y.length(); i++) {
-    digit_t new_borrow = 0;
-    digit_t difference = digit_sub(x.digit(i), y.digit(i), &new_borrow);
-    difference = digit_sub(difference, borrow, &new_borrow);
-    result.set_digit(i, difference);
-    borrow = new_borrow;
-  }
-  for (; i < x.length(); i++) {
-    digit_t new_borrow = 0;
-    digit_t difference = digit_sub(x.digit(i), borrow, &new_borrow);
-    result.set_digit(i, difference);
-    borrow = new_borrow;
-  }
-  DCHECK_EQ(0, borrow);
-}
 
 // Adds 1 to the absolute value of {x} and sets the result's sign to {sign}.
 // {result_storage} is optional; if present, it will be used to store the
@@ -2167,7 +2128,7 @@ void MutableBigInt_AbsoluteAddAndCanonicalize(Address result_addr,
   BigInt y = BigInt::cast(Object(y_addr));
   MutableBigInt result = MutableBigInt::cast(Object(result_addr));
 
-  MutableBigInt::AbsoluteAdd(result, x, y);
+  bigint::Add(GetRWDigits(result), GetDigits(x), GetDigits(y));
   MutableBigInt::Canonicalize(result);
 }
 
@@ -2184,7 +2145,7 @@ void MutableBigInt_AbsoluteSubAndCanonicalize(Address result_addr,
   BigInt y = BigInt::cast(Object(y_addr));
   MutableBigInt result = MutableBigInt::cast(Object(result_addr));
 
-  MutableBigInt::AbsoluteSub(result, x, y);
+  bigint::Subtract(GetRWDigits(result), GetDigits(x), GetDigits(y));
   MutableBigInt::Canonicalize(result);
 }
 

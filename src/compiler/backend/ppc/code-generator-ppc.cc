@@ -463,91 +463,6 @@ void EmitWordLoadPoisoningIfNeeded(CodeGenerator* codegen, Instruction* instr,
     DCHECK_EQ(LeaveRC, i.OutputRCBit());                                       \
   } while (0)
 
-#define ASSEMBLE_FLOAT_MAX()                                            \
-  do {                                                                  \
-    DoubleRegister left_reg = i.InputDoubleRegister(0);                 \
-    DoubleRegister right_reg = i.InputDoubleRegister(1);                \
-    DoubleRegister result_reg = i.OutputDoubleRegister();               \
-    Label check_zero, return_left, return_right, return_nan, done;      \
-    __ fcmpu(left_reg, right_reg);                                      \
-    __ bunordered(&return_nan);                                         \
-    __ beq(&check_zero);                                                \
-    __ bge(&return_left);                                               \
-    __ b(&return_right);                                                \
-                                                                        \
-    __ bind(&check_zero);                                               \
-    __ fcmpu(left_reg, kDoubleRegZero);                                 \
-    /* left == right != 0. */                                           \
-    __ bne(&return_left);                                               \
-    /* At this point, both left and right are either 0 or -0. */        \
-    __ fadd(result_reg, left_reg, right_reg);                           \
-    __ b(&done);                                                        \
-                                                                        \
-    __ bind(&return_nan);                                               \
-    /* If left or right are NaN, fadd propagates the appropriate one.*/ \
-    __ fadd(result_reg, left_reg, right_reg);                           \
-    __ b(&done);                                                        \
-                                                                        \
-    __ bind(&return_right);                                             \
-    if (right_reg != result_reg) {                                      \
-      __ fmr(result_reg, right_reg);                                    \
-    }                                                                   \
-    __ b(&done);                                                        \
-                                                                        \
-    __ bind(&return_left);                                              \
-    if (left_reg != result_reg) {                                       \
-      __ fmr(result_reg, left_reg);                                     \
-    }                                                                   \
-    __ bind(&done);                                                     \
-  } while (0)
-
-#define ASSEMBLE_FLOAT_MIN()                                              \
-  do {                                                                    \
-    DoubleRegister left_reg = i.InputDoubleRegister(0);                   \
-    DoubleRegister right_reg = i.InputDoubleRegister(1);                  \
-    DoubleRegister result_reg = i.OutputDoubleRegister();                 \
-    Label check_zero, return_left, return_right, return_nan, done;        \
-    __ fcmpu(left_reg, right_reg);                                        \
-    __ bunordered(&return_nan);                                           \
-    __ beq(&check_zero);                                                  \
-    __ ble(&return_left);                                                 \
-    __ b(&return_right);                                                  \
-                                                                          \
-    __ bind(&check_zero);                                                 \
-    __ fcmpu(left_reg, kDoubleRegZero);                                   \
-    /* left == right != 0. */                                             \
-    __ bne(&return_left);                                                 \
-    /* At this point, both left and right are either 0 or -0. */          \
-    /* Min: The algorithm is: -((-L) + (-R)), which in case of L and R */ \
-    /* being different registers is most efficiently expressed */         \
-    /* as -((-L) - R). */                                                 \
-    __ fneg(kScratchDoubleReg, left_reg);                                 \
-    if (kScratchDoubleReg == right_reg) {                                 \
-      __ fadd(result_reg, kScratchDoubleReg, right_reg);                  \
-    } else {                                                              \
-      __ fsub(result_reg, kScratchDoubleReg, right_reg);                  \
-    }                                                                     \
-    __ fneg(result_reg, result_reg);                                      \
-    __ b(&done);                                                          \
-                                                                          \
-    __ bind(&return_nan);                                                 \
-    /* If left or right are NaN, fadd propagates the appropriate one.*/   \
-    __ fadd(result_reg, left_reg, right_reg);                             \
-    __ b(&done);                                                          \
-                                                                          \
-    __ bind(&return_right);                                               \
-    if (right_reg != result_reg) {                                        \
-      __ fmr(result_reg, right_reg);                                      \
-    }                                                                     \
-    __ b(&done);                                                          \
-                                                                          \
-    __ bind(&return_left);                                                \
-    if (left_reg != result_reg) {                                         \
-      __ fmr(result_reg, left_reg);                                       \
-    }                                                                     \
-    __ bind(&done);                                                       \
-  } while (0)
-
 #define ASSEMBLE_LOAD_FLOAT(asm_instr, asm_instrx)    \
   do {                                                \
     DoubleRegister result = i.OutputDoubleRegister(); \
@@ -773,13 +688,13 @@ void AdjustStackPointerForTailCall(
     if (pending_pushes != nullptr) {
       FlushPendingPushRegisters(tasm, state, pending_pushes);
     }
-    tasm->Add(sp, sp, -stack_slot_delta * kSystemPointerSize, r0);
+    tasm->AddS64(sp, sp, Operand(-stack_slot_delta * kSystemPointerSize), r0);
     state->IncreaseSPDelta(stack_slot_delta);
   } else if (allow_shrinkage && stack_slot_delta < 0) {
     if (pending_pushes != nullptr) {
       FlushPendingPushRegisters(tasm, state, pending_pushes);
     }
-    tasm->Add(sp, sp, -stack_slot_delta * kSystemPointerSize, r0);
+    tasm->AddS64(sp, sp, Operand(-stack_slot_delta * kSystemPointerSize), r0);
     state->IncreaseSPDelta(stack_slot_delta);
   }
 }
@@ -832,7 +747,7 @@ void CodeGenerator::AssembleTailCallAfterGap(Instruction* instr,
 void CodeGenerator::AssembleCodeStartRegisterCheck() {
   Register scratch = kScratchReg;
   __ ComputeCodeStartAddress(scratch);
-  __ cmp(scratch, kJavaScriptCallCodeStartRegister);
+  __ CmpS64(scratch, kJavaScriptCallCodeStartRegister);
   __ Assert(eq, AbortReason::kWrongFunctionCodeStart);
 }
 
@@ -847,7 +762,7 @@ void CodeGenerator::BailoutIfDeoptimized() {
   if (FLAG_debug_code) {
     // Check that {kJavaScriptCallCodeStartRegister} is correct.
     __ ComputeCodeStartAddress(ip);
-    __ cmp(ip, kJavaScriptCallCodeStartRegister);
+    __ CmpS64(ip, kJavaScriptCallCodeStartRegister);
     __ Assert(eq, AbortReason::kWrongFunctionCodeStart);
   }
 
@@ -869,7 +784,7 @@ void CodeGenerator::GenerateSpeculationPoisonFromCodeStartRegister() {
 
   // Calculate a mask which has all bits set in the normal case, but has all
   // bits cleared if we are speculatively executing the wrong PC.
-  __ cmp(kJavaScriptCallCodeStartRegister, scratch);
+  __ CmpS64(kJavaScriptCallCodeStartRegister, scratch);
   __ li(scratch, Operand::Zero());
   __ notx(kSpeculationPoisonRegister, scratch);
   __ isel(eq, kSpeculationPoisonRegister, kSpeculationPoisonRegister, scratch);
@@ -990,7 +905,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         // Check the function's context matches the context argument.
         __ LoadTaggedPointerField(
             kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset), r0);
-        __ cmp(cp, kScratchReg);
+        __ CmpS64(cp, kScratchReg);
         __ Assert(eq, AbortReason::kWrongFunctionContext);
       }
       static_assert(kJavaScriptCallCodeStartRegister == r5, "ABI mismatch");
@@ -1201,7 +1116,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
 
       constexpr size_t kValueIndex = 0;
       DCHECK(instr->InputAt(kValueIndex)->IsRegister());
-      __ cmpl(lhs_register, i.InputRegister(kValueIndex), cr0);
+      __ CmpU64(lhs_register, i.InputRegister(kValueIndex), cr0);
       break;
     }
     case kArchStackCheckOffset:
@@ -1693,10 +1608,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ neg(i.OutputRegister(), i.InputRegister(0), LeaveOE, i.OutputRCBit());
       break;
     case kPPC_MaxDouble:
-      ASSEMBLE_FLOAT_MAX();
+      __ MaxF64(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                i.InputDoubleRegister(1), kScratchDoubleReg);
       break;
     case kPPC_MinDouble:
-      ASSEMBLE_FLOAT_MIN();
+      __ MinF64(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                i.InputDoubleRegister(1), kScratchDoubleReg);
       break;
     case kPPC_AbsDouble:
       ASSEMBLE_FLOAT_UNOP_RC(fabs, 0);
@@ -1730,12 +1647,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
 #endif
     case kPPC_Popcnt32:
-      __ popcntw(i.OutputRegister(), i.InputRegister(0));
+      __ Popcnt32(i.OutputRegister(), i.InputRegister(0));
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
 #if V8_TARGET_ARCH_PPC64
     case kPPC_Popcnt64:
-      __ popcntd(i.OutputRegister(), i.InputRegister(0));
+      __ Popcnt64(i.OutputRegister(), i.InputRegister(0));
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
 #endif
@@ -2183,22 +2100,22 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldarx, stdcx);
       break;
     case kWord32AtomicCompareExchangeInt8:
-      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_SIGN_EXT(cmp, lbarx, stbcx, extsb);
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_SIGN_EXT(CmpS64, lbarx, stbcx, extsb);
       break;
     case kPPC_AtomicCompareExchangeUint8:
-      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE(cmp, lbarx, stbcx, ZeroExtByte);
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE(CmpS64, lbarx, stbcx, ZeroExtByte);
       break;
     case kWord32AtomicCompareExchangeInt16:
-      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_SIGN_EXT(cmp, lharx, sthcx, extsh);
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_SIGN_EXT(CmpS64, lharx, sthcx, extsh);
       break;
     case kPPC_AtomicCompareExchangeUint16:
-      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE(cmp, lharx, sthcx, ZeroExtHalfWord);
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE(CmpS64, lharx, sthcx, ZeroExtHalfWord);
       break;
     case kPPC_AtomicCompareExchangeWord32:
       ASSEMBLE_ATOMIC_COMPARE_EXCHANGE(cmpw, lwarx, stwcx, ZeroExtWord32);
       break;
     case kPPC_AtomicCompareExchangeWord64:
-      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE(cmp, ldarx, stdcx, mr);
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE(CmpS64, ldarx, stdcx, mr);
       break;
 
 #define ATOMIC_BINOP_CASE(op, inst)                            \
@@ -2524,14 +2441,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       Simd128Register src0 = i.InputSimd128Register(0);
       Simd128Register src1 = i.InputSimd128Register(1);
       Simd128Register dst = i.OutputSimd128Register();
-      Simd128Register tempFPReg1 = i.ToSimd128Register(instr->TempAt(0));
-      __ vmuleuh(kScratchSimd128Reg, src0, src1);
-      __ vmulouh(i.OutputSimd128Register(), src0, src1);
-      __ xxspltib(tempFPReg1, Operand(16));
-      __ vslw(kScratchSimd128Reg, kScratchSimd128Reg, tempFPReg1);
-      __ vslw(dst, dst, tempFPReg1);
-      __ vsrw(dst, dst, tempFPReg1);
-      __ vor(dst, kScratchSimd128Reg, dst);
+      __ vxor(kScratchSimd128Reg, kScratchSimd128Reg, kScratchSimd128Reg);
+      __ vmladduhm(dst, src0, src1, kScratchSimd128Reg);
       break;
     }
     case kPPC_I8x16Add: {
@@ -3344,10 +3255,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ xvrdpiz(i.OutputSimd128Register(), i.InputSimd128Register(0));
       break;
     }
-    case kPPC_F64x2NearestInt: {
-      __ xvrdpi(i.OutputSimd128Register(), i.InputSimd128Register(0));
-      break;
-    }
     case kPPC_F32x4Ceil: {
       __ xvrspip(i.OutputSimd128Register(), i.InputSimd128Register(0));
       break;
@@ -3358,10 +3265,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kPPC_F32x4Trunc: {
       __ xvrspiz(i.OutputSimd128Register(), i.InputSimd128Register(0));
-      break;
-    }
-    case kPPC_F32x4NearestInt: {
-      __ xvrspi(i.OutputSimd128Register(), i.InputSimd128Register(0));
       break;
     }
     case kPPC_I64x2BitMask: {
@@ -4047,7 +3950,7 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
     cases[index] = GetLabel(i.InputRpo(index + 2));
   }
   Label* const table = AddJumpTable(cases, case_count);
-  __ Cmpli(input, Operand(case_count), r0);
+  __ CmpU64(input, Operand(case_count), r0);
   __ bge(GetLabel(i.InputRpo(1)));
   __ mov_label_addr(kScratchReg, table);
   __ ShiftLeftImm(r0, input, Operand(kSystemPointerSizeLog2));
@@ -4184,8 +4087,9 @@ void CodeGenerator::AssembleConstructFrame() {
                             WasmInstanceObject::kRealStackLimitAddressOffset),
             r0);
         __ LoadU64(scratch, MemOperand(scratch), r0);
-        __ Add(scratch, scratch, required_slots * kSystemPointerSize, r0);
-        __ cmpl(sp, scratch);
+        __ AddS64(scratch, scratch,
+                  Operand(required_slots * kSystemPointerSize), r0);
+        __ CmpU64(sp, scratch);
         __ bge(&done);
       }
 
@@ -4206,7 +4110,7 @@ void CodeGenerator::AssembleConstructFrame() {
     required_slots -= frame()->GetReturnSlotCount();
     required_slots -= (kDoubleSize / kSystemPointerSize) *
                       base::bits::CountPopulation(saves_fp);
-    __ Add(sp, sp, -required_slots * kSystemPointerSize, r0);
+    __ AddS64(sp, sp, Operand(-required_slots * kSystemPointerSize), r0);
   }
 
   // Save callee-saved Double registers.
@@ -4232,7 +4136,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* additional_pop_count) {
   const int returns = frame()->GetReturnSlotCount();
   if (returns != 0) {
     // Create space for returns.
-    __ Add(sp, sp, returns * kSystemPointerSize, r0);
+    __ AddS64(sp, sp, Operand(returns * kSystemPointerSize), r0);
   }
 
   // Restore registers.
@@ -4307,7 +4211,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* additional_pop_count) {
     __ addi(argc_reg, argc_reg, Operand(1));  // Also pop the receiver.
     if (parameter_slots > 1) {
       Label skip;
-      __ Cmpi(argc_reg, Operand(parameter_slots), r0);
+      __ CmpS64(argc_reg, Operand(parameter_slots), r0);
       __ bgt(&skip);
       __ mov(argc_reg, Operand(parameter_slots));
       __ bind(&skip);

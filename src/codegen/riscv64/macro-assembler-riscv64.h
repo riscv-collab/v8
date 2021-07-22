@@ -146,10 +146,15 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   DECLARE_NORELOC_PROTOTYPE(Name, Label*) \
   DECLARE_NORELOC_PROTOTYPE(Name, int32_t)
 
-  DECLARE_BRANCH_PROTOTYPES(Branch)
   DECLARE_BRANCH_PROTOTYPES(BranchAndLink)
   DECLARE_BRANCH_PROTOTYPES(BranchShort)
 
+  void Branch(Label* target);
+  void Branch(int32_t target);
+  void Branch(Label* target, Condition cond, Register r1, const Operand& r2,
+              Label::Distance near_jump = Label::kFar);
+  void Branch(int32_t target, Condition cond, Register r1, const Operand& r2,
+              Label::Distance near_jump = Label::kFar);
 #undef DECLARE_BRANCH_PROTOTYPES
 #undef COND_TYPED_ARGS
 #undef COND_ARGS
@@ -577,6 +582,8 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   // Change endianness
   void ByteSwap(Register dest, Register src, int operand_size);
 
+  void Clear_if_nan_d(Register rd, FPURegister fs);
+  void Clear_if_nan_s(Register rd, FPURegister fs);
   // Convert single to unsigned word.
   void Trunc_uw_s(Register rd, FPURegister fs, Register result = no_reg);
 
