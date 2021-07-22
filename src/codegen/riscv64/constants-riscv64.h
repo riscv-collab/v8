@@ -517,7 +517,7 @@ enum Opcode : uint32_t {
       C1 | (0b100111 << kRvcFunct6Shift) | (FUNCT2_0 << kRvcFunct2Shift),
   RO_C_ADDW =
       C1 | (0b100111 << kRvcFunct6Shift) | (FUNCT2_1 << kRvcFunct2Shift),
-  RO_C_LUI_ADD = C1 | (0b011 << kRvcFunct3Shift),
+  RO_C_LUI_ADDI16SP = C1 | (0b011 << kRvcFunct3Shift),
   RO_C_MISC_ALU = C1 | (0b100 << kRvcFunct3Shift),
   RO_C_J = C1 | (0b101 << kRvcFunct3Shift),
   RO_C_BEQZ = C1 | (0b110 << kRvcFunct3Shift),

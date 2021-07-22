@@ -210,13 +210,17 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   // Get offset from instr.
   int BranchOffset(Instr instr);
-  static int BrachlongOffset(Instr auipc, Instr jalr);
+  static int BranchlongOffset(Instr auipc, Instr instr_I);
+  static int BranchlongOffset(Instr auipc, ShortInstr instr_I);
   static int PatchBranchlongOffset(Address pc, Instr auipc, Instr instr_I,
                                    int32_t offset);
+  static int PatchBranchlongOffset(Address pc, Instr auipc, ShortInstr instr_I,
+                                   int32_t offset);                                 
   int JumpOffset(Instr instr);
   int CJumpOffset(Instr instr);
   int CBranchOffset(Instr instr);
   static int LdOffset(Instr instr);
+  static uint16_t CLdOffset(ShortInstr instr);
   static int AuipcOffset(Instr instr);
   static int JalrOffset(Instr instr);
 
@@ -298,18 +302,18 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
       RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
 
   // Difference between address of current opcode and target address offset.
-  static constexpr int kBranchPCOffset = kInstrSize;
+  //static constexpr int kBranchPCOffset = kInstrSize;
 
   // Difference between address of current opcode and target address offset,
   // when we are generatinga sequence of instructions for long relative PC
   // branches
-  static constexpr int kLongBranchPCOffset = 3 * kInstrSize;
+  //static constexpr int kLongBranchPCOffset = 3 * kInstrSize;
 
   // Adjust ra register in branch delay slot of bal instruction so to skip
   // instructions not needed after optimization of PIC in
   // TurboAssembler::BranchAndLink method.
 
-  static constexpr int kOptimizedBranchAndLinkLongReturnOffset = 4 * kInstrSize;
+  //static constexpr int kOptimizedBranchAndLinkLongReturnOffset = 4 * kInstrSize;
 
   // Here we are patching the address in the LUI/ADDI instruction pair.
   // These values are used in the serialization process and must be zero for
@@ -653,7 +657,15 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline void c_beqz(Register rs1, Label* L) { c_beqz(rs1, branch_offset(L)); }
   void c_srli(Register rs1, uint8_t uimm6);
   void c_srai(Register rs1, uint8_t uimm6);
-  void c_andi(Register rs1, uint8_t uimm6);
+  void c_andi(Register rs1, int8_t imm6);
+
+  bool isCExtApplicable1(Register reg1, Register reg2, int16_t imm);
+  bool isCExtApplicable2(Register reg1, Register reg2, int16_t imm);
+  bool isCExtApplicable3(Register reg, int16_t imm);
+  bool isCExtApplicable4(Register reg1, Register reg2, uint8_t imm);
+  bool isCExtApplicable5(Register reg1, Register reg2, Register reg3);
+  bool isCExtApplicable6(Register reg1, Register reg2, int16_t imm);
+  bool isCExtApplicable7(FPURegister reg1, Register reg2, int16_t imm);
 
   // Privileged
   void uret();
@@ -779,12 +791,16 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   // Check the code size generated from label to here.
   int SizeOfCodeGeneratedSince(Label* label) {
-    return pc_offset() - label->pos();
+    int num = pc_offset() - label->pos();
+    DCHECK_EQ(num % kShortInstrSize,0);
+    return num;
   }
 
   // Check the number of instructions generated from label to here.
   int InstructionsGeneratedSince(Label* label) {
-    return SizeOfCodeGeneratedSince(label) / kInstrSize;
+    int num = SizeOfCodeGeneratedSince(label) / kInstrSize;
+    DCHECK_EQ(num * kInstrSize, SizeOfCodeGeneratedSince(label));
+    return num;
   }
 
   using BlockConstPoolScope = ConstantPool::BlockScope;
@@ -850,6 +866,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // instructions.
   void BlockTrampolinePoolFor(int instructions);
 
+  void BlockTrampolinePoolForShort(int instructions);
+
   // Check if there is less than kGap bytes available in the buffer.
   // If this is the case, we need to grow the buffer before emitting
   // an instruction or relocation information.
@@ -862,11 +880,15 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   // Read/patch instructions.
   static Instr instr_at(Address pc) { return *reinterpret_cast<Instr*>(pc); }
+  static ShortInstr short_instr_at(Address pc) { return *reinterpret_cast<ShortInstr*>(pc); }
   static void instr_at_put(Address pc, Instr instr) {
     *reinterpret_cast<Instr*>(pc) = instr;
   }
   Instr instr_at(int pos) {
     return *reinterpret_cast<Instr*>(buffer_start_ + pos);
+  }
+  ShortInstr short_instr_at(int pos) {
+    return *reinterpret_cast<ShortInstr*>(buffer_start_ + pos);
   }
   void instr_at_put(int pos, Instr instr) {
     *reinterpret_cast<Instr*>(buffer_start_ + pos) = instr;
@@ -888,6 +910,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   static bool IsJal(Instr instr);
   static bool IsCJal(Instr instr);
   static bool IsJalr(Instr instr);
+  static bool IsCJalr(ShortInstr instr);
+  static bool IsCJr(ShortInstr instr);
   static bool IsLui(Instr instr);
   static bool IsAuipc(Instr instr);
   static bool IsAddiw(Instr instr);
@@ -895,7 +919,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   static bool IsOri(Instr instr);
   static bool IsSlli(Instr instr);
   static bool IsLd(Instr instr);
-  void CheckTrampolinePool();
+  static bool IsCLd(ShortInstr instr);
+  void CheckTrampolinePool(int instrsize);
 
   // Get the code target object for a pc-relative call or jump.
   V8_INLINE Handle<Code> relative_code_target_object_handle_at(
@@ -984,7 +1009,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
     DEBUG_PRINTF("\ttrampoline_pool_blocked_nesting:%d\n",
                  trampoline_pool_blocked_nesting_);
     if (trampoline_pool_blocked_nesting_ == 0) {
-      CheckTrampolinePoolQuick(1);
+      CheckTrampolinePoolQuick(kInstrSize, 1);
     }
   }
 
@@ -1009,11 +1034,11 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   bool is_buffer_growth_blocked() const { return block_buffer_growth_; }
 
-  void CheckTrampolinePoolQuick(int extra_instructions = 0) {
+  void CheckTrampolinePoolQuick(int instrsize, int extra_instructions = 0) {
     DEBUG_PRINTF("\tpc_offset:%d %d\n", pc_offset(),
-                 next_buffer_check_ - extra_instructions * kInstrSize);
-    if (pc_offset() >= next_buffer_check_ - extra_instructions * kInstrSize) {
-      CheckTrampolinePool();
+                 next_buffer_check_ - extra_instructions * instrsize);
+    if (pc_offset() >= next_buffer_check_ - extra_instructions * instrsize) {
+      CheckTrampolinePool(instrsize);
     }
   }
 

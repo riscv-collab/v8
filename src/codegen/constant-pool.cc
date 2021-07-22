@@ -538,14 +538,17 @@ void ConstantPool::EmitAndClear(Jump require_jump) {
   if (require_jump == Jump::kRequired) assm_->b(&after_pool);
 
   assm_->RecordComment("[ Constant Pool");
-
   EmitPrologue(require_alignment);
+  bool c_ext = FLAG_riscv_c_extension;
+  FLAG_riscv_c_extension = false;
   if (require_alignment == Alignment::kRequired) assm_->DataAlign(kInt64Size);
   EmitEntries();
   assm_->RecordComment("]");
   assm_->bind(&after_pool);
   DEBUG_PRINTF("\tConstant Pool end\n")
-
+  if(c_ext) {
+    FLAG_riscv_c_extension = true;
+  }
   DCHECK_LE(assm_->SizeOfCodeGeneratedSince(&size_check) - size, 3);
   Clear();
 }
@@ -654,9 +657,23 @@ bool ConstantPool::ShouldEmitNow(Jump require_jump, size_t margin) const {
 int ConstantPool::ComputeSize(Jump require_jump,
                               Alignment require_alignment) const {
   int size_up_to_marker = PrologueSize(require_jump);
-  int alignment = require_alignment == Alignment::kRequired ? kInstrSize : 0;
-  size_t size_after_marker =
+  size_t size_after_marker = 0;
+  if(FLAG_riscv_c_extension){
+    size_after_marker =
+      Entry32Count() * kInt32Size + Entry64Count() * kInt64Size;
+    int padding = 0;
+    if(require_alignment == Alignment::kRequired) {
+      padding = kInt64Size - (assm_->pc_offset() + size_up_to_marker)% kInt64Size;
+      if(padding < kInt64Size) {
+        size_after_marker += padding;
+      }
+    }
+  }
+  else{
+    int alignment = require_alignment == Alignment::kRequired ? kInstrSize : 0;
+    size_after_marker =
       Entry32Count() * kInt32Size + alignment + Entry64Count() * kInt64Size;
+  }
   return size_up_to_marker + static_cast<int>(size_after_marker);
 }
 

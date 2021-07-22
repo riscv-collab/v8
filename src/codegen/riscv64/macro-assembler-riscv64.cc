@@ -2796,7 +2796,7 @@ bool TurboAssembler::BranchShortHelper(int32_t offset, Label* L, Condition cond,
     }
   }
 
-  CheckTrampolinePoolQuick(1);
+  CheckTrampolinePoolQuick(kInstrSize, 1);
   return true;
 }
 
@@ -2906,10 +2906,15 @@ bool TurboAssembler::BranchAndLinkShortHelper(int32_t offset, Label* L,
     offset = GetOffset(offset, L, OffsetSize::kOffset21);
     jal(offset);
   } else {
+    bool c_ext = FLAG_riscv_c_extension;
+    FLAG_riscv_c_extension = false;
     Branch(kInstrSize * 2, NegateCondition(cond), rs,
            Operand(GetRtAsRegisterHelper(rt, scratch)));
     offset = GetOffset(offset, L, OffsetSize::kOffset21);
     jal(offset);
+    if(c_ext) {
+      FLAG_riscv_c_extension = true;
+    }
   }
 
   return true;
@@ -2960,8 +2965,13 @@ void TurboAssembler::Jump(Register target, Condition cond, Register rs,
     ForceConstantPoolEmissionWithoutJump();
   } else {
     BRANCH_ARGS_CHECK(cond, rs, rt);
+    bool c_ext = FLAG_riscv_c_extension;
+    FLAG_riscv_c_extension = false;
     Branch(kInstrSize * 2, NegateCondition(cond), rs, rt);
     jr(target);
+    if(c_ext) {
+      FLAG_riscv_c_extension = true;
+    }
   }
 }
 
@@ -3040,8 +3050,13 @@ void TurboAssembler::Call(Register target, Condition cond, Register rs,
     jalr(ra, target, 0);
   } else {
     BRANCH_ARGS_CHECK(cond, rs, rt);
+    bool c_ext = FLAG_riscv_c_extension;
+    FLAG_riscv_c_extension = false;
     Branch(kInstrSize * 2, NegateCondition(cond), rs, rt);
     jalr(ra, target, 0);
+    if(c_ext) {
+      FLAG_riscv_c_extension = true;
+    }
   }
 }
 
@@ -3158,10 +3173,15 @@ MemOperand TurboAssembler::EntryFromBuiltinAsOperand(Builtin builtin) {
 void TurboAssembler::PatchAndJump(Address target) {
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
+  bool c_ext = FLAG_riscv_c_extension;
+  FLAG_riscv_c_extension = false;
   auipc(scratch, 0);  // Load PC into scratch
   Ld(t6, MemOperand(scratch, kInstrSize * 4));
   jr(t6);
   nop();  // For alignment
+  if(c_ext) {
+    FLAG_riscv_c_extension = true;
+  }
   DCHECK_EQ(reinterpret_cast<uint64_t>(pc_) % 8, 0);
   *reinterpret_cast<uint64_t*>(pc_) = target;  // pc_ should be align.
   pc_ += sizeof(uint64_t);
@@ -3185,11 +3205,13 @@ void TurboAssembler::StoreReturnAddressAndCall(Register target) {
   // Adjust the value in ra to point to the correct return location, one
   // instruction past the real call into C code (the jalr(t6)), and push it.
   // This is the return address of the exit frame.
+  bool c_ext = FLAG_riscv_c_extension;
+  FLAG_riscv_c_extension = false;
   auipc(ra, 0);  // Set ra the current PC
   bind(&find_ra);
   addi(ra, ra,
        (kNumInstructionsToJump + 1) *
-           kInstrSize);  // Set ra to insn after the call
+           kInstrSize);  // Set ra to ins after the call
 
   // This spot was reserved in EnterExitFrame.
   Sd(ra, MemOperand(sp));
@@ -3202,6 +3224,9 @@ void TurboAssembler::StoreReturnAddressAndCall(Register target) {
   jalr(t6);
   // Make sure the stored 'ra' points to this position.
   DCHECK_EQ(kNumInstructionsToJump, InstructionsGeneratedSince(&find_ra));
+  if(c_ext) {
+    FLAG_riscv_c_extension = true;
+  }
 }
 
 void TurboAssembler::Ret(Condition cond, Register rs, const Operand& rt) {
@@ -3216,7 +3241,14 @@ void TurboAssembler::GenPCRelativeJump(Register rd, int64_t imm32) {
   int32_t Hi20 = (((int32_t)imm32 + 0x800) >> 12);
   int32_t Lo12 = (int32_t)imm32 << 20 >> 20;
   auipc(rd, Hi20);  // Read PC + Hi20 into scratch.
+  bool c_ext = FLAG_riscv_c_extension;
+  if(Lo12==0){
+    FLAG_riscv_c_extension=false;
+  }
   jr(rd, Lo12);     // jump PC + Hi20 + Lo12
+  if(c_ext){
+    FLAG_riscv_c_extension=true;
+  }
 }
 
 void TurboAssembler::GenPCRelativeJumpAndLink(Register rd, int64_t imm32) {
@@ -3224,7 +3256,14 @@ void TurboAssembler::GenPCRelativeJumpAndLink(Register rd, int64_t imm32) {
   int32_t Hi20 = (((int32_t)imm32 + 0x800) >> 12);
   int32_t Lo12 = (int32_t)imm32 << 20 >> 20;
   auipc(rd, Hi20);  // Read PC + Hi20 into scratch.
+  bool c_ext = FLAG_riscv_c_extension;
+  if(Lo12 == 0){
+    FLAG_riscv_c_extension = false;
+  }
   jalr(rd, Lo12);   // jump PC + Hi20 + Lo12
+  if(c_ext){
+    FLAG_riscv_c_extension = true;
+  }
 }
 
 void TurboAssembler::BranchLong(Label* L) {
@@ -3571,7 +3610,6 @@ void MacroAssembler::InvokePrologue(Register expected_parameter_count,
     Branch(&loop, gt, expected_parameter_count, Operand(zero_reg));
   }
   Branch(&regular_invoke);
-
   bind(&stack_overflow);
   {
     FrameScope frame(this,
@@ -3967,10 +4005,19 @@ void TurboAssembler::Abort(AbortReason reason) {
     // Currently in debug mode with debug_code enabled the number of
     // generated instructions is 10, so we use this as a maximum value.
     static const int kExpectedAbortInstructions = 10;
-    int abort_instructions = InstructionsGeneratedSince(&abort_start);
-    DCHECK_LE(abort_instructions, kExpectedAbortInstructions);
-    while (abort_instructions++ < kExpectedAbortInstructions) {
+
+    int abort_offset = SizeOfCodeGeneratedSince(&abort_start);
+    int expected_abort_offset = kExpectedAbortInstructions * kInstrSize;
+    DCHECK_LE(abort_offset, expected_abort_offset);
+    int abort_instructions = (expected_abort_offset-abort_offset)/kShortInstrSize;
+    bool c_ext = FLAG_riscv_c_extension;
+    FLAG_riscv_c_extension = true;
+    while (abort_instructions) {
       nop();
+      abort_instructions -= 1;
+    }
+    if(!c_ext){
+      FLAG_riscv_c_extension=false;
     }
   }
 }
@@ -4595,9 +4642,13 @@ void TurboAssembler::ComputeCodeStartAddress(Register dst) {
   // This push on ra and the pop below together ensure that we restore the
   // register ra, which is needed while computing the code start address.
   push(ra);
-
+  bool c_ext = FLAG_riscv_c_extension;
+  FLAG_riscv_c_extension = false;
   auipc(ra, 0);
   addi(ra, ra, kInstrSize * 2);  // ra = address of li
+  if(c_ext) {
+    FLAG_riscv_c_extension = true;
+  }
   int pc = pc_offset();
   li(dst, Operand(pc));
   Sub64(dst, ra, dst);

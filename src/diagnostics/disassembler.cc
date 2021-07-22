@@ -303,11 +303,16 @@ static int DecodeIt(Isolate* isolate, ExternalReferenceEncoder* ref_encoder,
     byte* prev_pc = pc;
     bool decoding_constant_pool = constants > 0;
     if (decoding_constant_pool) {
-      SNPrintF(
-          decode_buffer, "%08x       constant",
-          base::ReadUnalignedValue<int32_t>(reinterpret_cast<Address>(pc)));
-      constants--;
-      pc += 4;
+      int32_t val = base::ReadUnalignedValue<int32_t>(reinterpret_cast<Address>(pc));
+      if(((val & 0xffff) == 0xcccc) && ((val & 0xffffffff) != 0xcccccccc)){//padding 2 bytes
+        SNPrintF(decode_buffer, "%08x       padding", val);
+        pc += 2;
+      }
+      else{
+        SNPrintF(decode_buffer, "%08x       constant", val);
+        constants--;
+        pc += 4;
+      }
     } else {
       int num_const = d.ConstantPoolSizeAt(pc);
       if (num_const >= 0) {
@@ -347,6 +352,7 @@ static int DecodeIt(Isolate* isolate, ExternalReferenceEncoder* ref_encoder,
         it->next();
       }
     }
+
     while (cit.HasCurrent() &&
            cit.GetPCOffset() < static_cast<Address>(pc - begin)) {
       comments.push_back(cit.GetComment());

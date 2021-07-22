@@ -125,7 +125,7 @@ InstructionBase::Type InstructionBase::InstructionType() const {
       case RO_C_NOP_ADDI:
       case RO_C_ADDIW:
       case RO_C_LI:
-      case RO_C_LUI_ADD:
+      case RO_C_LUI_ADDI16SP:
         return kCIType;
       case RO_C_MISC_ALU:
         if (Bits(11, 10) != 0b11)

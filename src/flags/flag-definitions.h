@@ -1369,7 +1369,7 @@ DEFINE_BOOL(riscv_debug, false, "enable debug prints")
 DEFINE_BOOL(riscv_constant_pool, true,
             "enable constant pool (RISCV only)")
 
-DEFINE_BOOL(riscv_c_extension, false,
+DEFINE_BOOL(riscv_c_extension, true,
             "enable compressed extension isa variant (RISCV only)")
 #endif
 

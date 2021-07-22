@@ -1253,6 +1253,8 @@ void TurboAssembler::GenerateSwitchTable(Register index, size_t case_count,
   Register scratch2 = temps.Acquire();
 
   Align(8);
+  bool c_ext=FLAG_riscv_c_extension;
+  FLAG_riscv_c_extension=false;
   // Load the address from the jump table at index and jump to it
   auipc(scratch, 0);  // Load the current PC into scratch
   slli(scratch2, index,
@@ -1264,6 +1266,9 @@ void TurboAssembler::GenerateSwitchTable(Register index, size_t case_count,
                        // offset, then load
   jr(scratch2);        // Jump to the address loaded from the table
   nop();               // For 16-byte alignment
+  if(c_ext) {
+    FLAG_riscv_c_extension=true;
+  }
   for (size_t index = 0; index < case_count; ++index) {
     dd(GetLabelFunction(index));
   }

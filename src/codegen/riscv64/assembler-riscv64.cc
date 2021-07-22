@@ -237,7 +237,12 @@ void Assembler::GetCode(Isolate* isolate, CodeDesc* desc,
   // TODO(jgruber): Consider moving responsibility for proper alignment to
   // metadata table builders (safepoint, handler, constant pool, code
   // comments).
-  DataAlign(Code::kMetadataAlignment);
+  if(FLAG_riscv_c_extension){
+    DataAlign(Code::kShortMetadataAlignment);
+  }
+  else{
+    DataAlign(Code::kMetadataAlignment);
+  }
 
   ForceConstantPoolEmissionWithoutJump();
 
@@ -270,7 +275,12 @@ void Assembler::GetCode(Isolate* isolate, CodeDesc* desc,
 }
 
 void Assembler::Align(int m) {
-  DCHECK(m >= 4 && base::bits::IsPowerOfTwo(m));
+  if(FLAG_riscv_c_extension){
+    DCHECK(m >= 2 && base::bits::IsPowerOfTwo(m));
+  }
+  else{
+    DCHECK(m >= 4 && base::bits::IsPowerOfTwo(m));
+  }
   while ((pc_offset() & (m - 1)) != 0) {
     nop();
   }
@@ -320,6 +330,16 @@ bool Assembler::IsJalr(Instr instr) {
   return (instr & kBaseOpcodeMask) == JALR;
 }
 
+bool Assembler::IsCJalr(ShortInstr instr) {
+  uint16_t mask = (uint16_t)~kRdFieldMask;
+  return (instr & mask) == RO_C_JALR;
+}
+
+bool Assembler::IsCJr(ShortInstr instr) {
+  uint16_t mask = (uint16_t)~kRdFieldMask;
+  return (instr & mask) == RO_C_JR;
+}
+
 bool Assembler::IsCJal(Instr instr) {
   return (instr & kRvcOpcodeMask) == RO_C_J;
 }
@@ -343,6 +363,10 @@ bool Assembler::IsSlli(Instr instr) {
 
 bool Assembler::IsLd(Instr instr) {
   return (instr & (kBaseOpcodeMask | kFunct3Mask)) == RO_LD;
+}
+
+bool Assembler::IsCLd(ShortInstr instr) {
+  return (instr & kRvcOpcodeMask) == RO_C_LD;
 }
 
 int Assembler::target_at(int pos, bool is_internal) {
@@ -409,9 +433,9 @@ int Assembler::target_at(int pos, bool is_internal) {
     } break;
     case AUIPC: {
       Instr instr_auipc = instr;
-      Instr instr_I = instr_at(pos + 4);
+      Instr instr_I = instr_at(pos + kInstrSize);
       DCHECK(IsJalr(instr_I) || IsAddi(instr_I));
-      int32_t offset = BrachlongOffset(instr_auipc, instr_I);
+      int32_t offset = BranchlongOffset(instr_auipc, instr_I);
       if (offset == kEndOfJumpChain) return kEndOfChain;
       return offset + pos;
     } break;
@@ -459,6 +483,15 @@ static inline Instr SetLdOffset(int32_t offset, Instr instr) {
   instr &= ~kImm12Mask;
   int32_t imm12 = offset << kImm12Shift;
   return instr | (imm12 & kImm12Mask);
+}
+
+static inline ShortInstr SetCLdOffset(int32_t offset, ShortInstr instr) {
+  DCHECK(Assembler::IsCLd(instr));
+  DCHECK(is_uint8(offset));
+  uint16_t uimm8 = offset;
+  uint8_t uimm5 = ((uimm8 & 0x38) >> 1) | ((uimm8 & 0xc0) >> 6);
+  instr &= 0xe39f;
+  return instr | ((uimm5 & 0x3) << 5) | ((uimm5 & 0x1c) << 8);
 }
 
 static inline Instr SetAuipcOffset(int32_t offset, Instr instr) {
@@ -556,7 +589,7 @@ void Assembler::target_at_put(int pos, int target_pos, bool is_internal,
     } break;
     case AUIPC: {
       Instr instr_auipc = instr;
-      Instr instr_I = instr_at(pos + 4);
+      Instr instr_I = instr_at(pos + kInstrSize);
       DCHECK(IsJalr(instr_I) || IsAddi(instr_I));
 
       int64_t offset = target_pos - pos;
@@ -567,7 +600,7 @@ void Assembler::target_at_put(int pos, int target_pos, bool is_internal,
         DCHECK(IsJal(instr));
         DCHECK(JumpOffset(instr) == offset);
         instr_at_put(pos, instr);
-        instr_at_put(pos + 4, kNopByte);
+        instr_at_put(pos + kInstrSize, kNopByte);
       } else {
         DCHECK(is_int32(offset));
 
@@ -581,7 +614,7 @@ void Assembler::target_at_put(int pos, int target_pos, bool is_internal,
         const int kImm31_20Mask = ((1 << 12) - 1) << 20;
         const int kImm11_0Mask = ((1 << 12) - 1);
         instr_I = (instr_I & ~kImm31_20Mask) | ((Lo12 & kImm11_0Mask) << 20);
-        instr_at_put(pos + 4, instr_I);
+        instr_at_put(pos + kInstrSize, instr_I);
       }
     } break;
     case RO_C_J: {
@@ -743,7 +776,7 @@ int Assembler::CJumpOffset(Instr instr) {
   return imm12;
 }
 
-int Assembler::BrachlongOffset(Instr auipc, Instr instr_I) {
+int Assembler::BranchlongOffset(Instr auipc, Instr instr_I) {
   DCHECK(reinterpret_cast<Instruction*>(&instr_I)->InstructionType() ==
          InstructionBase::kIType);
   DCHECK(IsAuipc(auipc));
@@ -755,6 +788,16 @@ int Assembler::BrachlongOffset(Instr auipc, Instr instr_I) {
   return offset;
 }
 
+int Assembler::BranchlongOffset(Instr auipc, ShortInstr instr_I) {
+  DCHECK(reinterpret_cast<Instruction*>(&instr_I)->InstructionType() ==
+         InstructionBase::kCRType);
+  DCHECK(IsAuipc(auipc));
+  DCHECK_EQ((auipc & kRdFieldMask) >> kRdShift,
+            (instr_I & kRdFieldMask) >> kRdShift);
+  int32_t offset = AuipcOffset(auipc);
+  return offset;
+}
+
 int Assembler::PatchBranchlongOffset(Address pc, Instr instr_auipc,
                                      Instr instr_jalr, int32_t offset) {
   DCHECK(IsAuipc(instr_auipc));
@@ -763,16 +806,39 @@ int Assembler::PatchBranchlongOffset(Address pc, Instr instr_auipc,
   int32_t Lo12 = (int32_t)offset << 20 >> 20;
   CHECK(is_int32(offset));
   instr_at_put(pc, SetAuipcOffset(Hi20, instr_auipc));
-  instr_at_put(pc + 4, SetJalrOffset(Lo12, instr_jalr));
+  instr_at_put(pc + kInstrSize, SetJalrOffset(Lo12, instr_jalr));
   DCHECK(offset ==
-         BrachlongOffset(Assembler::instr_at(pc), Assembler::instr_at(pc + 4)));
-  return 2;
+         BranchlongOffset(Assembler::instr_at(pc), Assembler::instr_at(pc + kInstrSize)));
+  return 2 * kInstrSize;
+}
+
+int Assembler::PatchBranchlongOffset(Address pc, Instr instr_auipc,
+                                     ShortInstr instr_jalr, int32_t offset) {
+  DCHECK(IsAuipc(instr_auipc));
+  DCHECK(IsCJalr(instr_jalr) || IsCJr(instr_jalr));
+  int32_t Hi20 = (((int32_t)offset + 0x800) >> 12);
+  int32_t Lo12 = (int32_t)offset << 20 >> 20;
+  CHECK(is_int32(offset));
+  DCHECK_EQ(Lo12, 0);
+  USE(Lo12);
+  instr_at_put(pc, SetAuipcOffset(Hi20, instr_auipc));
+  DCHECK(offset ==
+         BranchlongOffset(Assembler::instr_at(pc), Assembler::instr_at(pc + kInstrSize)));
+  return kInstrSize + kShortInstrSize;
 }
 
 int Assembler::LdOffset(Instr instr) {
   DCHECK(IsLd(instr));
   int32_t imm12 = static_cast<int32_t>(instr & kImm12Mask) >> 20;
   return imm12;
+}
+
+uint16_t Assembler::CLdOffset(ShortInstr instr) {
+  DCHECK(IsCLd(instr));
+  uint16_t uimm3 = static_cast<uint16_t>((instr >> 7) & 0x38);
+  uint16_t uimm2 = static_cast<uint16_t>((instr << 1) & 0xc0);
+  uint16_t imm8 = uimm2 | uimm3;
+  return imm8;
 }
 
 int Assembler::JalrOffset(Instr instr) {
@@ -1127,7 +1193,8 @@ void Assembler::GenInstrCB(uint8_t funct3, Opcode opcode, Register rs1,
 
 void Assembler::GenInstrCBA(uint8_t funct3, uint8_t funct2, Opcode opcode,
                             Register rs1, uint8_t uimm6) {
-  DCHECK(is_uint3(funct3) && is_uint2(funct2) && is_uint6(uimm6));
+  //DCHECK(is_uint3(funct3) && is_uint2(funct2) && is_uint6(uimm6));
+  DCHECK(is_uint3(funct3) && is_uint2(funct2));
   ShortInstr instr = opcode | ((uimm6 & 0x1f) << 2) | ((uimm6 & 0x20) << 7) |
                      ((rs1.code() & 0x7) << kRvcRs1sShift) |
                      (funct3 << kRvcFunct3Shift) | (funct2 << 10);
@@ -1292,7 +1359,12 @@ uint64_t Assembler::branch_long_offset(Label* L) {
     }
   }
   int64_t offset = target_pos - pc_offset();
-  DCHECK_EQ(offset & 3, 0);
+  if(FLAG_riscv_c_extension) {
+    DCHECK_EQ(offset & 1, 0);
+  }
+  else {
+    DCHECK_EQ(offset & 3, 0);
+  }
 
   return static_cast<uint64_t>(offset);
 }
@@ -1326,6 +1398,7 @@ int32_t Assembler::branch_offset_helper(Label* L, OffsetSize bits) {
   DCHECK(is_intn(offset, bits));
   DCHECK_EQ(offset & 1, 0);
   DEBUG_PRINTF("\toffset = %d\n", offset);
+  //printf("branch_offset_helper: %d\n", offset);
   return offset;
 }
 
@@ -1361,8 +1434,9 @@ void Assembler::label_at_put(Label* L, int at_offset) {
 //===----------------------------------------------------------------------===//
 
 void Assembler::lui(Register rd, int32_t imm20) {
-  if(FLAG_riscv_c_extension && rd.code()!=0b010 && is_int6(imm20) && imm20!=0){
-    int8_t imm6=imm20;
+  if(FLAG_riscv_c_extension && rd.code() != 0b010 && is_int18(imm20) && 
+    (imm20 >> 12) != 0){
+    int8_t imm6 = imm20 >> 12;
     c_lui(rd, imm6);
   }
   else {
@@ -1377,8 +1451,10 @@ void Assembler::auipc(Register rd, int32_t imm20) {
 // Jumps
 
 void Assembler::jal(Register rd, int32_t imm21) {
-  if(FLAG_riscv_c_extension && rd==zero_reg && is_int12(imm21)) {
-    int16_t imm12=imm21;
+  if(FLAG_riscv_c_extension && rd == zero_reg && is_int12(imm21) && 
+    (imm21 & 0b01) == 0 && 
+    imm21 > 0) {//temporary solution
+    int16_t imm12 = imm21;
     c_j(imm12);
   }
   else {
@@ -1388,10 +1464,11 @@ void Assembler::jal(Register rd, int32_t imm21) {
 }
 
 void Assembler::jalr(Register rd, Register rs1, int16_t imm12) {
-  if(FLAG_riscv_c_extension && rd==zero_reg && rs1!=zero_reg && imm12==0) {
+  if(FLAG_riscv_c_extension && rd == zero_reg && rs1 != zero_reg && imm12 == 0) {
     c_jr(rs1);
   }
-  else if(FLAG_riscv_c_extension && rd.code()==0b01 && rs1!=zero_reg && imm12==0) {
+  else if(FLAG_riscv_c_extension && rd.code() == 0b01 && rs1 != zero_reg && 
+         imm12 == 0) {
     c_jalr(rs1);
   }
   else {
@@ -1403,23 +1480,19 @@ void Assembler::jalr(Register rd, Register rs1, int16_t imm12) {
 // Branches
 
 void Assembler::beq(Register rs1, Register rs2, int16_t imm13) {
-  if(FLAG_riscv_c_extension && rs2==zero_reg && is_int9(imm13) &&
-     (rs1.code() & 0b11000) == 0b01000) {
-    int16_t imm9=imm13;
+  if (isCExtApplicable1(rs1, rs2, imm13)) {
+    int16_t imm9 = imm13;
     c_beqz(rs1, imm9);
-  }
-  else {
+  } else {
     GenInstrBranchCC_rri(0b000, rs1, rs2, imm13);
   }
 }
 
 void Assembler::bne(Register rs1, Register rs2, int16_t imm13) {
-  if(FLAG_riscv_c_extension && rs2==zero_reg && is_int9(imm13) &&
-     (rs1.code() & 0b11000) == 0b01000) {
-    int16_t imm9=imm13;
+  if (isCExtApplicable1(rs1, rs2, imm13)) {
+    int16_t imm9 = imm13;
     c_bnez(rs1, imm9);
-  }
-  else {
+  } else {
     GenInstrBranchCC_rri(0b001, rs1, rs2, imm13);
   }
 }
@@ -1451,16 +1524,14 @@ void Assembler::lh(Register rd, Register rs1, int16_t imm12) {
 }
 
 void Assembler::lw(Register rd, Register rs1, int16_t imm12) {
-  if(FLAG_riscv_c_extension && rs1.code()==0b010 && rd!=zero_reg && is_uint8(imm12)) {
-    uint16_t uimm8=imm12;
+  if(FLAG_riscv_c_extension && rs1.code() == 0b010 && rd != zero_reg && 
+    is_uint8(imm12) && (imm12 & 0b011) == 0) {
+    uint16_t uimm8 = imm12;
     c_lwsp(rd, uimm8);
-  }
-  else if(FLAG_riscv_c_extension && is_uint7(imm12) && (rd.code() & 0b11000) == 0b01000 &&
-     (rs1.code() & 0b11000) == 0b01000) {
-    uint16_t uimm7=imm12;
+  } else if (isCExtApplicable2(rd, rs1, imm12)) {
+    uint16_t uimm7 = imm12;
     c_lw(rd, rs1, uimm7);
-  }
-  else {
+  } else {
     GenInstrLoad_ri(0b010, rd, rs1, imm12);
   }
 }
@@ -1484,16 +1555,14 @@ void Assembler::sh(Register source, Register base, int16_t imm12) {
 }
 
 void Assembler::sw(Register source, Register base, int16_t imm12) {
-  if(FLAG_riscv_c_extension && base.code()==0b010 && is_uint8(imm12)) {
-    uint16_t uimm8=imm12;
+  if(FLAG_riscv_c_extension && base.code() == 0b010 && is_uint8(imm12) && 
+    (imm12 & 0b011) == 0) {
+    uint16_t uimm8 = imm12;
     c_swsp(source, uimm8);
-  }
-  else if(FLAG_riscv_c_extension && is_uint7(imm12) && (source.code() & 0b11000) == 0b01000 &&
-     (base.code() & 0b11000) == 0b01000) {
-    uint16_t uimm7=imm12;
+  } else if (isCExtApplicable2(source, base, imm12)) {
+    uint16_t uimm7 = imm12;
     c_sw(source, base, uimm7);
-  }
-  else {
+  } else {
     GenInstrStore_rri(0b010, base, source, imm12);
   }
 }
@@ -1501,22 +1570,25 @@ void Assembler::sw(Register source, Register base, int16_t imm12) {
 // Arithmetic with immediate
 
 void Assembler::addi(Register rd, Register rs1, int16_t imm12) {
-  if(FLAG_riscv_c_extension && rs1.code()==0b010 && is_uint10(imm12) && 
-     imm12!=0 && (rd.code() & 0b11000) == 0b01000) {
-    uint16_t uimm10=imm12;
+  if(FLAG_riscv_c_extension && rs1.code() == 0b010 && is_uint10(imm12) && 
+     imm12 != 0 && (rd.code() & 0b11000) == 0b01000 && (imm12 & 0b011) == 0 && 
+     (rd.code() & 0xf0) == 0) {
+    uint16_t uimm10 = imm12;
     c_addi4spn(rd,uimm10);
   }
-  else if(FLAG_riscv_c_extension && rs1==zero_reg && is_int6(imm12)) {
-    int8_t imm6=imm12;
+  else if(FLAG_riscv_c_extension && rs1 == zero_reg && is_int6(imm12)) {
+    int8_t imm6 = imm12;
     c_li(rd,imm6);
   }
-  else if(FLAG_riscv_c_extension && rd.code()==rs1.code() && 
-          rd.code()==0b010 && is_int10(imm12) && imm12!=0) {
-    int16_t imm10=imm12;
+  else if(FLAG_riscv_c_extension && rd.code() == rs1.code() && 
+          rd.code() == 0b010 && is_int10(imm12) && imm12 != 0 && 
+          (imm12 & 0b01111) == 0) {
+    int16_t imm10 = imm12;
     c_addi16sp(imm10);
   }
-  else if(FLAG_riscv_c_extension && rd.code()==rs1.code() && is_int6(imm12)) {
-    int8_t imm6=imm12;
+  else if(FLAG_riscv_c_extension && rd.code() == rs1.code() && is_int6(imm12) &&
+          rd != zero_reg && imm12 != 0) {
+    int8_t imm6 = imm12;
     c_addi(rd, imm6);
   }
   else {
@@ -1541,9 +1613,10 @@ void Assembler::ori(Register rd, Register rs1, int16_t imm12) {
 }
 
 void Assembler::andi(Register rd, Register rs1, int16_t imm12) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && is_uint6(imm12)) {
-    uint8_t uimm6=imm12;
-    c_andi(rd,uimm6);
+  if(FLAG_riscv_c_extension && rd.code() == rs1.code() && is_int6(imm12) &&
+     (rd.code() & 0b11000) == 0b01000 && (rd.code() & 0xf0) == 0) {
+    int8_t imm6 = imm12;
+    c_andi(rd,imm6);
   }
   else {
     GenInstrALU_ri(0b111, rd, rs1, imm12);
@@ -1552,7 +1625,7 @@ void Assembler::andi(Register rd, Register rs1, int16_t imm12) {
 
 void Assembler::slli(Register rd, Register rs1, uint8_t shamt) {
   if(FLAG_riscv_c_extension && rd.code()==rs1.code() && is_uint6(shamt)) {
-    uint8_t uimm6=shamt;
+    uint8_t uimm6 = shamt;
     c_slli(rd,uimm6);
   }
   else {
@@ -1561,23 +1634,19 @@ void Assembler::slli(Register rd, Register rs1, uint8_t shamt) {
 }
 
 void Assembler::srli(Register rd, Register rs1, uint8_t shamt) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && is_uint6(shamt) &&
-     (rd.code() & 0b11000) == 0b01000) {
-    uint8_t uimm6=shamt;
+  if (isCExtApplicable4(rd, rs1, shamt)) {
+    uint8_t uimm6 = shamt;
     c_srli(rs1, uimm6);
-  }
-  else {
+  } else {
     GenInstrShift_ri(0, 0b101, rd, rs1, shamt & 0x3f);
   }
 }
 
 void Assembler::srai(Register rd, Register rs1, uint8_t shamt) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && is_uint6(shamt) &&
-     (rd.code() & 0b11000) == 0b01000) {
-    uint8_t uimm6=shamt;
+  if (isCExtApplicable4(rd, rs1, shamt)) {
+    uint8_t uimm6 = shamt;
     c_srai(rs1, uimm6);
-  }
-  else {
+  } else {
     GenInstrShift_ri(1, 0b101, rd, rs1, shamt & 0x3f);
   }
 }
@@ -1585,10 +1654,11 @@ void Assembler::srai(Register rd, Register rs1, uint8_t shamt) {
 // Arithmetic
 
 void Assembler::add(Register rd, Register rs1, Register rs2) {
-  if(FLAG_riscv_c_extension && rs1==zero_reg && rs2!=zero_reg) {
+  if(FLAG_riscv_c_extension && rs1 == zero_reg && rs2 != zero_reg) {
     c_mv(rd, rs2);
   }
-  else if(FLAG_riscv_c_extension && rd.code()==rs1.code() && rd!=zero_reg && rs2!=zero_reg) {
+  else if(FLAG_riscv_c_extension && rd.code() == rs1.code() && 
+         rd != zero_reg && rs2 != zero_reg) {
     c_add(rd, rs2);
   }
   else {
@@ -1597,11 +1667,9 @@ void Assembler::add(Register rd, Register rs1, Register rs2) {
 }
 
 void Assembler::sub(Register rd, Register rs1, Register rs2) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && (rd.code() & 0b11000) == 0b01000 &&
-     (rs2.code() & 0b11000) == 0b01000) {
+  if (isCExtApplicable5(rd, rs1, rs2)) {
     c_sub(rd, rs2);
-  }
-  else {
+  } else {
     GenInstrALU_rr(0b0100000, 0b000, rd, rs1, rs2);
   }
 }
@@ -1619,11 +1687,9 @@ void Assembler::sltu(Register rd, Register rs1, Register rs2) {
 }
 
 void Assembler::xor_(Register rd, Register rs1, Register rs2) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && (rd.code() & 0b11000) == 0b01000 &&
-     (rs2.code() & 0b11000) == 0b01000) {
+  if (isCExtApplicable5(rd, rs1, rs2)) {
     c_xor(rd, rs2);
-  }
-  else {
+  } else {
     GenInstrALU_rr(0b0000000, 0b100, rd, rs1, rs2);
   }
 }
@@ -1637,21 +1703,17 @@ void Assembler::sra(Register rd, Register rs1, Register rs2) {
 }
 
 void Assembler::or_(Register rd, Register rs1, Register rs2) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && (rd.code() & 0b11000) == 0b01000 &&
-     (rs2.code() & 0b11000) == 0b01000) {
+  if (isCExtApplicable5(rd, rs1, rs2)) {
     c_or(rd, rs2);
-  }
-  else {
+  } else {
     GenInstrALU_rr(0b0000000, 0b110, rd, rs1, rs2);
   }
 }
 
 void Assembler::and_(Register rd, Register rs1, Register rs2) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && (rd.code() & 0b11000) == 0b01000 &&
-     (rs2.code() & 0b11000) == 0b01000) {
+  if (isCExtApplicable5(rd, rs1, rs2)) {
     c_and(rd, rs2);
-  }
-  else {
+  } else {
     GenInstrALU_rr(0b0000000, 0b111, rd, rs1, rs2);
   }
 }
@@ -1724,38 +1786,34 @@ void Assembler::lwu(Register rd, Register rs1, int16_t imm12) {
 }
 
 void Assembler::ld(Register rd, Register rs1, int16_t imm12) {
-  if(FLAG_riscv_c_extension && rs1.code()==0b010 && rd!=zero_reg && is_uint9(imm12)) {
-    uint16_t uimm9=imm12;
+  if(FLAG_riscv_c_extension && rs1.code() == 0b010 && rd != zero_reg && 
+    is_uint9(imm12) && (imm12 & 0b0111) == 0) {
+    uint16_t uimm9 = imm12;
     c_ldsp(rd, uimm9);
-  }
-  else if(FLAG_riscv_c_extension && is_uint8(imm12) && (rd.code() & 0b11000) == 0b01000 &&
-     (rs1.code() & 0b11000) == 0b01000) {
-    uint16_t uimm8=imm12;
+  } else if (isCExtApplicable6(rd, rs1, imm12) && imm12 != 0) {
+    uint16_t uimm8 = imm12;
     c_ld(rd, rs1, uimm8);
-  }
-  else {
+  } else {
     GenInstrLoad_ri(0b011, rd, rs1, imm12);
   }
 }
 
 void Assembler::sd(Register source, Register base, int16_t imm12) {
-  if(FLAG_riscv_c_extension && base.code()==0b010 && is_uint9(imm12)) {
-    uint16_t uimm9=imm12;
+  if (isCExtApplicable3(base, imm12)) {
+    uint16_t uimm9 = imm12;
     c_sdsp(source, uimm9);
-  }
-  else if(FLAG_riscv_c_extension && is_uint8(imm12) && (source.code() & 0b11000) == 0b01000 &&
-     (base.code() & 0b11000) == 0b01000) {
-    uint16_t uimm8=imm12;
+  } else if (isCExtApplicable6(source, base, imm12)) {
+    uint16_t uimm8 = imm12;
     c_sd(source, base, uimm8);
-  }
-  else {
+  } else {
     GenInstrStore_rri(0b011, base, source, imm12);
   }
 }
 
 void Assembler::addiw(Register rd, Register rs1, int16_t imm12) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && rd!=zero_reg && is_int6(imm12)) {
-    int8_t imm6=imm12;
+  if(FLAG_riscv_c_extension && rd.code() == rs1.code() && rd != zero_reg && 
+    is_int6(imm12)) {
+    int8_t imm6 = imm12;
     c_addiw(rd, imm6);
   }
   else {
@@ -1776,21 +1834,17 @@ void Assembler::sraiw(Register rd, Register rs1, uint8_t shamt) {
 }
 
 void Assembler::addw(Register rd, Register rs1, Register rs2) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && (rd.code() & 0b11000) == 0b01000 &&
-     (rs2.code() & 0b11000) == 0b01000) {
+  if (isCExtApplicable5(rd, rs1, rs2)) {
     c_addw(rd, rs2);
-  }
-  else {
+  } else {
     GenInstrALUW_rr(0b0000000, 0b000, rd, rs1, rs2);
   }
 }
 
 void Assembler::subw(Register rd, Register rs1, Register rs2) {
-  if(FLAG_riscv_c_extension && rd.code()==rs1.code() && (rd.code() & 0b11000) == 0b01000 &&
-     (rs2.code() & 0b11000) == 0b01000) {
+  if (isCExtApplicable5(rd, rs1, rs2)) {
     c_subw(rd, rs2);
-  }
-  else {
+  } else {
     GenInstrALUW_rr(0b0100000, 0b000, rd, rs1, rs2);
   }
 }
@@ -2110,31 +2164,26 @@ void Assembler::fcvt_s_lu(FPURegister rd, Register rs1, RoundingMode frm) {
 // RV32D Standard Extension
 
 void Assembler::fld(FPURegister rd, Register rs1, int16_t imm12) {
-  if(FLAG_riscv_c_extension && is_uint9(imm12) && rs1.code()==0b010) {
-    uint16_t uimm9=imm12;
+  if(FLAG_riscv_c_extension && is_uint9(imm12) && rs1.code()==0b010 && 
+    (imm12 & 0b0111) == 0) {
+    uint16_t uimm9 = imm12;
     c_fldsp(rd,uimm9);
-  }
-  else if(FLAG_riscv_c_extension && is_uint8(imm12) && 
-    (rd.code() & 0b11000) == 0b01000 && (rs1.code() & 0b11000) == 0b01000) {
-    uint16_t uimm8=imm12;
+  } else if (isCExtApplicable7(rd, rs1, imm12)) {
+    uint16_t uimm8 = imm12;
     c_fld(rd, rs1, uimm8);
-  }
-  else {
+  } else {
     GenInstrLoadFP_ri(0b011, rd, rs1, imm12);
   }
 }
 
 void Assembler::fsd(FPURegister source, Register base, int16_t imm12) {
-  if(FLAG_riscv_c_extension && base.code()==0b010 && is_uint9(imm12)) {
-    uint16_t uimm9=imm12;
+  if (isCExtApplicable3(base, imm12)) {
+    uint16_t uimm9 = imm12;
     c_fsdsp(source, uimm9);
-  }
-  else if(FLAG_riscv_c_extension && is_uint8(imm12) && 
-    (source.code() & 0b11000) == 0b01000 && (base.code() & 0b11000) == 0b01000) {
-    uint16_t uimm8=imm12;
+  } else if (isCExtApplicable7(source, base, imm12)) {
+    uint16_t uimm8 = imm12;
     c_fsd(source, base, uimm8);
-  }
-  else {
+  } else {
     GenInstrStoreFP_rri(0b011, base, source, imm12);
   }
 }
@@ -2291,9 +2340,10 @@ void Assembler::c_addi16sp(int16_t imm10) {
 }
 
 void Assembler::c_addi4spn(Register rd, uint16_t uimm10) {
-  DCHECK(is_uint10(uimm10) && (uimm10 != 0));
+  DCHECK(is_uint10(uimm10));
   uint8_t uimm8 = ((uimm10 & 0x4) >> 1) | ((uimm10 & 0x8) >> 3) |
                   ((uimm10 & 0x30) << 2) | ((uimm10 & 0x3c0) >> 4);
+  DCHECK(uimm8 != 0);
   GenInstrCIW(0b000, C0, rd, uimm8);
 }
 
@@ -2333,7 +2383,7 @@ void Assembler::c_ldsp(Register rd, uint16_t uimm9) {
 void Assembler::c_jr(Register rs1) {
   DCHECK(rs1 != zero_reg);
   GenInstrCR(0b1000, C2, rs1, zero_reg);
-  BlockTrampolinePoolFor(1);
+  BlockTrampolinePoolForShort(1);
 }
 
 void Assembler::c_mv(Register rd, Register rs2) {
@@ -2346,7 +2396,7 @@ void Assembler::c_ebreak() { GenInstrCR(0b1001, C2, zero_reg, zero_reg); }
 void Assembler::c_jalr(Register rs1) {
   DCHECK(rs1 != zero_reg);
   GenInstrCR(0b1001, C2, rs1, zero_reg);
-  BlockTrampolinePoolFor(1);
+  BlockTrampolinePoolForShort(1);
 }
 
 void Assembler::c_add(Register rd, Register rs2) {
@@ -2466,7 +2516,7 @@ void Assembler::c_j(int16_t imm12) {
                    ((imm12 & 0x40) >> 1) | ((imm12 & 0x20) >> 5) |
                    ((imm12 & 0x10) << 5) | (imm12 & 0xe);
   GenInstrCJ(0b101, C1, uimm11);
-  BlockTrampolinePoolFor(1);
+  BlockTrampolinePoolForShort(1);
 }
 
 // CB Instructions
@@ -2495,9 +2545,80 @@ void Assembler::c_srai(Register rs1, uint8_t uimm6) {
   GenInstrCBA(0b100, 0b01, C1, rs1, uimm6);
 }
 
-void Assembler::c_andi(Register rs1, uint8_t uimm6) {
-  DCHECK(((rs1.code() & 0b11000) == 0b01000) && is_uint6(uimm6));
+void Assembler::c_andi(Register rs1, int8_t imm6) {
+  DCHECK(((rs1.code() & 0b11000) == 0b01000) && is_int6(imm6));
+  uint8_t uimm6 = imm6;
   GenInstrCBA(0b100, 0b10, C1, rs1, uimm6);
+}
+
+bool Assembler::isCExtApplicable1(Register reg1, Register reg2, int16_t imm) {
+  if (FLAG_riscv_c_extension && reg2 == zero_reg && is_int9(imm) &&
+      (reg1.code() & 0b11000) == 0b01000 && (reg1.code() & 0xf0) == 0 && 
+      (imm & 0b01) == 0 && imm > 0) {//temporary solution
+    return true;
+  }
+  return false;
+}
+
+bool Assembler::isCExtApplicable2(Register reg1, Register reg2, int16_t imm) {
+  if (FLAG_riscv_c_extension && is_uint7(imm) && (imm & 0b011) == 0 && 
+      (reg1.code() & 0b11000) == 0b01000 &&
+      (reg1.code() & 0xf0) == 0 &&
+      (reg2.code() & 0b11000) == 0b01000 && 
+      (reg2.code() & 0xf0) == 0) {
+    return true;
+  }
+  return false;
+}
+
+bool Assembler::isCExtApplicable3(Register reg, int16_t imm) {
+  if (FLAG_riscv_c_extension && reg.code() == 0b010 && is_uint9(imm) && 
+      (imm & 0b0111) == 0) {
+    return true;
+  }
+  return false;
+}
+
+bool Assembler::isCExtApplicable4(Register reg1, Register reg2, uint8_t imm) {
+  if (FLAG_riscv_c_extension && reg1.code() == reg2.code() && is_uint6(imm) &&
+      (reg1.code() & 0b11000) == 0b01000 && (reg1.code() & 0xf0) == 0) {
+    return true;
+  }
+  return false;
+}
+
+bool Assembler::isCExtApplicable5(Register reg1, Register reg2, Register reg3) {
+  if (FLAG_riscv_c_extension && reg1.code() == reg2.code() &&
+      (reg1.code() & 0b11000) == 0b01000 &&
+      (reg1.code() & 0xf0) == 0 &&
+      (reg3.code() & 0b11000) == 0b01000 && 
+      (reg3.code() & 0xf0) == 0) {
+    return true;
+  }
+  return false;
+}
+
+bool Assembler::isCExtApplicable6(Register reg1, Register reg2, int16_t imm) {
+  if (FLAG_riscv_c_extension && is_uint8(imm) && (imm & 0b0111) == 0 && 
+      (reg1.code() & 0b11000) == 0b01000 &&
+      (reg1.code() & 0xf0) == 0 &&
+      (reg2.code() & 0b11000) == 0b01000 && 
+      (reg2.code() & 0xf0) == 0) {
+    return true;
+  }
+  return false;
+}
+
+bool Assembler::isCExtApplicable7(FPURegister reg1, Register reg2,
+                                  int16_t imm) {
+  if (FLAG_riscv_c_extension && is_uint8(imm) && (imm & 0b0111) == 0 && 
+      (reg1.code() & 0b11000) == 0b01000 &&
+      (reg1.code() & 0xf0) == 0 &&
+      (reg2.code() & 0b11000) == 0b01000 && 
+      (reg2.code() & 0xf0) == 0) {
+    return true;
+  }
+  return false;
 }
 
 // Privileged
@@ -2824,12 +2945,17 @@ void Assembler::li_ptr(Register rd, int64_t imm) {
   int64_t high_31 = (imm >> 17) & 0x7fffffff;   // 31 bits
   int64_t high_20 = ((high_31 + 0x800) >> 12);  // 19 bits
   int64_t low_12 = high_31 & 0xfff;             // 12 bits
+  bool c_ext=FLAG_riscv_c_extension;
+  FLAG_riscv_c_extension=false;
   lui(rd, (int32_t)high_20);
   addi(rd, rd, low_12);  // 31 bits in rd.
   slli(rd, rd, 11);      // Space for next 11 bis
   ori(rd, rd, b11);      // 11 bits are put in. 42 bit in rd
   slli(rd, rd, 6);       // Space for next 6 bits
   ori(rd, rd, a6);       // 6 bits are put in. 48 bis in rd
+  if(c_ext){
+    FLAG_riscv_c_extension=true;
+  }
 }
 
 void Assembler::li_constant(Register rd, int64_t imm) {
@@ -2956,7 +3082,7 @@ void Assembler::RelocateRelativeReference(RelocInfo::Mode rmode, Address pc,
   DCHECK(RelocInfo::IsRelativeCodeTarget(rmode));
   if (IsAuipc(instr) && IsJalr(instr1)) {
     int32_t imm;
-    imm = BrachlongOffset(instr, instr1);
+    imm = BranchlongOffset(instr, instr1);
     imm -= pc_delta;
     PatchBranchlongOffset(pc, instr, instr1, imm);
     return;
@@ -3060,13 +3186,21 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
 
 void Assembler::BlockTrampolinePoolFor(int instructions) {
   DEBUG_PRINTF("\tBlockTrampolinePoolFor %d", instructions);
-  CheckTrampolinePoolQuick(instructions);
+  CheckTrampolinePoolQuick(kInstrSize, instructions);
   DEBUG_PRINTF("\tpc_offset %d,BlockTrampolinePoolBefore %d\n", pc_offset(),
                pc_offset() + instructions * kInstrSize);
   BlockTrampolinePoolBefore(pc_offset() + instructions * kInstrSize);
 }
 
-void Assembler::CheckTrampolinePool() {
+void Assembler::BlockTrampolinePoolForShort(int instructions) {
+  DEBUG_PRINTF("\tBlockTrampolinePoolFor %d", instructions);
+  CheckTrampolinePoolQuick(kShortInstrSize, instructions);
+  DEBUG_PRINTF("\tpc_offset %d,BlockTrampolinePoolBefore %d\n", pc_offset(),
+               pc_offset() + instructions * kShortInstrSize);
+  BlockTrampolinePoolBefore(pc_offset() + instructions * kShortInstrSize);
+}
+
+void Assembler::CheckTrampolinePool(int instrsize) {
   // Some small sequences of instructions must not be broken up by the
   // insertion of a trampoline pool; such sequences are protected by setting
   // either trampoline_pool_blocked_nesting_ or no_trampoline_pool_before_,
@@ -3081,7 +3215,7 @@ void Assembler::CheckTrampolinePool() {
     // Emission is currently blocked; make sure we try again as soon as
     // possible.
     if (trampoline_pool_blocked_nesting_ > 0) {
-      next_buffer_check_ = pc_offset() + kInstrSize;
+      next_buffer_check_ = pc_offset() + instrsize;
     } else {
       next_buffer_check_ = no_trampoline_pool_before_;
     }
@@ -3101,6 +3235,8 @@ void Assembler::CheckTrampolinePool() {
       j(&after_pool);
 
       int pool_start = pc_offset();
+      bool c_ext = FLAG_riscv_c_extension;
+      FLAG_riscv_c_extension=false;
       for (int i = 0; i < unbound_labels_count_; i++) {
         int64_t imm64;
         imm64 = branch_long_offset(&after_pool);
@@ -3109,6 +3245,9 @@ void Assembler::CheckTrampolinePool() {
         int32_t Lo12 = (int32_t)imm64 << 20 >> 20;
         auipc(t6, Hi20);  // Read PC + Hi20 into t6
         jr(t6, Lo12);     // jump PC + Hi20 + Lo12
+      }
+      if(c_ext){
+        FLAG_riscv_c_extension=true;
       }
       // If unbound_labels_count_ is big enough, label after_pool will
       // need a trampoline too, so we must create the trampoline before
@@ -3136,22 +3275,41 @@ void Assembler::set_target_address_at(Address pc, Address constant_pool,
                                       ICacheFlushMode icache_flush_mode) {
   Instr* instr = reinterpret_cast<Instr*>(pc);
   if (IsAuipc(*instr)) {
-    if (IsLd(*reinterpret_cast<Instr*>(pc + 4))) {
+    if (IsLd(*reinterpret_cast<Instr*>(pc + kInstrSize))) {
       int32_t Hi20 = AuipcOffset(*instr);
-      int32_t Lo12 = LdOffset(*reinterpret_cast<Instr*>(pc + 4));
+      int32_t Lo12 = LdOffset(*reinterpret_cast<Instr*>(pc + kInstrSize));
       Memory<Address>(pc + Hi20 + Lo12) = target;
       if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
         FlushInstructionCache(pc + Hi20 + Lo12, 2 * kInstrSize);
       }
-    } else {
-      DCHECK(IsJalr(*reinterpret_cast<Instr*>(pc + 4)));
-      int64_t imm = (int64_t)target - (int64_t)pc;
-      Instr instr = instr_at(pc);
-      Instr instr1 = instr_at(pc + 1 * kInstrSize);
-      DCHECK(is_int32(imm));
-      int num = PatchBranchlongOffset(pc, instr, instr1, (int32_t)imm);
+    }
+    else if (IsCLd(*reinterpret_cast<ShortInstr*>(pc + kInstrSize))) {
+      int32_t Hi20 = AuipcOffset(*instr);
+      int32_t Lo12 = CLdOffset(*reinterpret_cast<ShortInstr*>(pc + kInstrSize));
+      Memory<Address>(pc + Hi20 + Lo12) = target;
       if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-        FlushInstructionCache(pc, num * kInstrSize);
+        FlushInstructionCache(pc + Hi20 + Lo12, 2 * kInstrSize);
+      }
+    }
+    else if (IsCJalr(*reinterpret_cast<ShortInstr*>(pc + kInstrSize)) || 
+             IsCJr(*reinterpret_cast<ShortInstr*>(pc + kInstrSize))) {
+      int64_t imm = (int64_t)target - (int64_t)pc;
+      ShortInstr instr1 = short_instr_at(pc + kInstrSize);
+      DCHECK(is_int32(imm));
+      int length = PatchBranchlongOffset(pc, *instr, instr1, (int32_t)imm);
+      if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
+        FlushInstructionCache(pc, length);
+      }
+    }
+    else {
+      DCHECK(IsJalr(*reinterpret_cast<Instr*>(pc + kInstrSize)));
+      int64_t imm = (int64_t)target - (int64_t)pc;
+      //Instr instr = instr_at(pc); //redundant
+      Instr instr1 = instr_at(pc + kInstrSize);
+      DCHECK(is_int32(imm));
+      int length = PatchBranchlongOffset(pc, *instr, instr1, (int32_t)imm);
+      if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
+        FlushInstructionCache(pc, length);
       }
     }
   } else {
@@ -3162,14 +3320,14 @@ void Assembler::set_target_address_at(Address pc, Address constant_pool,
 Address Assembler::target_address_at(Address pc, Address constant_pool) {
   Instr* instr = reinterpret_cast<Instr*>(pc);
   if (IsAuipc(*instr)) {
-    if (IsLd(*reinterpret_cast<Instr*>(pc + 4))) {
+    if (IsLd(*reinterpret_cast<Instr*>(pc + kInstrSize))) {
       int32_t Hi20 = AuipcOffset(*instr);
-      int32_t Lo12 = LdOffset(*reinterpret_cast<Instr*>(pc + 4));
+      int32_t Lo12 = LdOffset(*reinterpret_cast<Instr*>(pc + kInstrSize));
       return Memory<Address>(pc + Hi20 + Lo12);
     } else {
-      DCHECK(IsJalr(*reinterpret_cast<Instr*>(pc + 4)));
+      DCHECK(IsJalr(*reinterpret_cast<Instr*>(pc + kInstrSize)));
       int32_t Hi20 = AuipcOffset(*instr);
-      int32_t Lo12 = JalrOffset(*reinterpret_cast<Instr*>(pc + 4));
+      int32_t Lo12 = JalrOffset(*reinterpret_cast<Instr*>(pc + kInstrSize));
       return pc + Hi20 + Lo12;
     }
 
@@ -3323,8 +3481,13 @@ void ConstantPool::EmitPrologue(Alignment require_alignment) {
   const int marker_size = 1;
   int word_count =
       ComputeSize(Jump::kOmitted, require_alignment) / kInt32Size - marker_size;
+  bool c_ext = FLAG_riscv_c_extension;
+  FLAG_riscv_c_extension = false;
   assm_->ld(zero_reg, zero_reg, word_count);
   assm_->EmitPoolGuard();
+  if(c_ext) {
+    FLAG_riscv_c_extension = true;
+  }
 }
 
 int ConstantPool::PrologueSize(Jump require_jump) const {
@@ -3341,11 +3504,22 @@ void ConstantPool::SetLoadOffsetToConstPoolEntry(int load_offset,
                                                  Instruction* entry_offset,
                                                  const ConstantPoolKey& key) {
   Instr instr_auipc = assm_->instr_at(load_offset);
-  Instr instr_ld = assm_->instr_at(load_offset + 4);
+  Instr instr_ld = assm_->instr_at(load_offset + kInstrSize);
+  ShortInstr instr_c_ld = assm_->short_instr_at(load_offset + kInstrSize);
   // Instruction to patch must be 'ld rd, offset(rd)' with 'offset == 0'.
   DCHECK(assm_->IsAuipc(instr_auipc));
-  DCHECK(assm_->IsLd(instr_ld));
-  DCHECK_EQ(assm_->LdOffset(instr_ld), 0);
+  if(FLAG_riscv_c_extension) {
+    DCHECK(assm_->IsLd(instr_ld) || assm_->IsCLd(instr_c_ld));
+  }
+  else {
+    DCHECK(assm_->IsLd(instr_ld));
+  }
+  if(assm_->IsLd(instr_ld)) {
+    DCHECK_EQ(assm_->LdOffset(instr_ld), 0);
+  }
+  else {
+    DCHECK_EQ(assm_->CLdOffset(instr_c_ld), 0);
+  }
   DCHECK_EQ(assm_->AuipcOffset(instr_auipc), 0);
   int32_t distance = static_cast<int32_t>(
       reinterpret_cast<Address>(entry_offset) -
@@ -3354,7 +3528,12 @@ void ConstantPool::SetLoadOffsetToConstPoolEntry(int load_offset,
   int32_t Lo12 = (int32_t)distance << 20 >> 20;
   CHECK(is_int32(distance));
   assm_->instr_at_put(load_offset, SetAuipcOffset(Hi20, instr_auipc));
-  assm_->instr_at_put(load_offset + 4, SetLdOffset(Lo12, instr_ld));
+  if(assm_->IsLd(instr_ld)) {
+    assm_->instr_at_put(load_offset + kInstrSize, SetLdOffset(Lo12, instr_ld));
+  }
+  else {
+    assm_->instr_at_put(load_offset + kInstrSize, SetCLdOffset(Lo12, instr_c_ld));
+  }
 }
 
 void ConstantPool::Check(Emission force_emit, Jump require_jump,

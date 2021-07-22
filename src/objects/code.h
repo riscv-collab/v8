@@ -223,6 +223,7 @@ class Code : public HeapObject {
 
   // The metadata section is aligned to this value.
   static constexpr int kMetadataAlignment = kIntSize;
+  static constexpr int kShortMetadataAlignment = kIntSize/2;
 
   // [safepoint_table_offset]: The offset where the safepoint table starts.
   inline int safepoint_table_offset() const { return 0; }

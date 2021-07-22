@@ -251,9 +251,21 @@ Handle<Code> Assembler::relative_code_target_object_handle_at(
     Address pc) const {
   Instr instr1 = Assembler::instr_at(pc);
   Instr instr2 = Assembler::instr_at(pc + kInstrSize);
+  ShortInstr instr3 = Assembler::short_instr_at(pc + kInstrSize);
   DCHECK(IsAuipc(instr1));
-  DCHECK(IsJalr(instr2));
-  int32_t code_target_index = BrachlongOffset(instr1, instr2);
+  if(FLAG_riscv_c_extension) {
+    DCHECK(IsJalr(instr2) || IsCJalr(instr3) || IsCJr(instr3));
+  }
+  else {
+    DCHECK(IsJalr(instr2));
+  }
+  int32_t code_target_index = -1;
+  if(IsJalr(instr2)) {
+    code_target_index = BranchlongOffset(instr1, instr2);
+  }
+  else {
+    code_target_index = BranchlongOffset(instr1, instr3);
+  }
   return GetCodeTarget(code_target_index);
 }
 
@@ -311,7 +323,7 @@ void Assembler::emit(Instr x) {
   DEBUG_PRINTF("%p: ", pc_);
   disassembleInstr(x);
   EmitHelper(x);
-  CheckTrampolinePoolQuick();
+  CheckTrampolinePoolQuick(kInstrSize);
 }
 
 void Assembler::emit(ShortInstr x) {
@@ -321,7 +333,7 @@ void Assembler::emit(ShortInstr x) {
   DEBUG_PRINTF("%p: ", pc_);
   disassembleInstr(x);
   EmitHelper(x);
-  CheckTrampolinePoolQuick();
+  CheckTrampolinePoolQuick(kShortInstrSize);
 }
 
 void Assembler::emit(uint64_t data) {
