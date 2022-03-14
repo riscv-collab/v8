@@ -23,8 +23,8 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
-      - name: Run pwd
-        run: pwd
+      - name: git clone depot_tools
+        run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
