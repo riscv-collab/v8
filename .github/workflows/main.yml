@@ -22,11 +22,25 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: Cache depot_tools v8
+        uses: actions/cache@v2
+        with:
+          path: |
+            $GITHUB_WORKSPACE/depot_tools
+            $GITHUB_WORKSPACE/v8
+          key: ${{ runner.os }}-build-v8
 
       - name: git clone depot_tools
         run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - name: fetch v8
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools fetch v8
+
+      - name: git checkout
+        run: cd v8 && git log -1
+
+      - name: echo GITHUB_REF
+        run: echo $GITHUB_REF && echo $GITHUB_SHA
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
