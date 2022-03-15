@@ -107,20 +107,20 @@ static inline bool isSnan(float fp) { return !QUIET_BIT_S(fp); }
 static inline bool isSnan(double fp) { return !QUIET_BIT_D(fp); }
 #undef QUIET_BIT_S
 #undef QUIET_BIT_D
-
+//RV32Gtodo: in RV32 mul's operands are 32bit
 inline uint64_t mulhu(uint64_t a, uint64_t b) {
-  __uint128_t full_result = ((__uint128_t)a) * ((__uint128_t)b);
-  return full_result >> 64;
+  uint64_t full_result = ((uint64_t)a) * ((uint64_t)b);
+  return full_result;
 }
 
 inline int64_t mulh(int64_t a, int64_t b) {
-  __int128_t full_result = ((__int128_t)a) * ((__int128_t)b);
-  return full_result >> 64;
+  int64_t full_result = ((int64_t)a) * ((int64_t)b);
+  return full_result;
 }
 
 inline int64_t mulhsu(int64_t a, uint64_t b) {
-  __int128_t full_result = ((__int128_t)a) * ((__uint128_t)b);
-  return full_result >> 64;
+  int64_t full_result = ((int64_t)a) * ((uint64_t)b);
+  return full_result;
 }
 
 // Floating point helpers
@@ -381,7 +381,12 @@ class Simulator : public SimulatorBase {
   void clear_fflags(int32_t flags) { clear_csr_bits(csr_fflags, flags); }
 
   // RVV CSR
-  __int128_t get_vregister(int vreg) const;
+#ifdef __SIZEOF_INT128__
+  __int128 get_vregister(int vreg) const;
+#else
+    // do some fallback stuff here
+  int64_t get_vregister(int vreg) const;
+#endif
   inline uint64_t rvv_vlen() const { return kRvvVLEN; }
   inline uint64_t rvv_vtype() const { return vtype_; }
   inline uint64_t rvv_vl() const { return vl_; }
@@ -654,7 +659,7 @@ class Simulator : public SimulatorBase {
 
   inline void rvv_trace_vd() {
     if (::v8::internal::FLAG_trace_sim) {
-      __int128_t value = Vregister_[rvv_vd_reg()];
+      int64_t value = Vregister_[rvv_vd_reg()];
       SNPrintF(trace_buf_, "%016" PRIx64 "%016" PRIx64 " (%" PRId64 ")",
                *(reinterpret_cast<int64_t*>(&value) + 1),
                *reinterpret_cast<int64_t*>(&value), icount_);
@@ -665,7 +670,7 @@ class Simulator : public SimulatorBase {
     if (::v8::internal::FLAG_trace_sim) {
       PrintF("\t%s:0x%016" PRIx64 "%016" PRIx64 "\n",
              v8::internal::VRegisters::Name(static_cast<int>(rvv_vs1_reg())),
-             (uint64_t)(get_vregister(static_cast<int>(rvv_vs1_reg())) >> 64),
+             (uint64_t)(get_vregister(static_cast<int>(rvv_vs1_reg()))),
              (uint64_t)get_vregister(static_cast<int>(rvv_vs1_reg())));
     }
   }
@@ -674,7 +679,7 @@ class Simulator : public SimulatorBase {
     if (::v8::internal::FLAG_trace_sim) {
       PrintF("\t%s:0x%016" PRIx64 "%016" PRIx64 "\n",
              v8::internal::VRegisters::Name(static_cast<int>(rvv_vs2_reg())),
-             (uint64_t)(get_vregister(static_cast<int>(rvv_vs2_reg())) >> 64),
+             (uint64_t)(get_vregister(static_cast<int>(rvv_vs2_reg()))),
              (uint64_t)get_vregister(static_cast<int>(rvv_vs2_reg())));
     }
   }
@@ -682,7 +687,7 @@ class Simulator : public SimulatorBase {
     if (::v8::internal::FLAG_trace_sim) {
       PrintF("\t%s:0x%016" PRIx64 "%016" PRIx64 "\n",
              v8::internal::VRegisters::Name(v0),
-             (uint64_t)(get_vregister(v0) >> 64), (uint64_t)get_vregister(v0));
+             (uint64_t)(get_vregister(v0)), (uint64_t)get_vregister(v0));
     }
   }
 
@@ -701,7 +706,7 @@ class Simulator : public SimulatorBase {
         if (trace_buf_[i] == '\0') break;
       }
       SNPrintF(trace_buf_.SubVector(i, trace_buf_.length()),
-               "  sew:%s lmul:%s vstart:%lu vl:%lu", rvv_sew_s(), rvv_lmul_s(),
+               "  sew:%s lmul:%s vstart:%llu vl:%llu", rvv_sew_s(), rvv_lmul_s(),
                rvv_vstart(), rvv_vl());
     }
   }
@@ -939,8 +944,8 @@ class Simulator : public SimulatorBase {
   uint32_t FCSR_;
 
   // RVV registers
-  __int128_t Vregister_[kNumVRegisters];
-  static_assert(sizeof(__int128_t) == kRvvVLEN / 8, "unmatch vlen");
+  int64_t Vregister_[kNumVRegisters];
+  //static_assert(sizeof(int64_t) == kRvvVLEN / 8, "unmatch vlen");
   uint64_t vstart_, vxsat_, vxrm_, vcsr_, vtype_, vl_, vlenb_;
   // Simulator support.
   // Allocate 1MB for stack.
