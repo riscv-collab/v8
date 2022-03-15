@@ -2474,7 +2474,7 @@ v8_source_set("v8_initializers") {
   } else if (v8_current_cpu == "riscv32") {
     sources += [
       ### gcmole(arch:riscv64) ###
-      "src/builtins/riscv64/builtins-riscv32.cc",
+      "src/builtins/riscv32/builtins-riscv32.cc",
     ]
   }
 

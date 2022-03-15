@@ -114,6 +114,8 @@ class PerfJitLogger : public CodeEventLogger {
     return kElfMachPPC64;
 #elif V8_TARGET_ARCH_RISCV64
     return kElfMachRISCV;
+#elif V8_TARGET_ARCH_RISCV32
+    return kElfMachRISCV;
 #else
     UNIMPLEMENTED();
     return 0;

@@ -222,11 +222,11 @@
   'wasm/compare-exchange64-stress': [PASS, SLOW, NO_VARIANTS],
 
   # Very slow on ARM, MIPS, RISCV and LOONG, contains no architecture dependent code.
-  'unicode-case-overoptimization0': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips64, mips, riscv64, loong64)', SKIP]],
-  'unicode-case-overoptimization1': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips64, mips, riscv64, loong64)', SKIP]],
-  'regress/regress-3976': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips64, mips, riscv64, loong64)', SKIP]],
-  'regress/regress-crbug-482998': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips, riscv64, loong64)', SKIP]],
-  'regress/regress-740784': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips, riscv64, loong64)', SKIP]],
+  'unicode-case-overoptimization0': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips64, mips, riscv64, riscv32, loong64)', SKIP]],
+  'unicode-case-overoptimization1': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips64, mips, riscv64, riscv32, loong64)', SKIP]],
+  'regress/regress-3976': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips64, mips, riscv64, riscv32, loong64)', SKIP]],
+  'regress/regress-crbug-482998': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips, riscv64, riscv32, loong64)', SKIP]],
+  'regress/regress-740784': [PASS, NO_VARIANTS, ['arch in (arm, arm64, mipsel, mips64el, mips, riscv64,riscv32, loong64)', SKIP]],
 
   # TODO(bmeurer): Flaky timeouts (sometimes <1s, sometimes >3m).
   'unicodelctest': [PASS, NO_VARIANTS],
@@ -897,7 +897,7 @@
 }],  # 'arch == loong64'
 
 ##############################################################################
-['arch == riscv64', {
+['arch == riscv64 or arch == riscv32', {
 
   # Slow tests which times out in debug mode.
   'try': [PASS, ['mode == debug', SKIP]],
@@ -963,7 +963,7 @@
   'wasm/exceptions-simd': [SKIP],
   'wasm/simd-*': [SKIP],
 
-}],  # 'arch == riscv64'
+}],  # 'arch == riscv64 or arch == riscv32'
 
 
 ##############################################################################
@@ -1561,7 +1561,7 @@
 
 ##############################################################################
 # TODO(v8:11421): Port baseline compiler to other architectures.
-['arch not in (x64, arm64, ia32, arm, mips64el, mipsel, riscv64, loong64, s390x) or (arch == s390x and pointer_compression)', {
+['arch not in (x64, arm64, ia32, arm, mips64el, mipsel, riscv64, riscv32, loong64, s390x)', {
   'baseline/*': [SKIP],
   'regress/regress-1242306': [SKIP],
 }],

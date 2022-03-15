@@ -101,7 +101,7 @@
   'proposals/tail-call/skip-stack-guard-page': '--sim-stack-size=8192',
 }],  # '(arch == mipsel or arch == mips64el) and simulator_run'
 
-['arch == riscv64', {
+['arch == riscv64 or arch == riscv32', {
    # These tests need larger stack size on simulator.
    'skip-stack-guard-page': '--sim-stack-size=8192',
    'proposals/tail-call/skip-stack-guard-page': '--sim-stack-size=8192',
@@ -109,7 +109,7 @@
    # SIMD is not fully implemented yet.
    'proposals/simd/*': [SKIP],
    'simd*': [SKIP],
-}],  # 'arch == riscv64
+}],  # 'arch == riscv64 or arch == riscv32'
 
 ['arch == ppc or arch == ppc64', {
   # These tests fail because ppc float min and max doesn't convert sNaN to qNaN.

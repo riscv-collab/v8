@@ -112,6 +112,7 @@ SLOW_ARCHS = [
   "s390",
   "s390x",
   "riscv64",
+  "riscv32",
   "loong64"
 ]
 

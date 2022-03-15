@@ -25,6 +25,8 @@
 #include "src/codegen/x64/constants-x64.h"
 #elif V8_TARGET_ARCH_RISCV64
 #include "src/codegen/riscv64/constants-riscv64.h"
+#elif V8_TARGET_ARCH_RISCV32
+#include "src/codegen/riscv32/constants-riscv32.h"
 #else
 #error Unsupported target architecture.
 #endif

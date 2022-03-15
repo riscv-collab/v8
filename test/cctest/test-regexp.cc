@@ -618,7 +618,7 @@ using ArchRegExpMacroAssembler = RegExpMacroAssemblerMIPS;
 using ArchRegExpMacroAssembler = RegExpMacroAssemblerMIPS;
 #elif V8_TARGET_ARCH_LOONG64
 using ArchRegExpMacroAssembler = RegExpMacroAssemblerLOONG64;
-#elif V8_TARGET_ARCH_RISCV64
+#elif V8_TARGET_ARCH_RISCV64 || V8_TARGET_ARCH_RISCV32
 using ArchRegExpMacroAssembler = RegExpMacroAssemblerRISCV;
 #endif
 

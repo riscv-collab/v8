@@ -8,6 +8,32 @@
 #include "src/codegen/register-arch.h"
 #include "src/codegen/reglist.h"
 
+#if V8_TARGET_ARCH_IA32
+#include "src/codegen/ia32/register-ia32.h"
+#elif V8_TARGET_ARCH_X64
+#include "src/codegen/x64/register-x64.h"
+#elif V8_TARGET_ARCH_ARM64
+#include "src/codegen/arm64/register-arm64.h"
+#elif V8_TARGET_ARCH_ARM
+#include "src/codegen/arm/register-arm.h"
+#elif V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_PPC64
+#include "src/codegen/ppc/register-ppc.h"
+#elif V8_TARGET_ARCH_MIPS
+#include "src/codegen/mips/register-mips.h"
+#elif V8_TARGET_ARCH_MIPS64
+#include "src/codegen/mips64/register-mips64.h"
+#elif V8_TARGET_ARCH_LOONG64
+#include "src/codegen/loong64/register-loong64.h"
+#elif V8_TARGET_ARCH_S390
+#include "src/codegen/s390/register-s390.h"
+#elif V8_TARGET_ARCH_RISCV64
+#include "src/codegen/riscv64/register-riscv64.h"
+#elif V8_TARGET_ARCH_RISCV32
+#include "src/codegen/riscv32/register-riscv32.h"
+#else
+#error Unknown architecture.
+#endif
+
 namespace v8 {
 namespace internal {
 

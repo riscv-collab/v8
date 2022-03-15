@@ -410,7 +410,7 @@ TF_BUILTIN(AtomicsExchange, SharedArrayBufferBuiltinsAssembler) {
   TNode<UintPtrT> index_word =
       ValidateAtomicAccess(array, index_or_field_name, context);
 
-#if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_RISCV64
+#if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_RISCV64 || V8_TARGET_ARCH_RISCV32
   USE(array_buffer);
   TNode<Number> index_number = ChangeUintPtrToTagged(index_word);
   Return(CallRuntime(Runtime::kAtomicsExchange, context, array, index_number,
@@ -512,7 +512,7 @@ TF_BUILTIN(AtomicsExchange, SharedArrayBufferBuiltinsAssembler) {
   BIND(&other);
   Unreachable();
 #endif  // V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64 ||
-        // V8_TARGET_ARCH_RISCV64
+        // V8_TARGET_ARCH_RISCV64 || V8_TARGET_ARCH_RISCV32
 
   BIND(&detached);
   {
@@ -549,7 +549,7 @@ TF_BUILTIN(AtomicsCompareExchange, SharedArrayBufferBuiltinsAssembler) {
 
 #if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_PPC64 || \
     V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_S390X ||    \
-    V8_TARGET_ARCH_RISCV64
+    V8_TARGET_ARCH_RISCV64 || V8_TARGET_ARCH_RISCV32
   USE(array_buffer);
   TNode<Number> index_number = ChangeUintPtrToTagged(index_word);
   Return(CallRuntime(Runtime::kAtomicsCompareExchange, context, array,
@@ -671,7 +671,7 @@ TF_BUILTIN(AtomicsCompareExchange, SharedArrayBufferBuiltinsAssembler) {
   Unreachable();
 #endif  // V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_PPC64
         // || V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_S390X
-        // || V8_TARGET_ARCH_RISCV64
+        // || V8_TARGET_ARCH_RISCV64 || V8_TARGET_ARCH_RISCV32
 
   BIND(&detached);
   {
@@ -724,7 +724,7 @@ void SharedArrayBufferBuiltinsAssembler::AtomicBinopBuiltinCommon(
 
 #if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_PPC64 || \
     V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_S390X ||    \
-    V8_TARGET_ARCH_RISCV64
+    V8_TARGET_ARCH_RISCV64 || V8_TARGET_ARCH_RISCV32
   USE(array_buffer);
   TNode<Number> index_number = ChangeUintPtrToTagged(index_word);
   Return(CallRuntime(runtime_function, context, array, index_number, value));
@@ -817,7 +817,7 @@ void SharedArrayBufferBuiltinsAssembler::AtomicBinopBuiltinCommon(
   Unreachable();
 #endif  // V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_PPC64
         // || V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_S390X
-        // || V8_TARGET_ARCH_RISCV64
+        // || V8_TARGET_ARCH_RISCV64 || V8_TARGET_ARCH_RISCV32
 
   BIND(&detached);
   ThrowTypeError(context, MessageTemplate::kDetachedOperation, method_name);

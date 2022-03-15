@@ -423,7 +423,7 @@
 }],  # 'mips_arch_variant == r6'
 
 ##############################################################################
-['arch == riscv64', {
+['arch == riscv64 or (arch == riscv32)', {
   # this test is unstable, sometimes fail when running w/ other tests.
   'test-cpu-profiler/CrossScriptInliningCallerLineNumbers2': [SKIP],
 
@@ -448,7 +448,7 @@
 }],  # 'arch == riscv64'
 
 ##############################################################################
-['arch == riscv64 and simulator_run', {
+['((arch == riscv64) or (arch == riscv32)) and simulator_run', {
 
   # Pass but take too long with the simulator.
   'test-api/Threading*': [PASS, SLOW],
