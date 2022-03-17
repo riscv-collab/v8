@@ -97,8 +97,9 @@ using reg_t = uint64_t;
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
 #define zext32(x) ((reg_t)(uint32_t)(x))
-#define sext_xlen(x) (((sreg_t)(x) << (64 - xlen)) >> (64 - xlen))
-#define zext_xlen(x) (((reg_t)(x) << (64 - xlen)) >> (64 - xlen))
+//RV32Gtodo: re-impl
+#define sext_xlen(x) (((sreg_t)(x) << (32 - xlen)) >> (32 - xlen))
+#define zext_xlen(x) (((reg_t)(x) << (32 - xlen)) >> (32 - xlen))
 
 #define BIT(n) (0x1LL << n)
 #define QUIET_BIT_S(nan) (bit_cast<int32_t>(nan) & BIT(22))
@@ -380,13 +381,9 @@ class Simulator : public SimulatorBase {
   void set_fflags(uint32_t flags) { set_csr_bits(csr_fflags, flags); }
   void clear_fflags(int32_t flags) { clear_csr_bits(csr_fflags, flags); }
 
+#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
   // RVV CSR
-#ifdef __SIZEOF_INT128__
-  __int128 get_vregister(int vreg) const;
-#else
-    // do some fallback stuff here
-  int64_t get_vregister(int vreg) const;
-#endif
+  __int128_t get_vregister(int vreg) const;
   inline uint64_t rvv_vlen() const { return kRvvVLEN; }
   inline uint64_t rvv_vtype() const { return vtype_; }
   inline uint64_t rvv_vl() const { return vl_; }
@@ -444,6 +441,7 @@ class Simulator : public SimulatorBase {
       return ((rvv_vlen() << rvv_vlmul()) / rvv_sew());
     }
   }
+#endif
 
   inline uint32_t get_dynamic_rounding_mode();
   inline bool test_fflags_bits(uint32_t mask);
@@ -657,9 +655,10 @@ class Simulator : public SimulatorBase {
     }
   }
 
+#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
   inline void rvv_trace_vd() {
     if (::v8::internal::FLAG_trace_sim) {
-      int64_t value = Vregister_[rvv_vd_reg()];
+      __int128_t value = Vregister_[rvv_vd_reg()];
       SNPrintF(trace_buf_, "%016" PRIx64 "%016" PRIx64 " (%" PRId64 ")",
                *(reinterpret_cast<int64_t*>(&value) + 1),
                *reinterpret_cast<int64_t*>(&value), icount_);
@@ -670,7 +669,7 @@ class Simulator : public SimulatorBase {
     if (::v8::internal::FLAG_trace_sim) {
       PrintF("\t%s:0x%016" PRIx64 "%016" PRIx64 "\n",
              v8::internal::VRegisters::Name(static_cast<int>(rvv_vs1_reg())),
-             (uint64_t)(get_vregister(static_cast<int>(rvv_vs1_reg()))),
+             (uint64_t)(get_vregister(static_cast<int>(rvv_vs1_reg())) >> 64),
              (uint64_t)get_vregister(static_cast<int>(rvv_vs1_reg())));
     }
   }
@@ -679,7 +678,7 @@ class Simulator : public SimulatorBase {
     if (::v8::internal::FLAG_trace_sim) {
       PrintF("\t%s:0x%016" PRIx64 "%016" PRIx64 "\n",
              v8::internal::VRegisters::Name(static_cast<int>(rvv_vs2_reg())),
-             (uint64_t)(get_vregister(static_cast<int>(rvv_vs2_reg()))),
+             (uint64_t)(get_vregister(static_cast<int>(rvv_vs2_reg())) >> 64),
              (uint64_t)get_vregister(static_cast<int>(rvv_vs2_reg())));
     }
   }
@@ -687,7 +686,7 @@ class Simulator : public SimulatorBase {
     if (::v8::internal::FLAG_trace_sim) {
       PrintF("\t%s:0x%016" PRIx64 "%016" PRIx64 "\n",
              v8::internal::VRegisters::Name(v0),
-             (uint64_t)(get_vregister(v0)), (uint64_t)get_vregister(v0));
+             (uint64_t)(get_vregister(v0) >> 64), (uint64_t)get_vregister(v0));
     }
   }
 
@@ -706,7 +705,7 @@ class Simulator : public SimulatorBase {
         if (trace_buf_[i] == '\0') break;
       }
       SNPrintF(trace_buf_.SubVector(i, trace_buf_.length()),
-               "  sew:%s lmul:%s vstart:%llu vl:%llu", rvv_sew_s(), rvv_lmul_s(),
+               "  sew:%s lmul:%s vstart:%lu vl:%lu", rvv_sew_s(), rvv_lmul_s(),
                rvv_vstart(), rvv_vl());
     }
   }
@@ -751,6 +750,7 @@ class Simulator : public SimulatorBase {
   inline void set_rvv_vlenb(uint64_t value, bool trace = true) {
     vlenb_ = value;
   }
+#endif
 
   template <typename T, typename Func>
   inline T CanonicalizeFPUOpFMA(Func fn, T dst, T src1, T src2) {
@@ -867,6 +867,7 @@ class Simulator : public SimulatorBase {
   void DecodeCSType();
   void DecodeCJType();
   void DecodeCBType();
+#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
   void DecodeVType();
   void DecodeRvvIVV();
   void DecodeRvvIVI();
@@ -877,6 +878,7 @@ class Simulator : public SimulatorBase {
   void DecodeRvvFVF();
   bool DecodeRvvVL();
   bool DecodeRvvVS();
+#endif
 
   // Used for breakpoints and traps.
   void SoftwareInterrupt();
@@ -943,10 +945,12 @@ class Simulator : public SimulatorBase {
   // Floating-point control and status register.
   uint32_t FCSR_;
 
+#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
   // RVV registers
-  int64_t Vregister_[kNumVRegisters];
-  //static_assert(sizeof(int64_t) == kRvvVLEN / 8, "unmatch vlen");
+  __int128_t Vregister_[kNumVRegisters];
+  static_assert(sizeof(__int128_t) == kRvvVLEN / 8, "unmatch vlen");
   uint64_t vstart_, vxsat_, vxrm_, vcsr_, vtype_, vl_, vlenb_;
+#endif
   // Simulator support.
   // Allocate 1MB for stack.
   size_t stack_size_;

@@ -3467,7 +3467,7 @@ void Builtins::Generate_DirectCEntry(MacroAssembler* masm) {
     // this.
     __ Uld(a4, MemOperand(t6));
     __ Assert(ne, AbortReason::kReceivedInvalidReturnAddress, a4,
-              Operand(reinterpret_cast<uint64_t>(kZapValue)));
+              Operand(reinterpret_cast<uint32_t>(kZapValue)));
   }
 
   __ Jump(t6);
