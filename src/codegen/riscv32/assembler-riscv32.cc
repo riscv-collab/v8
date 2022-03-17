@@ -3495,7 +3495,7 @@ void Assembler::li_ptr(Register rd, int64_t imm) {
 }
 
 void Assembler::li_constant(Register rd, int64_t imm) {
-  DEBUG_PRINTF("li_constant(%d, %lx <%ld>)\n", ToNumber(rd), imm, imm);
+  DEBUG_PRINTF("li_constant(%d, %llx <%lld>)\n", ToNumber(rd), imm, imm);
   lui(rd, (imm + (1LL << 47) + (1LL << 35) + (1LL << 23) + (1LL << 11)) >>
               48);  // Bits 63:48
   addiw(rd, rd,
@@ -3600,7 +3600,7 @@ int Assembler::RelocateInternalReference(RelocInfo::Mode rmode, Address pc,
   DCHECK(RelocInfo::IsInternalReferenceEncoded(rmode));
   if (IsLui(instr)) {
     uint64_t target_address = target_address_at(pc) + pc_delta;
-    DEBUG_PRINTF("target_address 0x%lx\n", target_address);
+    DEBUG_PRINTF("target_address 0x%llx\n", target_address);
     set_target_value_at(pc, target_address);
     return 8;  // Number of instructions patched.
   } else {
@@ -3695,7 +3695,7 @@ void Assembler::dq(uint64_t data, RelocInfo::Mode rmode) {
     RecordRelocInfo(rmode);
   }
   if (!is_buffer_growth_blocked()) CheckBuffer();
-  DEBUG_PRINTF("%p: constant 0x%lx\n", pc_, data);
+  DEBUG_PRINTF("%p: constant 0x%llx\n", pc_, data);
   EmitHelper(data);
 }
 
@@ -3840,7 +3840,7 @@ Address Assembler::target_address_at(Address pc, Address constant_pool) {
   }
 }
 Address Assembler::target_address_at(Address pc) {
-  DEBUG_PRINTF("target_address_at: pc: %lx\t", pc);
+  DEBUG_PRINTF("target_address_at: pc: %x\t", pc);
   Instruction* instr0 = Instruction::At((unsigned char*)pc);
   Instruction* instr1 = Instruction::At((unsigned char*)(pc + 1 * kInstrSize));
   Instruction* instr2 = Instruction::At((unsigned char*)(pc + 2 * kInstrSize));
@@ -3864,7 +3864,7 @@ Address Assembler::target_address_at(Address pc) {
     addr <<= 6;
     addr |= (int64_t)instr5->Imm12Value();
 
-    DEBUG_PRINTF("addr: %lx\n", addr);
+    DEBUG_PRINTF("addr: %llx\n", addr);
     return static_cast<Address>(addr);
   }
   // We should never get here, force a bad address if we do.
@@ -3882,7 +3882,7 @@ Address Assembler::target_address_at(Address pc) {
 // Note that this assumes the use of SV48, the 48-bit virtual memory system.
 void Assembler::set_target_value_at(Address pc, uint64_t target,
                                     ICacheFlushMode icache_flush_mode) {
-  DEBUG_PRINTF("set_target_value_at: pc: %lx\ttarget: %lx\n", pc, target);
+  DEBUG_PRINTF("set_target_value_at: pc: %x\ttarget: %llx\n", pc, target);
   uint32_t* p = reinterpret_cast<uint32_t*>(pc);
   DCHECK_EQ((target & 0xffff000000000000ll), 0);
 #ifdef DEBUG
