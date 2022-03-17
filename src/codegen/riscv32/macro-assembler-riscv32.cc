@@ -3398,7 +3398,7 @@ void TurboAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
 }
 
 void TurboAssembler::LoadEntryFromBuiltinIndex(Register builtin) {
-  STATIC_ASSERT(kSystemPointerSize == 8);
+  STATIC_ASSERT(kSystemPointerSize == 4);
   STATIC_ASSERT(kSmiTagSize == 1);
   STATIC_ASSERT(kSmiTag == 0);
 
@@ -5151,8 +5151,10 @@ void TurboAssembler::DecompressTaggedSigned(const Register& destination,
   Lwu(destination, field_operand);
   if (FLAG_debug_code) {
     // Corrupt the top 32 bits. Made up of 16 fixed bits and 16 pc offset bits.
+    /* RV32Gtodo: here need to re-impl
     Add64(destination, destination,
           Operand(((kDebugZapValue << 16) | (pc_offset() & 0xffff)) << 32));
+    */
   }
 }
 

@@ -406,7 +406,7 @@ int Assembler::target_at(int pos, bool is_internal) {
       Address pc = reinterpret_cast<Address>(buffer_start_ + pos);
       pc = target_address_at(pc);
       uint64_t instr_address = reinterpret_cast<uint64_t>(buffer_start_ + pos);
-      uint64_t imm = reinterpret_cast<uint64_t>(pc);
+      uint64_t imm = reinterpret_cast<uint32_t>(pc);
       if (imm == kEndOfJumpChain) {
         return kEndOfChain;
       } else {
