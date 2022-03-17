@@ -40,7 +40,7 @@
 // The original source code covered by the above license above has been
 // modified significantly by the v8 project authors.
 
-#include "src/execution/riscv64/simulator-riscv64.h"
+#include "src/execution/riscv32/simulator-riscv32.h"
 
 // Only build the simulator if not compiling for real RISCV hardware.
 #if defined(USE_SIMULATOR)
