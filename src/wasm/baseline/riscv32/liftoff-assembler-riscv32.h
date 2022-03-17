@@ -1274,9 +1274,11 @@ bool LiftoffAssembler::emit_i64_remu(LiftoffRegister dst, LiftoffRegister lhs,
 // clang-format off
 I64_BINOP(add, add)
 I64_BINOP(sub, sub)
+/* RV32Gtodo should delete. becuase RV32 doesn't have 64bit logical ops
 I64_BINOP(and, and_)
 I64_BINOP(or, or_)
 I64_BINOP(xor, xor_)
+*/
 // clang-format on
 
 #undef I64_BINOP
@@ -1288,9 +1290,11 @@ I64_BINOP(xor, xor_)
   }
 
 // clang-format off
+/* RV32Gtodo should delete. becuase RV32 doesn't have 64bit logical ops
 I64_BINOP_I(and, And)
 I64_BINOP_I(or, Or)
 I64_BINOP_I(xor, Xor)
+*/
 // clang-format on
 
 #undef I64_BINOP_I
@@ -1322,9 +1326,12 @@ void LiftoffAssembler::emit_i64_addi(LiftoffRegister dst, LiftoffRegister lhs,
                                      int64_t imm) {
   TurboAssembler::Add64(dst.gp(), lhs.gp(), Operand(imm));
 }
+
+/* RV32Gtodo should delete?
 void LiftoffAssembler::emit_u32_to_uintptr(Register dst, Register src) {
   addw(dst, src, zero_reg);
 }
+*/
 
 void LiftoffAssembler::emit_f32_neg(DoubleRegister dst, DoubleRegister src) {
   TurboAssembler::Neg_s(dst, src);
