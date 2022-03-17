@@ -670,6 +670,7 @@ void InstructionSelector::VisitWord32And(Node* node) {
   VisitBinop(this, node, kRiscvAnd32, true, kRiscvAnd32);
 }
 
+#if 0
 void InstructionSelector::VisitWord64And(Node* node) {
   RiscvOperandGenerator g(this);
   Int64BinopMatcher m(node);
@@ -706,14 +707,17 @@ void InstructionSelector::VisitWord64And(Node* node) {
   }
   VisitBinop(this, node, kRiscvAnd, true, kRiscvAnd);
 }
+#endif
 
 void InstructionSelector::VisitWord32Or(Node* node) {
   VisitBinop(this, node, kRiscvOr32, true, kRiscvOr32);
 }
 
+#if 0
 void InstructionSelector::VisitWord64Or(Node* node) {
   VisitBinop(this, node, kRiscvOr, true, kRiscvOr);
 }
+#endif
 
 void InstructionSelector::VisitWord32Xor(Node* node) {
   Int32BinopMatcher m(node);
@@ -738,6 +742,7 @@ void InstructionSelector::VisitWord32Xor(Node* node) {
   VisitBinop(this, node, kRiscvXor32, true, kRiscvXor32);
 }
 
+#if 0
 void InstructionSelector::VisitWord64Xor(Node* node) {
   Int64BinopMatcher m(node);
   if (m.left().IsWord64Or() && CanCover(node, m.left().node()) &&
@@ -760,6 +765,7 @@ void InstructionSelector::VisitWord64Xor(Node* node) {
   }
   VisitBinop(this, node, kRiscvXor, true, kRiscvXor);
 }
+#endif
 
 void InstructionSelector::VisitWord32Shl(Node* node) {
   Int32BinopMatcher m(node);
@@ -821,6 +827,7 @@ void InstructionSelector::VisitWord32Sar(Node* node) {
   VisitRRO(this, kRiscvSar32, node);
 }
 
+#if 0
 void InstructionSelector::VisitWord64Shl(Node* node) {
   RiscvOperandGenerator g(this);
   Int64BinopMatcher m(node);
@@ -870,9 +877,13 @@ void InstructionSelector::VisitWord64Sar(Node* node) {
   VisitRRO(this, kRiscvSar64, node);
 }
 
+#endif
+
 void InstructionSelector::VisitWord32Rol(Node* node) { UNREACHABLE(); }
 
+#if 0
 void InstructionSelector::VisitWord64Rol(Node* node) { UNREACHABLE(); }
+#endif
 
 void InstructionSelector::VisitWord32Ror(Node* node) {
   VisitRRO(this, kRiscvRor32, node);
@@ -884,8 +895,9 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 
 void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
 
+#if 0
 void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
-
+#endif
 void InstructionSelector::VisitWord64ReverseBytes(Node* node) {
   RiscvOperandGenerator g(this);
   Emit(kRiscvByteSwap64, g.DefineAsRegister(node),
@@ -906,18 +918,19 @@ void InstructionSelector::VisitWord32Ctz(Node* node) {
   RiscvOperandGenerator g(this);
   Emit(kRiscvCtz32, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
 }
-
+#if 0
 void InstructionSelector::VisitWord64Ctz(Node* node) {
   RiscvOperandGenerator g(this);
   Emit(kRiscvCtz64, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
 }
+#endif
 
 void InstructionSelector::VisitWord32Popcnt(Node* node) {
   RiscvOperandGenerator g(this);
   Emit(kRiscvPopcnt32, g.DefineAsRegister(node),
        g.UseRegister(node->InputAt(0)));
 }
-
+#if 0
 void InstructionSelector::VisitWord64Popcnt(Node* node) {
   RiscvOperandGenerator g(this);
   Emit(kRiscvPopcnt64, g.DefineAsRegister(node),
@@ -931,23 +944,25 @@ void InstructionSelector::VisitWord64Ror(Node* node) {
 void InstructionSelector::VisitWord64Clz(Node* node) {
   VisitRR(this, kRiscvClz64, node);
 }
+#endif
 
 void InstructionSelector::VisitInt32Add(Node* node) {
   VisitBinop(this, node, kRiscvAdd32, true, kRiscvAdd32);
 }
-
+#if 0
 void InstructionSelector::VisitInt64Add(Node* node) {
   VisitBinop(this, node, kRiscvAdd64, true, kRiscvAdd64);
 }
+#endif
 
 void InstructionSelector::VisitInt32Sub(Node* node) {
   VisitBinop(this, node, kRiscvSub32);
 }
-
+#if 0
 void InstructionSelector::VisitInt64Sub(Node* node) {
   VisitBinop(this, node, kRiscvSub64);
 }
-
+#endif
 void InstructionSelector::VisitInt32Mul(Node* node) {
   RiscvOperandGenerator g(this);
   Int32BinopMatcher m(node);
@@ -1046,7 +1061,7 @@ void InstructionSelector::VisitInt32MulHigh(Node* node) {
 void InstructionSelector::VisitUint32MulHigh(Node* node) {
   VisitRRR(this, kRiscvMulHighU32, node);
 }
-
+#if 0
 void InstructionSelector::VisitInt64Mul(Node* node) {
   RiscvOperandGenerator g(this);
   Int64BinopMatcher m(node);
@@ -1072,6 +1087,7 @@ void InstructionSelector::VisitInt64Mul(Node* node) {
   Emit(kRiscvMul64, g.DefineAsRegister(node), g.UseRegister(m.left().node()),
        g.UseRegister(m.right().node()));
 }
+#endif
 
 void InstructionSelector::VisitInt32Div(Node* node) {
   RiscvOperandGenerator g(this);
@@ -1130,7 +1146,7 @@ void InstructionSelector::VisitUint32Mod(Node* node) {
   Emit(kRiscvModU32, g.DefineAsRegister(node), g.UseRegister(m.left().node()),
        g.UseRegister(m.right().node()));
 }
-
+#if 0
 void InstructionSelector::VisitInt64Div(Node* node) {
   RiscvOperandGenerator g(this);
   Int64BinopMatcher m(node);
@@ -1158,6 +1174,7 @@ void InstructionSelector::VisitUint64Mod(Node* node) {
   Emit(kRiscvModU64, g.DefineAsRegister(node), g.UseRegister(m.left().node()),
        g.UseRegister(m.right().node()));
 }
+#endif
 
 void InstructionSelector::VisitChangeFloat32ToFloat64(Node* node) {
   VisitRR(this, kRiscvCvtDS, node);
@@ -1174,11 +1191,11 @@ void InstructionSelector::VisitRoundUint32ToFloat32(Node* node) {
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRR(this, kRiscvCvtDW, node);
 }
-
+#if 0
 void InstructionSelector::VisitChangeInt64ToFloat64(Node* node) {
   VisitRR(this, kRiscvCvtDL, node);
 }
-
+#endif
 void InstructionSelector::VisitChangeUint32ToFloat64(Node* node) {
   VisitRR(this, kRiscvCvtDUw, node);
 }
@@ -1266,22 +1283,23 @@ void InstructionSelector::VisitChangeFloat64ToInt32(Node* node) {
   VisitRR(this, kRiscvTruncWD, node);
 }
 
+#if 0
 void InstructionSelector::VisitChangeFloat64ToInt64(Node* node) {
   VisitRR(this, kRiscvTruncLD, node);
 }
-
+#endif
 void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
   VisitRR(this, kRiscvTruncUwD, node);
 }
-
+#if 0
 void InstructionSelector::VisitChangeFloat64ToUint64(Node* node) {
   VisitRR(this, kRiscvTruncUlD, node);
 }
-
+#endif
 void InstructionSelector::VisitTruncateFloat64ToUint32(Node* node) {
   VisitRR(this, kRiscvTruncUwD, node);
 }
-
+#if 0
 void InstructionSelector::VisitTruncateFloat64ToInt64(Node* node) {
   RiscvOperandGenerator g(this);
   InstructionCode opcode = kRiscvTruncLD;
@@ -1291,7 +1309,6 @@ void InstructionSelector::VisitTruncateFloat64ToInt64(Node* node) {
   }
   Emit(opcode, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
 }
-
 void InstructionSelector::VisitTryTruncateFloat32ToInt64(Node* node) {
   RiscvOperandGenerator g(this);
   InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
@@ -1352,7 +1369,6 @@ void InstructionSelector::VisitTryTruncateFloat64ToUint64(Node* node) {
 
   Emit(kRiscvTruncUlD, output_count, outputs, 1, inputs);
 }
-
 void InstructionSelector::VisitBitcastWord32ToWord64(Node* node) {
   DCHECK(SmiValuesAre31Bits());
   DCHECK(COMPRESS_POINTERS_BOOL);
@@ -1457,7 +1473,7 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
   Emit(kRiscvSignExtendWord, g.DefineAsRegister(node),
        g.UseRegister(node->InputAt(0)));
 }
-
+#endif
 void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
   RiscvOperandGenerator g(this);
   Node* value = node->InputAt(0);
@@ -1479,7 +1495,7 @@ void InstructionSelector::VisitTruncateFloat64ToWord32(Node* node) {
 void InstructionSelector::VisitRoundFloat64ToInt32(Node* node) {
   VisitRR(this, kRiscvTruncWD, node);
 }
-
+#if 0
 void InstructionSelector::VisitRoundInt64ToFloat32(Node* node) {
   VisitRR(this, kRiscvCvtSL, node);
 }
@@ -1495,23 +1511,24 @@ void InstructionSelector::VisitRoundUint64ToFloat32(Node* node) {
 void InstructionSelector::VisitRoundUint64ToFloat64(Node* node) {
   VisitRR(this, kRiscvCvtDUl, node);
 }
-
+#endif
 void InstructionSelector::VisitBitcastFloat32ToInt32(Node* node) {
   VisitRR(this, kRiscvBitcastFloat32ToInt32, node);
 }
-
+#if 0
 void InstructionSelector::VisitBitcastFloat64ToInt64(Node* node) {
   VisitRR(this, kRiscvBitcastDL, node);
 }
+#endif
 
 void InstructionSelector::VisitBitcastInt32ToFloat32(Node* node) {
   VisitRR(this, kRiscvBitcastInt32ToFloat32, node);
 }
-
+#if 0
 void InstructionSelector::VisitBitcastInt64ToFloat64(Node* node) {
   VisitRR(this, kRiscvBitcastLD, node);
 }
-
+#endif
 void InstructionSelector::VisitFloat32Add(Node* node) {
   VisitRRR(this, kRiscvAddS, node);
 }
@@ -2411,6 +2428,7 @@ void InstructionSelector::VisitInt32MulWithOverflow(Node* node) {
   VisitBinop(this, node, kRiscvMulOvf32, &cont);
 }
 
+#if 0
 void InstructionSelector::VisitInt64AddWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
@@ -2460,6 +2478,7 @@ void InstructionSelector::VisitUint64LessThanOrEqual(Node* node) {
       FlagsContinuation::ForSet(kUnsignedLessThanOrEqual, node);
   VisitWord64Compare(this, node, &cont);
 }
+#endif
 
 void InstructionSelector::VisitFloat32Equal(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kEqual, node);
@@ -2566,7 +2585,7 @@ void InstructionSelector::VisitWord32AtomicStore(Node* node) {
 
   VisitAtomicStore(this, node, opcode, AtomicWidth::kWord32);
 }
-
+#if 0
 void InstructionSelector::VisitWord64AtomicLoad(Node* node) {
   AtomicLoadParameters atomic_load_params = AtomicLoadParametersOf(node->op());
   LoadRepresentation load_rep = atomic_load_params.representation();
@@ -2649,7 +2668,7 @@ void InstructionSelector::VisitWord64AtomicStore(Node* node) {
 
   VisitAtomicStore(this, node, opcode, AtomicWidth::kWord64);
 }
-
+#endif
 void InstructionSelector::VisitWord32AtomicExchange(Node* node) {
   ArchOpcode opcode;
   MachineType type = AtomicOpType(node->op());
@@ -2669,7 +2688,7 @@ void InstructionSelector::VisitWord32AtomicExchange(Node* node) {
 
   VisitAtomicExchange(this, node, opcode, AtomicWidth::kWord32);
 }
-
+#if 0
 void InstructionSelector::VisitWord64AtomicExchange(Node* node) {
   ArchOpcode opcode;
   MachineType type = AtomicOpType(node->op());
@@ -2686,7 +2705,7 @@ void InstructionSelector::VisitWord64AtomicExchange(Node* node) {
   }
   VisitAtomicExchange(this, node, opcode, AtomicWidth::kWord64);
 }
-
+#endif
 void InstructionSelector::VisitWord32AtomicCompareExchange(Node* node) {
   ArchOpcode opcode;
   MachineType type = AtomicOpType(node->op());
@@ -2706,7 +2725,7 @@ void InstructionSelector::VisitWord32AtomicCompareExchange(Node* node) {
 
   VisitAtomicCompareExchange(this, node, opcode, AtomicWidth::kWord32);
 }
-
+#if 0
 void InstructionSelector::VisitWord64AtomicCompareExchange(Node* node) {
   ArchOpcode opcode;
   MachineType type = AtomicOpType(node->op());
@@ -2723,6 +2742,7 @@ void InstructionSelector::VisitWord64AtomicCompareExchange(Node* node) {
   }
   VisitAtomicCompareExchange(this, node, opcode, AtomicWidth::kWord64);
 }
+#endif
 void InstructionSelector::VisitWord32AtomicBinaryOperation(
     Node* node, ArchOpcode int8_op, ArchOpcode uint8_op, ArchOpcode int16_op,
     ArchOpcode uint16_op, ArchOpcode word32_op) {
@@ -2783,11 +2803,13 @@ void InstructionSelector::VisitWord64AtomicBinaryOperation(
                                      kAtomic##op##Uint16, kAtomic##op##Word32, \
                                      kRiscvWord64Atomic##op##Uint64);          \
   }
+#if 0
 VISIT_ATOMIC_BINOP(Add)
 VISIT_ATOMIC_BINOP(Sub)
 VISIT_ATOMIC_BINOP(And)
 VISIT_ATOMIC_BINOP(Or)
 VISIT_ATOMIC_BINOP(Xor)
+#endif
 #undef VISIT_ATOMIC_BINOP
 
 void InstructionSelector::VisitInt32AbsWithOverflow(Node* node) {
@@ -3224,7 +3246,7 @@ void InstructionSelector::VisitSignExtendWord16ToInt32(Node* node) {
   Emit(kRiscvSignExtendShort, g.DefineAsRegister(node),
        g.UseRegister(node->InputAt(0)));
 }
-
+#if 0
 void InstructionSelector::VisitSignExtendWord8ToInt64(Node* node) {
   RiscvOperandGenerator g(this);
   Emit(kRiscvSignExtendByte, g.DefineAsRegister(node),
@@ -3242,6 +3264,7 @@ void InstructionSelector::VisitSignExtendWord32ToInt64(Node* node) {
   Emit(kRiscvShl32, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
        g.TempImmediate(0));
 }
+#endif
 
 void InstructionSelector::VisitF32x4Pmin(Node* node) {
   VisitUniqueRRR(this, kRiscvF32x4Pmin, node);
@@ -3309,6 +3332,60 @@ VISIT_EXT_MUL(I64x2, I32x4, 32)
 VISIT_EXT_MUL(I32x4, I16x8, 16)
 VISIT_EXT_MUL(I16x8, I8x16, 8)
 #undef VISIT_EXT_MUL
+
+//RV32Gtodo tobe impl
+void InstructionSelector::VisitInt32PairAdd(Node* node) {
+      UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitInt32PairSub(Node* node) {
+
+      UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitInt32PairMul(Node* node) {
+      UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitWord32PairShl(Node* node) {
+      UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitWord32PairShr(Node* node) {
+      UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitWord32PairSar(Node* node) {
+      UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitWord32AtomicPairLoad(Node* node) {
+}
+
+void InstructionSelector::VisitWord32AtomicPairStore(Node* node) {
+}
+
+void InstructionSelector::VisitWord32AtomicPairAdd(Node* node) {
+}
+
+void InstructionSelector::VisitWord32AtomicPairSub(Node* node) {
+}
+
+void InstructionSelector::VisitWord32AtomicPairAnd(Node* node) {
+}
+
+void InstructionSelector::VisitWord32AtomicPairOr(Node* node) {
+}
+
+void InstructionSelector::VisitWord32AtomicPairXor(Node* node) {
+}
+
+void InstructionSelector::VisitWord32AtomicPairExchange(Node* node) {
+}
+
+void InstructionSelector::VisitWord32AtomicPairCompareExchange(Node* node) {
+}
+
 
 void InstructionSelector::AddOutputToSelectContinuation(OperandGenerator* g,
                                                         int first_input_index,
