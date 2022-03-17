@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#if V8_TARGET_ARCH_RISCV64
+#if V8_TARGET_ARCH_RISCV32
 
 #include "src/base/platform/platform.h"
 #include "src/base/strings.h"
@@ -2943,4 +2943,4 @@ void Disassembler::Disassemble(FILE* f, byte* begin, byte* end,
 
 }  // namespace disasm
 
-#endif  // V8_TARGET_ARCH_RISCV64
+#endif  // V8_TARGET_ARCH_RISCV32

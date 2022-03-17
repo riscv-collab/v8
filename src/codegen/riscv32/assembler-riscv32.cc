@@ -32,7 +32,7 @@
 // modified significantly by Google Inc.
 // Copyright 2021 the V8 project authors. All rights reserved.
 
-#if V8_TARGET_ARCH_RISCV64
+#if V8_TARGET_ARCH_RISCV32
 
 #include "src/codegen/riscv64/assembler-riscv64.h"
 
@@ -3529,9 +3529,9 @@ void Assembler::break_(uint32_t code, bool break_as_stop) {
 void Assembler::stop(uint32_t code) {
   DCHECK_GT(code, kMaxWatchpointCode);
   DCHECK_LE(code, kMaxStopCode);
-#if defined(V8_HOST_ARCH_RISCV64)
+#if defined(V8_HOST_ARCH_RISCV32)
   break_(0x54321);
-#else  // V8_HOST_ARCH_RISCV64
+#else  // V8_HOST_ARCH_RISCV32
   break_(code, true);
 #endif
 }
@@ -4089,4 +4089,4 @@ const size_t ConstantPool::kApproxMaxEntryCount = 512;
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_TARGET_ARCH_RISCV64
+#endif  // V8_TARGET_ARCH_RISCV32

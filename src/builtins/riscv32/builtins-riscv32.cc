@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#if V8_TARGET_ARCH_RISCV64
+#if V8_TARGET_ARCH_RISCV32
 
 #include "src/api/api-arguments.h"
 #include "src/codegen/code-factory.h"
@@ -3940,4 +3940,4 @@ void Builtins::Generate_DynamicCheckMapsTrampoline(
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_TARGET_ARCH_RISCV64
+#endif  // V8_TARGET_ARCH_RISCV32

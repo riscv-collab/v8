@@ -5,7 +5,7 @@
 #ifndef V8_CODEGEN_RISCV64_INTERFACE_DESCRIPTORS_RISCV64_INL_H_
 #define V8_CODEGEN_RISCV64_INTERFACE_DESCRIPTORS_RISCV64_INL_H_
 
-#if V8_TARGET_ARCH_RISCV64
+#if V8_TARGET_ARCH_RISCV32
 
 #include "src/base/template-utils.h"
 #include "src/codegen/interface-descriptors.h"
@@ -333,6 +333,6 @@ constexpr auto RunMicrotasksEntryDescriptor::registers() {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_TARGET_ARCH_RISCV64
+#endif  // V8_TARGET_ARCH_RISCV32
 
 #endif  // V8_CODEGEN_RISCV64_INTERFACE_DESCRIPTORS_RISCV64_INL_H_

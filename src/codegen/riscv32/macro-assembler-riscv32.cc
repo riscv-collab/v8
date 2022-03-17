@@ -4,7 +4,7 @@
 
 #include <limits.h>  // For LONG_MIN, LONG_MAX.
 
-#if V8_TARGET_ARCH_RISCV64
+#if V8_TARGET_ARCH_RISCV32
 
 #include "src/base/bits.h"
 #include "src/base/division-by-constant.h"
@@ -4535,19 +4535,19 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles, Register argument_count,
 }
 
 int TurboAssembler::ActivationFrameAlignment() {
-#if V8_HOST_ARCH_RISCV64
+#if V8_HOST_ARCH_RISCV32
   // Running on the real platform. Use the alignment as mandated by the local
   // environment.
   // Note: This will break if we ever start generating snapshots on one RISC-V
   // platform for another RISC-V platform with a different alignment.
   return base::OS::ActivationFrameAlignment();
-#else   // V8_HOST_ARCH_RISCV64
+#else   // V8_HOST_ARCH_RISCV32
   // If we are using the simulator then we should always align to the expected
   // alignment. As the simulator is used to generate snapshots we do not know
   // if the target platform will need alignment, so this is controlled from a
   // flag.
   return FLAG_sim_stack_alignment;
-#endif  // V8_HOST_ARCH_RISCV64
+#endif  // V8_HOST_ARCH_RISCV32
 }
 
 void MacroAssembler::AssertStackIsAligned() {
@@ -4907,7 +4907,7 @@ void TurboAssembler::CallCFunctionHelper(Register function,
   // The argument stots are presumed to have been set up by
   // PrepareCallCFunction.
 
-#if V8_HOST_ARCH_RISCV64
+#if V8_HOST_ARCH_RISCV32
   if (FLAG_debug_code) {
     int frame_alignment = base::OS::ActivationFrameAlignment();
     int frame_alignment_mask = frame_alignment - 1;
@@ -4926,7 +4926,7 @@ void TurboAssembler::CallCFunctionHelper(Register function,
       bind(&alignment_as_expected);
     }
   }
-#endif  // V8_HOST_ARCH_RISCV64
+#endif  // V8_HOST_ARCH_RISCV32
 
   // Just call directly. The function called cannot cause a GC, or
   // allow preemption, so the return address in the link register
@@ -5220,4 +5220,4 @@ void MacroAssembler::DropArgumentsAndPushNewReceiver(Register argc,
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_TARGET_ARCH_RISCV64
+#endif  // V8_TARGET_ARCH_RISCV32
