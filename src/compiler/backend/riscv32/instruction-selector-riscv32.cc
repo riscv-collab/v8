@@ -1391,6 +1391,7 @@ void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
   }
 }
 
+/* RV32Gtodo ensure 32bit doesn't need 
 bool InstructionSelector::ZeroExtendsWord32ToWord64NoPhis(Node* node) {
   DCHECK_NE(node->opcode(), IrOpcode::kPhi);
   if (node->opcode() == IrOpcode::kLoad ||
@@ -1421,6 +1422,7 @@ void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
   Emit(kRiscvZeroExtendWord, g.DefineAsRegister(node),
        g.UseRegister(node->InputAt(0)));
 }
+*/
 
 void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
   RiscvOperandGenerator g(this);
