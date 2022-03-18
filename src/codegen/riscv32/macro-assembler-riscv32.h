@@ -6,8 +6,8 @@
 #error This header must be included via macro-assembler.h
 #endif
 
-#ifndef V8_CODEGEN_RISCV64_MACRO_ASSEMBLER_RISCV64_H_
-#define V8_CODEGEN_RISCV64_MACRO_ASSEMBLER_RISCV64_H_
+#ifndef V8_CODEGEN_RISCV64_MACRO_ASSEMBLER_RISCV32_H_
+#define V8_CODEGEN_RISCV64_MACRO_ASSEMBLER_RISCV32_H_
 
 #include "src/codegen/assembler.h"
 #include "src/codegen/riscv32/assembler-riscv32.h"
@@ -1359,4 +1359,4 @@ void TurboAssembler::GenerateSwitchTable(Register index, size_t case_count,
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_CODEGEN_RISCV64_MACRO_ASSEMBLER_RISCV64_H_
+#endif  // V8_CODEGEN_RISCV64_MACRO_ASSEMBLER_RISCV32_H_

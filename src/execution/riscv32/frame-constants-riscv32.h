@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_EXECUTION_RISCV64_FRAME_CONSTANTS_RISCV64_H_
-#define V8_EXECUTION_RISCV64_FRAME_CONSTANTS_RISCV64_H_
+#ifndef V8_EXECUTION_RISCV64_FRAME_CONSTANTS_RISCV32_H_
+#define V8_EXECUTION_RISCV64_FRAME_CONSTANTS_RISCV32_H_
 
 #include "src/base/bits.h"
 #include "src/base/macros.h"
@@ -83,4 +83,4 @@ class WasmDebugBreakFrameConstants : public TypedFrameConstants {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_EXECUTION_RISCV64_FRAME_CONSTANTS_RISCV64_H_
+#endif  // V8_EXECUTION_RISCV64_FRAME_CONSTANTS_RISCV32_H_

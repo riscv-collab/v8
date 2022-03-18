@@ -32,8 +32,8 @@
 // modified significantly by Google Inc.
 // Copyright 2021 the V8 project authors. All rights reserved.
 
-#ifndef V8_CODEGEN_RISCV64_ASSEMBLER_RISCV64_H_
-#define V8_CODEGEN_RISCV64_ASSEMBLER_RISCV64_H_
+#ifndef V8_CODEGEN_RISCV64_ASSEMBLER_RISCV32_H_
+#define V8_CODEGEN_RISCV64_ASSEMBLER_RISCV32_H_
 
 #include <stdio.h>
 
@@ -1824,4 +1824,4 @@ class LoadStoreLaneParams {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_CODEGEN_RISCV64_ASSEMBLER_RISCV64_H_
+#endif  // V8_CODEGEN_RISCV64_ASSEMBLER_RISCV32_H_

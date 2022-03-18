@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_CODEGEN_RISCV64_REGISTER_RISCV64_H_
-#define V8_CODEGEN_RISCV64_REGISTER_RISCV64_H_
+#ifndef V8_CODEGEN_RISCV64_REGISTER_RISCV32_H_
+#define V8_CODEGEN_RISCV64_REGISTER_RISCV32_H_
 
 #include "src/codegen/register-base.h"
 #include "src/codegen/reglist.h"
@@ -395,4 +395,4 @@ constexpr Register kPtrComprCageBaseRegister = kRootRegister;
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_CODEGEN_RISCV64_REGISTER_RISCV64_H_
+#endif  // V8_CODEGEN_RISCV64_REGISTER_RISCV32_H_

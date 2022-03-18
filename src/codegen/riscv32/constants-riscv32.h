@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_CODEGEN_RISCV64_CONSTANTS_RISCV64_H_
-#define V8_CODEGEN_RISCV64_CONSTANTS_RISCV64_H_
+#ifndef V8_CODEGEN_RISCV64_CONSTANTS_RISCV32_H_
+#define V8_CODEGEN_RISCV64_CONSTANTS_RISCV32_H_
 
 #include "src/base/logging.h"
 #include "src/base/macros.h"
@@ -1983,4 +1983,4 @@ bool InstructionGetters<P>::IsTrap() const {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_CODEGEN_RISCV64_CONSTANTS_RISCV64_H_
+#endif  // V8_CODEGEN_RISCV64_CONSTANTS_RISCV32_H_

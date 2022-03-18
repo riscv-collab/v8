@@ -46,8 +46,8 @@
 // GeneratedCode wrapper, which will start execution in the Simulator or
 // forwards to the real entry on a RISC-V HW platform.
 
-#ifndef V8_EXECUTION_RISCV64_SIMULATOR_RISCV64_H_
-#define V8_EXECUTION_RISCV64_SIMULATOR_RISCV64_H_
+#ifndef V8_EXECUTION_RISCV64_SIMULATOR_RISCV32_H_
+#define V8_EXECUTION_RISCV64_SIMULATOR_RISCV32_H_
 
 // globals.h defines USE_SIMULATOR.
 #include "src/common/globals.h"
@@ -1075,4 +1075,4 @@ class Simulator : public SimulatorBase {
 }  // namespace v8
 
 #endif  // defined(USE_SIMULATOR)
-#endif  // V8_EXECUTION_RISCV64_SIMULATOR_RISCV64_H_
+#endif  // V8_EXECUTION_RISCV64_SIMULATOR_RISCV32_H_
