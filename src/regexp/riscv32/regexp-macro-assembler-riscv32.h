@@ -7,7 +7,7 @@
 
 #include "src/base/strings.h"
 #include "src/codegen/macro-assembler.h"
-#include "src/codegen/riscv64/assembler-riscv64.h"
+#include "src/codegen/riscv32/assembler-riscv32.h"
 #include "src/regexp/regexp-macro-assembler.h"
 
 namespace v8 {

@@ -44,8 +44,8 @@
 #include "src/codegen/constant-pool.h"
 #include "src/codegen/external-reference.h"
 #include "src/codegen/label.h"
-#include "src/codegen/riscv64/constants-riscv64.h"
-#include "src/codegen/riscv64/register-riscv64.h"
+#include "src/codegen/riscv32/constants-riscv32.h"
+#include "src/codegen/riscv32/register-riscv32.h"
 #include "src/objects/contexts.h"
 #include "src/objects/smi.h"
 

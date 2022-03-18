@@ -29,7 +29,7 @@
 // Satisfy cpplint check, but don't include platform-specific header. It is
 // included recursively via macro-assembler.h.
 #if 0
-#include "src/codegen/riscv64/macro-assembler-riscv64.h"
+#include "src/codegen/riscv32/macro-assembler-riscv32.h"
 #endif
 
 namespace v8 {
@@ -3320,7 +3320,7 @@ void TurboAssembler::Jump(const ExternalReference& reference) {
   Jump(t6);
 }
 
-// Note: To call gcc-compiled C code on riscv64, you must call through t6.
+// Note: To call gcc-compiled C code on riscv32, you must call through t6.
 void TurboAssembler::Call(Register target, Condition cond, Register rs,
                           const Operand& rt) {
   BlockTrampolinePoolScope block_trampoline_pool(this);

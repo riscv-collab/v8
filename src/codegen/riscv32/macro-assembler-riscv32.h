@@ -10,7 +10,7 @@
 #define V8_CODEGEN_RISCV64_MACRO_ASSEMBLER_RISCV64_H_
 
 #include "src/codegen/assembler.h"
-#include "src/codegen/riscv64/assembler-riscv64.h"
+#include "src/codegen/riscv32/assembler-riscv32.h"
 #include "src/common/globals.h"
 #include "src/execution/isolate-data.h"
 #include "src/objects/tagged-index.h"

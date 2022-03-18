@@ -34,10 +34,10 @@
 
 #if V8_TARGET_ARCH_RISCV32
 
-#include "src/codegen/riscv64/assembler-riscv64.h"
+#include "src/codegen/riscv32/assembler-riscv32.h"
 
 #include "src/base/cpu.h"
-#include "src/codegen/riscv64/assembler-riscv64-inl.h"
+#include "src/codegen/riscv32/assembler-riscv32-inl.h"
 #include "src/codegen/safepoint-table.h"
 #include "src/codegen/string-constants.h"
 #include "src/deoptimizer/deoptimizer.h"
@@ -154,7 +154,7 @@ uint32_t RelocInfo::wasm_call_tag() const {
 
 // -----------------------------------------------------------------------------
 // Implementation of Operand and MemOperand.
-// See assembler-riscv64-inl.h for inlined constructors.
+// See assembler-riscv32-inl.h for inlined constructors.
 
 Operand::Operand(Handle<HeapObject> handle)
     : rm_(no_reg), rmode_(RelocInfo::FULL_EMBEDDED_OBJECT) {

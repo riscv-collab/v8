@@ -4,9 +4,9 @@
 
 #if V8_TARGET_ARCH_RISCV32
 
-#include "src/execution/riscv64/frame-constants-riscv64.h"
+#include "src/execution/riscv32/frame-constants-riscv32.h"
 
-#include "src/codegen/riscv64/assembler-riscv64-inl.h"
+#include "src/codegen/riscv32/assembler-riscv32-inl.h"
 #include "src/execution/frame-constants.h"
 #include "src/execution/frames.h"
 

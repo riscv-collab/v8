@@ -7,7 +7,7 @@
 
 #include "src/codegen/register-base.h"
 #include "src/codegen/reglist.h"
-#include "src/codegen/riscv64/constants-riscv64.h"
+#include "src/codegen/riscv32/constants-riscv32.h"
 
 namespace v8 {
 namespace internal {

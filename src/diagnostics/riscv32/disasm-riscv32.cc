@@ -33,7 +33,7 @@
 #include "src/base/strings.h"
 #include "src/base/vector.h"
 #include "src/codegen/macro-assembler.h"
-#include "src/codegen/riscv64/constants-riscv64.h"
+#include "src/codegen/riscv32/constants-riscv32.h"
 #include "src/diagnostics/disasm.h"
 
 namespace v8 {

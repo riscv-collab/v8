@@ -4,7 +4,7 @@
 
 #if V8_TARGET_ARCH_RISCV32
 
-#include "src/regexp/riscv64/regexp-macro-assembler-riscv64.h"
+#include "src/regexp/riscv32/regexp-macro-assembler-riscv32.h"
 
 #include "src/codegen/assembler-inl.h"
 #include "src/codegen/macro-assembler.h"

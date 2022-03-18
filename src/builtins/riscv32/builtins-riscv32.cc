@@ -15,7 +15,7 @@
 // For interpreter_entry_return_pc_offset. TODO(jkummerow): Drop.
 #include "src/codegen/macro-assembler-inl.h"
 #include "src/codegen/register-configuration.h"
-#include "src/codegen/riscv64/constants-riscv64.h"
+#include "src/codegen/riscv32/constants-riscv32.h"
 #include "src/heap/heap-inl.h"
 #include "src/objects/cell.h"
 #include "src/objects/foreign.h"
