@@ -40,12 +40,13 @@
 #include "src/utils/ostreams.h"
 #include "test/cctest/cctest.h"
 #include "test/cctest/compiler/value-helper.h"
-#include "test/cctest/test-helper-riscv64.h"
+#include "test/cctest/test-helper-riscv32.h"
 #include "test/common/assembler-tester.h"
 
 namespace v8 {
 namespace internal {
-
+#if 0
+//RV32Gtodo
 const float qnan_f = std::numeric_limits<float>::quiet_NaN();
 const float snan_f = std::numeric_limits<float>::signaling_NaN();
 const double qnan_d = std::numeric_limits<double>::quiet_NaN();
@@ -62,7 +63,6 @@ using F3 = void*(void* p, int p1, int p2, int p3, int p4);
 using F4 = void*(void* p0, void* p1, int p2, int p3, int p4);
 
 #define __ masm.
-
 static uint64_t run_CalcScaledAddress(uint64_t rt, uint64_t rs, int8_t sa) {
   Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
@@ -1564,6 +1564,7 @@ TEST(AddWithImm) {
   Test(Sub32, 4095, -4095);
 #undef Test
 }
+#endif 
 
 #undef __
 

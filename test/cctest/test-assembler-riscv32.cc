@@ -43,7 +43,8 @@
 
 namespace v8 {
 namespace internal {
-
+#if 0
+//RV32Gtodo
 // Define these function prototypes to match JSEntryFunction in execution.cc
 using F1 = void*(int x, int p1, int p2, int p3, int p4);
 using F2 = void*(int x, int y, int p2, int p3, int p4);
@@ -2826,6 +2827,6 @@ UTEST_VCPOP_M_WITH_WIDTH(8)
 #undef UTEST_VCPOP_M_WITH_WIDTH
 
 #undef __
-
+#endif
 }  // namespace internal
 }  // namespace v8

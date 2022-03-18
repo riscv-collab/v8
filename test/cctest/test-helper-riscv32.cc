@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "test/cctest/test-helper-riscv64.h"
+#include "test/cctest/test-helper-riscv32.h"
 
 #include "src/codegen/macro-assembler.h"
 #include "src/execution/isolate-inl.h"
@@ -24,7 +24,7 @@ int64_t GenAndRunTest(Func test_generator) {
   assm.GetCode(isolate, &desc);
   Handle<Code> code =
       Factory::CodeBuilder(isolate, desc, CodeKind::FOR_TESTING).Build();
-  auto f = GeneratedCode<int64_t()>::FromCode(*code);
+  auto f = GeneratedCode<int32_t()>::FromCode(*code);
   return f.Call();
 }
 
