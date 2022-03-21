@@ -1564,7 +1564,7 @@ TEST(AddWithImm) {
   Test(Sub32, 4095, -4095);
 #undef Test
 }
-#endif 
+#endif
 
 #undef __
 

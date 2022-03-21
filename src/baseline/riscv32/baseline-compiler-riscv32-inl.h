@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_BASELINE_RISCV64_BASELINE_COMPILER_RISCV64_INL_H_
-#define V8_BASELINE_RISCV64_BASELINE_COMPILER_RISCV64_INL_H_
+#ifndef V8_BASELINE_RISCV32_BASELINE_COMPILER_RISCV32_INL_H_
+#define V8_BASELINE_RISCV32_BASELINE_COMPILER_RISCV32_INL_H_
 
 #include "src/baseline/baseline-compiler.h"
 
@@ -76,4 +76,4 @@ void BaselineCompiler::VerifyFrameSize() {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_BASELINE_RISCV64_BASELINE_COMPILER_RISCV64_INL_H_
+#endif  // V8_BASELINE_RISCV32_BASELINE_COMPILER_RISCV32_INL_H_

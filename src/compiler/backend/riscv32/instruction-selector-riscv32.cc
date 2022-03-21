@@ -641,7 +641,7 @@ void InstructionSelector::VisitStore(Node* node) {
         UNREACHABLE();
 #endif
       case MachineRepresentation::kSandboxedPointer:
-      case MachineRepresentation::kMapWord:            // Fall through.
+      case MachineRepresentation::kMapWord:  // Fall through.
       case MachineRepresentation::kNone:
         UNREACHABLE();
     }
@@ -1407,7 +1407,7 @@ void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
   }
 }
 
-/* RV32Gtodo ensure 32bit doesn't need 
+/* RV32Gtodo ensure 32bit doesn't need
 bool InstructionSelector::ZeroExtendsWord32ToWord64NoPhis(Node* node) {
   DCHECK_NE(node->opcode(), IrOpcode::kPhi);
   if (node->opcode() == IrOpcode::kLoad ||
@@ -1769,7 +1769,7 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) {
     case MachineRepresentation::kCompressedPointer:  // Fall through.
     case MachineRepresentation::kCompressed:         // Fall through.
     case MachineRepresentation::kSandboxedPointer:
-    case MachineRepresentation::kMapWord:            // Fall through.
+    case MachineRepresentation::kMapWord:  // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
   }
@@ -1824,7 +1824,7 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
     case MachineRepresentation::kCompressedPointer:  // Fall through.
     case MachineRepresentation::kCompressed:         // Fall through.
     case MachineRepresentation::kSandboxedPointer:
-    case MachineRepresentation::kMapWord:            // Fall through.
+    case MachineRepresentation::kMapWord:  // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
   }
@@ -3333,59 +3333,36 @@ VISIT_EXT_MUL(I32x4, I16x8, 16)
 VISIT_EXT_MUL(I16x8, I8x16, 8)
 #undef VISIT_EXT_MUL
 
-//RV32Gtodo tobe impl
-void InstructionSelector::VisitInt32PairAdd(Node* node) {
-      UNIMPLEMENTED();
-}
+// RV32Gtodo tobe impl
+void InstructionSelector::VisitInt32PairAdd(Node* node) { UNIMPLEMENTED(); }
 
-void InstructionSelector::VisitInt32PairSub(Node* node) {
+void InstructionSelector::VisitInt32PairSub(Node* node) { UNIMPLEMENTED(); }
 
-      UNIMPLEMENTED();
-}
+void InstructionSelector::VisitInt32PairMul(Node* node) { UNIMPLEMENTED(); }
 
-void InstructionSelector::VisitInt32PairMul(Node* node) {
-      UNIMPLEMENTED();
-}
+void InstructionSelector::VisitWord32PairShl(Node* node) { UNIMPLEMENTED(); }
 
-void InstructionSelector::VisitWord32PairShl(Node* node) {
-      UNIMPLEMENTED();
-}
+void InstructionSelector::VisitWord32PairShr(Node* node) { UNIMPLEMENTED(); }
 
-void InstructionSelector::VisitWord32PairShr(Node* node) {
-      UNIMPLEMENTED();
-}
+void InstructionSelector::VisitWord32PairSar(Node* node) { UNIMPLEMENTED(); }
 
-void InstructionSelector::VisitWord32PairSar(Node* node) {
-      UNIMPLEMENTED();
-}
+void InstructionSelector::VisitWord32AtomicPairLoad(Node* node) {}
 
-void InstructionSelector::VisitWord32AtomicPairLoad(Node* node) {
-}
+void InstructionSelector::VisitWord32AtomicPairStore(Node* node) {}
 
-void InstructionSelector::VisitWord32AtomicPairStore(Node* node) {
-}
+void InstructionSelector::VisitWord32AtomicPairAdd(Node* node) {}
 
-void InstructionSelector::VisitWord32AtomicPairAdd(Node* node) {
-}
+void InstructionSelector::VisitWord32AtomicPairSub(Node* node) {}
 
-void InstructionSelector::VisitWord32AtomicPairSub(Node* node) {
-}
+void InstructionSelector::VisitWord32AtomicPairAnd(Node* node) {}
 
-void InstructionSelector::VisitWord32AtomicPairAnd(Node* node) {
-}
+void InstructionSelector::VisitWord32AtomicPairOr(Node* node) {}
 
-void InstructionSelector::VisitWord32AtomicPairOr(Node* node) {
-}
+void InstructionSelector::VisitWord32AtomicPairXor(Node* node) {}
 
-void InstructionSelector::VisitWord32AtomicPairXor(Node* node) {
-}
+void InstructionSelector::VisitWord32AtomicPairExchange(Node* node) {}
 
-void InstructionSelector::VisitWord32AtomicPairExchange(Node* node) {
-}
-
-void InstructionSelector::VisitWord32AtomicPairCompareExchange(Node* node) {
-}
-
+void InstructionSelector::VisitWord32AtomicPairCompareExchange(Node* node) {}
 
 void InstructionSelector::AddOutputToSelectContinuation(OperandGenerator* g,
                                                         int first_input_index,
@@ -3417,7 +3394,7 @@ InstructionSelector::AlignmentRequirements() {
   return MachineOperatorBuilder::AlignmentRequirements::
       NoUnalignedAccessSupport();
 #else
-    return MachineOperatorBuilder::AlignmentRequirements::
+  return MachineOperatorBuilder::AlignmentRequirements::
       FullUnalignedAccessSupport();
 #endif
 }

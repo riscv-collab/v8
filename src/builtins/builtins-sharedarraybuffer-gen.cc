@@ -379,7 +379,8 @@ TF_BUILTIN(AtomicsExchange, SharedArrayBufferBuiltinsAssembler) {
   // 2. Let i be ? ValidateAtomicAccess(typedArray, index).
   TNode<UintPtrT> index_word = ValidateAtomicAccess(array, index, context);
 
-#if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_RISCV64 || V8_TARGET_ARCH_RISCV32
+#if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_RISCV64 || \
+    V8_TARGET_ARCH_RISCV32
   USE(array_buffer);
   TNode<Number> index_number = ChangeUintPtrToTagged(index_word);
   Return(CallRuntime(Runtime::kAtomicsExchange, context, array, index_number,

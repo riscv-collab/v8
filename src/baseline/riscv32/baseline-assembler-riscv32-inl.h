@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_BASELINE_RISCV64_BASELINE_ASSEMBLER_RISCV64_INL_H_
-#define V8_BASELINE_RISCV64_BASELINE_ASSEMBLER_RISCV64_INL_H_
+#ifndef V8_BASELINE_RISCV32_BASELINE_ASSEMBLER_RISCV32_INL_H_
+#define V8_BASELINE_RISCV32_BASELINE_ASSEMBLER_RISCV32_INL_H_
 
 #include "src/baseline/baseline-assembler.h"
 #include "src/codegen/assembler-inl.h"
@@ -443,7 +443,7 @@ void BaselineAssembler::Switch(Register reg, int case_value_base,
   int32_t Hi20 = (((int32_t)imm64 + 0x800) >> 12);
   int32_t Lo12 = (int32_t)imm64 << 20 >> 20;
   __ BlockTrampolinePoolFor(2);
-  __ auipc(t6, Hi20);  // Read PC + Hi20 into t6
+  __ auipc(t6, Hi20);     // Read PC + Hi20 into t6
   __ addi(t6, t6, Lo12);  // jump PC + Hi20 + Lo12
 
   int entry_size_log2 = 3;
@@ -488,7 +488,7 @@ void BaselineAssembler::EmitReturn(MacroAssembler* masm) {
     __ masm()->Pop(params_size, kInterpreterAccumulatorRegister);
     __ masm()->SmiUntag(params_size);
 
-  __ Bind(&skip_interrupt_label);
+    __ Bind(&skip_interrupt_label);
   }
 
   BaselineAssembler::ScratchRegisterScope temps(&basm);
@@ -525,4 +525,4 @@ inline void EnsureAccumulatorPreservedScope::AssertEqualToAccumulator(
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_BASELINE_RISCV64_BASELINE_ASSEMBLER_RISCV64_INL_H_
+#endif  // V8_BASELINE_RISCV32_BASELINE_ASSEMBLER_RISCV32_INL_H_

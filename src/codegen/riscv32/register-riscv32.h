@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_CODEGEN_RISCV64_REGISTER_RISCV32_H_
-#define V8_CODEGEN_RISCV64_REGISTER_RISCV32_H_
+#ifndef V8_CODEGEN_RISCV32_REGISTER_RISCV32_H_
+#define V8_CODEGEN_RISCV32_REGISTER_RISCV32_H_
 
 #include "src/codegen/register-base.h"
 #include "src/codegen/reglist.h"
@@ -312,7 +312,6 @@ class FPURegister : public RegisterBase<FPURegister, kDoubleAfterLast> {
   explicit constexpr FPURegister(int code) : RegisterBase(code) {}
 };
 
-
 // A few double registers are reserved: one as a scratch register and one to
 //  hold 0.0.
 //  fs9: 0.0
@@ -395,4 +394,4 @@ constexpr Register kPtrComprCageBaseRegister = kRootRegister;
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_CODEGEN_RISCV64_REGISTER_RISCV32_H_
+#endif  // V8_CODEGEN_RISCV32_REGISTER_RISCV32_H_

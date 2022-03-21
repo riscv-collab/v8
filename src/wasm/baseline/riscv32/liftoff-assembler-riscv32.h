@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_WASM_BASELINE_RISCV64_LIFTOFF_ASSEMBLER_RISCV32_H_
-#define V8_WASM_BASELINE_RISCV64_LIFTOFF_ASSEMBLER_RISCV32_H_
+#ifndef V8_WASM_BASELINE_RISCV32_LIFTOFF_ASSEMBLER_RISCV32_H_
+#define V8_WASM_BASELINE_RISCV32_LIFTOFF_ASSEMBLER_RISCV32_H_
 
 #include "src/base/platform/wrappers.h"
 #include "src/heap/memory-chunk.h"
@@ -3816,4 +3816,4 @@ void LiftoffStackSlots::Construct(int param_slots) {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_WASM_BASELINE_RISCV64_LIFTOFF_ASSEMBLER_RISCV32_H_
+#endif  // V8_WASM_BASELINE_RISCV32_LIFTOFF_ASSEMBLER_RISCV32_H_

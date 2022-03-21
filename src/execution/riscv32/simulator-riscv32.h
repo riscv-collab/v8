@@ -97,7 +97,7 @@ using reg_t = uint64_t;
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
 #define zext32(x) ((reg_t)(uint32_t)(x))
-//RV32Gtodo: re-impl
+// RV32Gtodo: re-impl
 #define sext_xlen(x) (((sreg_t)(x) << (32 - xlen)) >> (32 - xlen))
 #define zext_xlen(x) (((reg_t)(x) << (32 - xlen)) >> (32 - xlen))
 
@@ -108,7 +108,7 @@ static inline bool isSnan(float fp) { return !QUIET_BIT_S(fp); }
 static inline bool isSnan(double fp) { return !QUIET_BIT_D(fp); }
 #undef QUIET_BIT_S
 #undef QUIET_BIT_D
-//RV32Gtodo: in RV32 mul's operands are 32bit
+// RV32Gtodo: in RV32 mul's operands are 32bit
 inline uint64_t mulhu(uint64_t a, uint64_t b) {
   uint64_t full_result = ((uint64_t)a) * ((uint64_t)b);
   return full_result;
@@ -133,11 +133,8 @@ union u32_f32 {
 inline float fsgnj32(float rs1, float rs2, bool n, bool x) {
   u32_f32 a = {.f = rs1}, b = {.f = rs2};
   u32_f32 res;
-  res.u = (a.u & ~F32_SIGN) | ((((x)   ? a.u
-                                 : (n) ? F32_SIGN
-                                       : 0) ^
-                                b.u) &
-                               F32_SIGN);
+  res.u =
+      (a.u & ~F32_SIGN) | ((((x) ? a.u : (n) ? F32_SIGN : 0) ^ b.u) & F32_SIGN);
   return res.f;
 }
 #define F64_SIGN ((uint64_t)1 << 63)
@@ -148,11 +145,8 @@ union u64_f64 {
 inline double fsgnj64(double rs1, double rs2, bool n, bool x) {
   u64_f64 a = {.d = rs1}, b = {.d = rs2};
   u64_f64 res;
-  res.u = (a.u & ~F64_SIGN) | ((((x)   ? a.u
-                                 : (n) ? F64_SIGN
-                                       : 0) ^
-                                b.u) &
-                               F64_SIGN);
+  res.u =
+      (a.u & ~F64_SIGN) | ((((x) ? a.u : (n) ? F64_SIGN : 0) ^ b.u) & F64_SIGN);
   return res.d;
 }
 
@@ -381,7 +375,7 @@ class Simulator : public SimulatorBase {
   void set_fflags(uint32_t flags) { set_csr_bits(csr_fflags, flags); }
   void clear_fflags(int32_t flags) { clear_csr_bits(csr_fflags, flags); }
 
-#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
   // RVV CSR
   __int128_t get_vregister(int vreg) const;
   inline uint64_t rvv_vlen() const { return kRvvVLEN; }
@@ -655,7 +649,7 @@ class Simulator : public SimulatorBase {
     }
   }
 
-#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
   inline void rvv_trace_vd() {
     if (::v8::internal::FLAG_trace_sim) {
       __int128_t value = Vregister_[rvv_vd_reg()];
@@ -867,7 +861,7 @@ class Simulator : public SimulatorBase {
   void DecodeCSType();
   void DecodeCJType();
   void DecodeCBType();
-#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
   void DecodeVType();
   void DecodeRvvIVV();
   void DecodeRvvIVI();
@@ -945,7 +939,7 @@ class Simulator : public SimulatorBase {
   // Floating-point control and status register.
   uint32_t FCSR_;
 
-#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
   // RVV registers
   __int128_t Vregister_[kNumVRegisters];
   static_assert(sizeof(__int128_t) == kRvvVLEN / 8, "unmatch vlen");
