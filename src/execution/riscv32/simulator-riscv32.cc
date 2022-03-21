@@ -88,7 +88,7 @@
 // PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 // HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 // MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
-#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
 static inline bool is_aligned(const unsigned val, const unsigned pos) {
   return pos ? (val & (pos - 1)) == 0 : true;
 }
@@ -158,7 +158,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 // PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 // HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 // MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
 template <uint64_t N>
 struct type_usew_t;
 template <>
@@ -314,130 +314,130 @@ struct type_sew_t<128> {
     }                                                             \
   }
 
-#define RVV_VI_VV_LOOP(BODY)       \
-  RVV_VI_GENERAL_LOOP_BASE         \
-  RVV_VI_LOOP_MASK_SKIP()          \
-  if (rvv_vsew() == E8) {          \
-    VV_PARAMS(8);                  \
-    BODY                           \
-  } else if (rvv_vsew() == E16) {  \
-    VV_PARAMS(16);                 \
-    BODY                           \
-  } else if (rvv_vsew() == E32) {  \
-    VV_PARAMS(32);                 \
-    BODY                           \
-  } else if (rvv_vsew() == E64) {  \
-    VV_PARAMS(64);                 \
-    BODY                           \
-  } else {                         \
-    UNREACHABLE();                 \
-  }                                \
-  RVV_VI_LOOP_END                  \
+#define RVV_VI_VV_LOOP(BODY)      \
+  RVV_VI_GENERAL_LOOP_BASE        \
+  RVV_VI_LOOP_MASK_SKIP()         \
+  if (rvv_vsew() == E8) {         \
+    VV_PARAMS(8);                 \
+    BODY                          \
+  } else if (rvv_vsew() == E16) { \
+    VV_PARAMS(16);                \
+    BODY                          \
+  } else if (rvv_vsew() == E32) { \
+    VV_PARAMS(32);                \
+    BODY                          \
+  } else if (rvv_vsew() == E64) { \
+    VV_PARAMS(64);                \
+    BODY                          \
+  } else {                        \
+    UNREACHABLE();                \
+  }                               \
+  RVV_VI_LOOP_END                 \
   rvv_trace_vd();
 
-#define RVV_VI_VV_ULOOP(BODY)      \
-  RVV_VI_GENERAL_LOOP_BASE         \
-  RVV_VI_LOOP_MASK_SKIP()          \
-  if (rvv_vsew() == E8) {          \
-    VV_UPARAMS(8);                 \
-    BODY                           \
-  } else if (rvv_vsew() == E16) {  \
-    VV_UPARAMS(16);                \
-    BODY                           \
-  } else if (rvv_vsew() == E32) {  \
-    VV_UPARAMS(32);                \
-    BODY                           \
-  } else if (rvv_vsew() == E64) {  \
-    VV_UPARAMS(64);                \
-    BODY                           \
-  } else {                         \
-    UNREACHABLE();                 \
-  }                                \
-  RVV_VI_LOOP_END                  \
+#define RVV_VI_VV_ULOOP(BODY)     \
+  RVV_VI_GENERAL_LOOP_BASE        \
+  RVV_VI_LOOP_MASK_SKIP()         \
+  if (rvv_vsew() == E8) {         \
+    VV_UPARAMS(8);                \
+    BODY                          \
+  } else if (rvv_vsew() == E16) { \
+    VV_UPARAMS(16);               \
+    BODY                          \
+  } else if (rvv_vsew() == E32) { \
+    VV_UPARAMS(32);               \
+    BODY                          \
+  } else if (rvv_vsew() == E64) { \
+    VV_UPARAMS(64);               \
+    BODY                          \
+  } else {                        \
+    UNREACHABLE();                \
+  }                               \
+  RVV_VI_LOOP_END                 \
   rvv_trace_vd();
 
-#define RVV_VI_VX_LOOP(BODY)       \
-  RVV_VI_GENERAL_LOOP_BASE         \
-  RVV_VI_LOOP_MASK_SKIP()          \
-  if (rvv_vsew() == E8) {          \
-    VX_PARAMS(8);                  \
-    BODY                           \
-  } else if (rvv_vsew() == E16) {  \
-    VX_PARAMS(16);                 \
-    BODY                           \
-  } else if (rvv_vsew() == E32) {  \
-    VX_PARAMS(32);                 \
-    BODY                           \
-  } else if (rvv_vsew() == E64) {  \
-    VX_PARAMS(64);                 \
-    BODY                           \
-  } else {                         \
-    UNREACHABLE();                 \
-  }                                \
-  RVV_VI_LOOP_END                  \
+#define RVV_VI_VX_LOOP(BODY)      \
+  RVV_VI_GENERAL_LOOP_BASE        \
+  RVV_VI_LOOP_MASK_SKIP()         \
+  if (rvv_vsew() == E8) {         \
+    VX_PARAMS(8);                 \
+    BODY                          \
+  } else if (rvv_vsew() == E16) { \
+    VX_PARAMS(16);                \
+    BODY                          \
+  } else if (rvv_vsew() == E32) { \
+    VX_PARAMS(32);                \
+    BODY                          \
+  } else if (rvv_vsew() == E64) { \
+    VX_PARAMS(64);                \
+    BODY                          \
+  } else {                        \
+    UNREACHABLE();                \
+  }                               \
+  RVV_VI_LOOP_END                 \
   rvv_trace_vd();
 
-#define RVV_VI_VX_ULOOP(BODY)      \
-  RVV_VI_GENERAL_LOOP_BASE         \
-  RVV_VI_LOOP_MASK_SKIP()          \
-  if (rvv_vsew() == E8) {          \
-    VX_UPARAMS(8);                 \
-    BODY                           \
-  } else if (rvv_vsew() == E16) {  \
-    VX_UPARAMS(16);                \
-    BODY                           \
-  } else if (rvv_vsew() == E32) {  \
-    VX_UPARAMS(32);                \
-    BODY                           \
-  } else if (rvv_vsew() == E64) {  \
-    VX_UPARAMS(64);                \
-    BODY                           \
-  } else {                         \
-    UNREACHABLE();                 \
-  }                                \
-  RVV_VI_LOOP_END                  \
+#define RVV_VI_VX_ULOOP(BODY)     \
+  RVV_VI_GENERAL_LOOP_BASE        \
+  RVV_VI_LOOP_MASK_SKIP()         \
+  if (rvv_vsew() == E8) {         \
+    VX_UPARAMS(8);                \
+    BODY                          \
+  } else if (rvv_vsew() == E16) { \
+    VX_UPARAMS(16);               \
+    BODY                          \
+  } else if (rvv_vsew() == E32) { \
+    VX_UPARAMS(32);               \
+    BODY                          \
+  } else if (rvv_vsew() == E64) { \
+    VX_UPARAMS(64);               \
+    BODY                          \
+  } else {                        \
+    UNREACHABLE();                \
+  }                               \
+  RVV_VI_LOOP_END                 \
   rvv_trace_vd();
 
-#define RVV_VI_VI_LOOP(BODY)       \
-  RVV_VI_GENERAL_LOOP_BASE         \
-  RVV_VI_LOOP_MASK_SKIP()          \
-  if (rvv_vsew() == E8) {          \
-    VI_PARAMS(8);                  \
-    BODY                           \
-  } else if (rvv_vsew() == E16) {  \
-    VI_PARAMS(16);                 \
-    BODY                           \
-  } else if (rvv_vsew() == E32) {  \
-    VI_PARAMS(32);                 \
-    BODY                           \
-  } else if (rvv_vsew() == E64) {  \
-    VI_PARAMS(64);                 \
-    BODY                           \
-  } else {                         \
-    UNREACHABLE();                 \
-  }                                \
-  RVV_VI_LOOP_END                  \
+#define RVV_VI_VI_LOOP(BODY)      \
+  RVV_VI_GENERAL_LOOP_BASE        \
+  RVV_VI_LOOP_MASK_SKIP()         \
+  if (rvv_vsew() == E8) {         \
+    VI_PARAMS(8);                 \
+    BODY                          \
+  } else if (rvv_vsew() == E16) { \
+    VI_PARAMS(16);                \
+    BODY                          \
+  } else if (rvv_vsew() == E32) { \
+    VI_PARAMS(32);                \
+    BODY                          \
+  } else if (rvv_vsew() == E64) { \
+    VI_PARAMS(64);                \
+    BODY                          \
+  } else {                        \
+    UNREACHABLE();                \
+  }                               \
+  RVV_VI_LOOP_END                 \
   rvv_trace_vd();
 
-#define RVV_VI_VI_ULOOP(BODY)      \
-  RVV_VI_GENERAL_LOOP_BASE         \
-  RVV_VI_LOOP_MASK_SKIP()          \
-  if (rvv_vsew() == E8) {          \
-    VI_UPARAMS(8);                 \
-    BODY                           \
-  } else if (rvv_vsew() == E16) {  \
-    VI_UPARAMS(16);                \
-    BODY                           \
-  } else if (rvv_vsew() == E32) {  \
-    VI_UPARAMS(32);                \
-    BODY                           \
-  } else if (rvv_vsew() == E64) {  \
-    VI_UPARAMS(64);                \
-    BODY                           \
-  } else {                         \
-    UNREACHABLE();                 \
-  }                                \
-  RVV_VI_LOOP_END                  \
+#define RVV_VI_VI_ULOOP(BODY)     \
+  RVV_VI_GENERAL_LOOP_BASE        \
+  RVV_VI_LOOP_MASK_SKIP()         \
+  if (rvv_vsew() == E8) {         \
+    VI_UPARAMS(8);                \
+    BODY                          \
+  } else if (rvv_vsew() == E16) { \
+    VI_UPARAMS(16);               \
+    BODY                          \
+  } else if (rvv_vsew() == E32) { \
+    VI_UPARAMS(32);               \
+    BODY                          \
+  } else if (rvv_vsew() == E64) { \
+    VI_UPARAMS(64);               \
+    BODY                          \
+  } else {                        \
+    UNREACHABLE();                \
+  }                               \
+  RVV_VI_LOOP_END                 \
   rvv_trace_vd();
 
 // widen operation loop
@@ -1493,7 +1493,7 @@ class RiscvDebugger {
   int64_t GetFPURegisterValue(int regnum);
   float GetFPURegisterValueFloat(int regnum);
   double GetFPURegisterValueDouble(int regnum);
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
   __int128_t GetVRegisterValue(int regnum);
 #endif
   bool GetValue(const char* desc, int64_t* value);
@@ -1536,7 +1536,7 @@ double RiscvDebugger::GetFPURegisterValueDouble(int regnum) {
   }
 }
 
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
 __int128_t RiscvDebugger::GetVRegisterValue(int regnum) {
   if (regnum == kNumVRegisters) {
     return sim_->get_pc();
@@ -1704,7 +1704,7 @@ void RiscvDebugger::Debug() {
           } else {
             int regnum = Registers::Number(arg1);
             int fpuregnum = FPURegisters::Number(arg1);
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
             int vregnum = VRegisters::Number(arg1);
 #endif
             if (regnum != kInvalidRegister) {
@@ -1717,7 +1717,7 @@ void RiscvDebugger::Debug() {
               PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n",
                      FPURegisters::Name(fpuregnum), value, dvalue);
 
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
             } else if (vregnum != kInvalidVRegister) {
               __int128_t v = GetVRegisterValue(vregnum);
               PrintF("\t%s:0x%016" PRIx64 "%016" PRIx64 "\n",
@@ -2359,7 +2359,7 @@ double Simulator::get_fpu_register_double(int fpureg) const {
   return *bit_cast<double*>(&FPUregisters_[fpureg]);
 }
 
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
 __int128_t Simulator::get_vregister(int vreg) const {
   DCHECK((vreg >= 0) && (vreg < kNumVRegisters));
   return Vregister_[vreg];
@@ -2678,8 +2678,7 @@ T Simulator::ReadMem(int64_t addr, Instruction* instr) {
 #if !defined(V8_COMPRESS_POINTERS) && defined(RISCV_HAS_NO_UNALIGNED)
   // check for natural alignment
   if (!FLAG_riscv_c_extension && ((addr & (sizeof(T) - 1)) != 0)) {
-    PrintF("Unaligned read at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n",
-    addr,
+    PrintF("Unaligned read at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n", addr,
            reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
   }
@@ -2968,7 +2967,7 @@ void Simulator::SoftwareInterrupt() {
                                  arg8, arg9, arg10, arg11, arg12, arg13, arg14,
                                  arg15, arg16, arg17, arg18, arg19);
       set_register(a0, (int32_t)result);
-      set_register(a1, (int32_t)(result>>32));
+      set_register(a1, (int32_t)(result >> 32));
     }
     if (::v8::internal::FLAG_trace_sim) {
       PrintF("Returned %08" PRIx64 "  : %08" PRIx64 " \n", get_register(a1),
@@ -4270,7 +4269,7 @@ void Simulator::DecodeRVR4Type() {
   }
 }
 
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
 bool Simulator::DecodeRvvVL() {
   uint32_t instr_temp =
       instr_.InstructionBits() & (kRvvMopMask | kRvvNfMask | kBaseOpcodeMask);
@@ -4635,12 +4634,12 @@ void Simulator::DecodeRVIType() {
       break;
     }
     default: {
-#if 0 // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo CAN_USE_RVV_INSTRUCTIONS
       if (!DecodeRvvVL()) {
         UNSUPPORTED();
       }
-#endif 
-      UNSUPPORTED(); 
+#endif
+      UNSUPPORTED();
     }
   }
 }
@@ -4674,7 +4673,7 @@ void Simulator::DecodeRVSType() {
       break;
     }
     default:
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
       if (!DecodeRvvVS()) {
         UNSUPPORTED();
       }
@@ -5058,7 +5057,7 @@ T sat_subu(T x, T y, bool& sat) {
   return res;
 }
 
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
 void Simulator::DecodeRvvIVV() {
   DCHECK_EQ(instr_.InstructionBits() & (kBaseOpcodeMask | kFunct3Mask), OP_IVV);
   switch (instr_.InstructionBits() & kVTypeMask) {
@@ -6934,7 +6933,7 @@ void Simulator::InstructionDecode(Instruction* instr) {
     case Instruction::kCSType:
       DecodeCSType();
       break;
-#if 0 //RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
+#if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
     case Instruction::kVType:
       DecodeVType();
       break;

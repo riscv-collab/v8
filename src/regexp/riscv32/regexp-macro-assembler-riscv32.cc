@@ -962,8 +962,7 @@ Handle<HeapObject> RegExpMacroAssemblerRISCV::GetCode(Handle<String> source) {
     if (stack_overflow_label_.is_linked()) {
       SafeCallTarget(&stack_overflow_label_);
       // Call GrowStack(isolate).
-      StoreRegExpStackPointerToMemory(backtrack_stackpointer(),
-                                      a1);
+      StoreRegExpStackPointerToMemory(backtrack_stackpointer(), a1);
 
       static constexpr int kNumArguments = 1;
       __ PrepareCallCFunction(kNumArguments, 0, a0);
@@ -1348,7 +1347,7 @@ void RegExpMacroAssemblerRISCV::LoadCurrentCharacterUnchecked(int cp_offset,
       __ Add64(kScratchReg, end_of_input_address(), offset);
       __ Lhu(current_character(), MemOperand(kScratchReg));
     } else {
-  DCHECK_EQ(1, characters);
+      DCHECK_EQ(1, characters);
       __ Add64(kScratchReg, end_of_input_address(), offset);
       __ Lbu(current_character(), MemOperand(kScratchReg));
     }

@@ -32,8 +32,8 @@
 // modified significantly by Google Inc.
 // Copyright 2021 the V8 project authors. All rights reserved.
 
-#ifndef V8_CODEGEN_RISCV64_ASSEMBLER_RISCV32_H_
-#define V8_CODEGEN_RISCV64_ASSEMBLER_RISCV32_H_
+#ifndef V8_CODEGEN_RISCV32_ASSEMBLER_RISCV32_H_
+#define V8_CODEGEN_RISCV32_ASSEMBLER_RISCV32_H_
 
 #include <stdio.h>
 
@@ -709,9 +709,9 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 #undef ARG
 #undef SegInstr
 
-  // RVV Vector Arithmetic Instruction
+      // RVV Vector Arithmetic Instruction
 
-  void vmv_vv(VRegister vd, VRegister vs1);
+      void vmv_vv(VRegister vd, VRegister vs1);
   void vmv_vx(VRegister vd, Register rs1);
   void vmv_vi(VRegister vd, uint8_t simm5);
   void vmv_xs(Register rd, VRegister vs2);
@@ -1824,4 +1824,4 @@ class LoadStoreLaneParams {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_CODEGEN_RISCV64_ASSEMBLER_RISCV32_H_
+#endif  // V8_CODEGEN_RISCV32_ASSEMBLER_RISCV32_H_
