@@ -73,5 +73,4 @@ jobs:
 
       - name: build
         working-directory: ./v8
-        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv32.debug
-
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv32.debug all
