@@ -17,18 +17,43 @@ on:
 jobs:
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: "Check depot_tools existence"
+        id: check_depot_tools
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "depot_tools"
+
       - name: git clone depot_tools
+        if: steps.check_depot_tools.outputs.files_exists == 'false'
         run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+      - name: "Check v8 existence"
+        id: check_v8
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "v8"
+
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: fetch v8
+        if: steps.check_v8.outputs.files_exists == 'false'
         run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools fetch v8
-    
-      - working-directory: ./v8
-        run: git remote add riscv https://github.com/riscv-collab/v8.git
 
+      - name: sync v8
+        if: steps.check_v8.outputs.files_exists == 'true'
+        working-directory: ./v8
+        run: git fetch origin && PATH=$PATH:$GITHUB_WORKSPACE/depot_tools gclient sync
+
+      - working-directory: ./v8
+        if: steps.check_v8.outputs.files_exists == 'false'
+        run: git remote add riscv https://github.com/riscv-collab/v8.git
+      
+      - working-directory: ./v8
+        if: steps.check_v8.outputs.files_exists == 'true'
+        run: git fetch riscv && git checkout riscv/RV32G && git branch -D LocalCI
+      
       - working-directory: ./v8
         run: git fetch riscv $GITHUB_SHA:LocalCI
  
@@ -36,9 +61,17 @@ jobs:
         run: git checkout LocalCI
 
       - working-directory: ./v8
-        run: echo $GITHUB_REF && echo $GITHUB_SHA &&  git log -1
+        run: echo $GITHUB_REF && echo $GITHUB_SHA &&  git log -10
 
       - name: presubmit
         working-directory: ./v8
         run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools git cl presubmit
+
+      - name: clean
+        working-directory: ./v8
+        run: rm -rf ./out/*
+
+      - name: build
+        working-directory: ./v8
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv32.debug
 
