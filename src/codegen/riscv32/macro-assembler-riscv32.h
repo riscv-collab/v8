@@ -160,12 +160,12 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 #undef COND_TYPED_ARGS
 #undef COND_ARGS
 
-  void AllocateStackSpace(Register bytes) { Sub64(sp, sp, bytes); }
+  void AllocateStackSpace(Register bytes) { Sub(sp, sp, bytes); }
 
   void AllocateStackSpace(int bytes) {
     DCHECK_GE(bytes, 0);
     if (bytes == 0) return;
-    Sub64(sp, sp, Operand(bytes));
+    Sub(sp, sp, Operand(bytes));
   }
 
   inline void NegateBool(Register rd, Register rs) { Xor(rd, rs, 1); }
@@ -287,7 +287,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void Sd(Register rd, const MemOperand& rs);
 
   void push(Register src) {
-    Add64(sp, sp, Operand(-kSystemPointerSize));
+    Add(sp, sp, Operand(-kSystemPointerSize));
     Sd(src, MemOperand(sp, 0));
   }
   void Push(Register src) { push(src); }
@@ -296,14 +296,14 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   // Push two registers. Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2) {
-    Sub64(sp, sp, Operand(2 * kSystemPointerSize));
+    Sub(sp, sp, Operand(2 * kSystemPointerSize));
     Sd(src1, MemOperand(sp, 1 * kSystemPointerSize));
     Sd(src2, MemOperand(sp, 0 * kSystemPointerSize));
   }
 
   // Push three registers. Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2, Register src3) {
-    Sub64(sp, sp, Operand(3 * kSystemPointerSize));
+    Sub(sp, sp, Operand(3 * kSystemPointerSize));
     Sd(src1, MemOperand(sp, 2 * kSystemPointerSize));
     Sd(src2, MemOperand(sp, 1 * kSystemPointerSize));
     Sd(src3, MemOperand(sp, 0 * kSystemPointerSize));
@@ -311,7 +311,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   // Push four registers. Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2, Register src3, Register src4) {
-    Sub64(sp, sp, Operand(4 * kSystemPointerSize));
+    Sub(sp, sp, Operand(4 * kSystemPointerSize));
     Sd(src1, MemOperand(sp, 3 * kSystemPointerSize));
     Sd(src2, MemOperand(sp, 2 * kSystemPointerSize));
     Sd(src3, MemOperand(sp, 1 * kSystemPointerSize));
@@ -321,7 +321,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   // Push five registers. Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2, Register src3, Register src4,
             Register src5) {
-    Sub64(sp, sp, Operand(5 * kSystemPointerSize));
+    Sub(sp, sp, Operand(5 * kSystemPointerSize));
     Sd(src1, MemOperand(sp, 4 * kSystemPointerSize));
     Sd(src2, MemOperand(sp, 3 * kSystemPointerSize));
     Sd(src3, MemOperand(sp, 2 * kSystemPointerSize));
@@ -332,7 +332,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void Push(Register src, Condition cond, Register tst1, Register tst2) {
     // Since we don't have conditional execution we use a Branch.
     Branch(3, cond, tst1, Operand(tst2));
-    Sub64(sp, sp, Operand(kSystemPointerSize));
+    Sub(sp, sp, Operand(kSystemPointerSize));
     Sd(src, MemOperand(sp, 0));
   }
 
@@ -380,7 +380,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   void pop(Register dst) {
     Ld(dst, MemOperand(sp, 0));
-    Add64(sp, sp, Operand(kSystemPointerSize));
+    Add(sp, sp, Operand(kSystemPointerSize));
   }
   void Pop(Register dst) { pop(dst); }
 
@@ -389,7 +389,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
     DCHECK(src1 != src2);
     Ld(src2, MemOperand(sp, 0 * kSystemPointerSize));
     Ld(src1, MemOperand(sp, 1 * kSystemPointerSize));
-    Add64(sp, sp, 2 * kSystemPointerSize);
+    Add(sp, sp, 2 * kSystemPointerSize);
   }
 
   // Pop three registers. Pops rightmost register first (from lower address).
@@ -397,11 +397,11 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
     Ld(src3, MemOperand(sp, 0 * kSystemPointerSize));
     Ld(src2, MemOperand(sp, 1 * kSystemPointerSize));
     Ld(src1, MemOperand(sp, 2 * kSystemPointerSize));
-    Add64(sp, sp, 3 * kSystemPointerSize);
+    Add(sp, sp, 3 * kSystemPointerSize);
   }
 
   void Pop(uint32_t count = 1) {
-    Add64(sp, sp, Operand(count * kSystemPointerSize));
+    Add(sp, sp, Operand(count * kSystemPointerSize));
   }
 
   // Pops multiple values from the stack and load them in the
@@ -423,16 +423,14 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
 #define DEFINE_INSTRUCTION3(instr) void instr(Register rd, int64_t imm);
 
-  DEFINE_INSTRUCTION(Add32)
-  DEFINE_INSTRUCTION(Add64)
+  DEFINE_INSTRUCTION(Add)
   DEFINE_INSTRUCTION(Div32)
   DEFINE_INSTRUCTION(Divu32)
   DEFINE_INSTRUCTION(Divu64)
   DEFINE_INSTRUCTION(Mod32)
   DEFINE_INSTRUCTION(Modu32)
   DEFINE_INSTRUCTION(Div64)
-  DEFINE_INSTRUCTION(Sub32)
-  DEFINE_INSTRUCTION(Sub64)
+  DEFINE_INSTRUCTION(Sub)
   DEFINE_INSTRUCTION(Mod64)
   DEFINE_INSTRUCTION(Modu64)
   DEFINE_INSTRUCTION(Mul32)
@@ -929,13 +927,9 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void DecompressAnyTagged(const Register& destination,
                            const MemOperand& field_operand);
   void CmpTagged(const Register& rd, const Register& rs1, const Register& rs2) {
-    if (COMPRESS_POINTERS_BOOL) {
-      Sub32(rd, rs1, rs2);
-    } else {
-      Sub64(rd, rs1, rs2);
-    }
+      Sub(rd, rs1, rs2);
   }
-  // Wasm into RVV
+  // W1sm into RVV
   void WasmRvvExtractLane(Register dst, VRegister src, int8_t idx, VSew sew,
                           Vlmul lmul) {
     VU.set(kScratchReg, sew, lmul);
@@ -1242,7 +1236,7 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
     } else {
       DCHECK(SmiValuesAre31Bits());
       // Smi is shifted left by 1
-      Add32(dst, src, src);
+      Add(dst, src, src);
     }
   }
 

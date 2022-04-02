@@ -39,7 +39,7 @@ void BaselineCompiler::PrologueFillFrame() {
   const bool has_new_target = new_target_index != kMaxInt;
   if (has_new_target) {
     DCHECK_LE(new_target_index, register_count);
-    __ masm()->Add64(sp, sp, Operand(-(kPointerSize * new_target_index)));
+    __ masm()->Add(sp, sp, Operand(-(kPointerSize * new_target_index)));
     for (int i = 0; i < new_target_index; i++) {
       __ masm()->Sd(kInterpreterAccumulatorRegister, MemOperand(sp, i * 8));
     }
@@ -49,12 +49,12 @@ void BaselineCompiler::PrologueFillFrame() {
   }
   if (register_count < 2 * kLoopUnrollSize) {
     // If the frame is small enough, just unroll the frame fill completely.
-    __ masm()->Add64(sp, sp, Operand(-(kPointerSize * register_count)));
+    __ masm()->Add(sp, sp, Operand(-(kPointerSize * register_count)));
     for (int i = 0; i < register_count; ++i) {
       __ masm()->Sd(kInterpreterAccumulatorRegister, MemOperand(sp, i * 8));
     }
   } else {
-    __ masm()->Add64(sp, sp, Operand(-(kPointerSize * register_count)));
+    __ masm()->Add(sp, sp, Operand(-(kPointerSize * register_count)));
     for (int i = 0; i < register_count; ++i) {
       __ masm()->Sd(kInterpreterAccumulatorRegister, MemOperand(sp, i * 8));
     }
@@ -63,7 +63,7 @@ void BaselineCompiler::PrologueFillFrame() {
 
 void BaselineCompiler::VerifyFrameSize() {
   ASM_CODE_COMMENT(&masm_);
-  __ masm()->Add64(kScratchReg, sp,
+  __ masm()->Add(kScratchReg, sp,
                    Operand(InterpreterFrameConstants::kFixedFrameSizeFromFp +
                            bytecode_->frame_size()));
   __ masm()->Assert(eq, AbortReason::kUnexpectedStackPointer, kScratchReg,

@@ -83,14 +83,14 @@ inline MemOperand GetMemOp(LiftoffAssembler* assm, Register addr,
   if (is_uint31(offset_imm)) {
     int32_t offset_imm32 = static_cast<int32_t>(offset_imm);
     if (offset == no_reg) return MemOperand(addr, offset_imm32);
-    assm->Add64(kScratchReg2, addr, offset);
+    assm->Add(kScratchReg2, addr, offset);
     return MemOperand(kScratchReg2, offset_imm32);
   }
   // Offset immediate does not fit in 31 bits.
   assm->li(kScratchReg2, offset_imm);
-  assm->Add64(kScratchReg2, kScratchReg2, addr);
+  assm->Add(kScratchReg2, kScratchReg2, addr);
   if (offset != no_reg) {
-    assm->Add64(kScratchReg2, kScratchReg2, offset);
+    assm->Add(kScratchReg2, kScratchReg2, offset);
   }
   return MemOperand(kScratchReg2, 0);
 }
@@ -309,7 +309,7 @@ void LiftoffAssembler::PrepareTailCall(int num_callee_stack_params,
   }
 
   // Set the new stack and frame pointer.
-  Add64(sp, fp, -stack_param_delta * 8);
+  Add(sp, fp, -stack_param_delta * 8);
   Pop(ra, fp);
 }
 
@@ -331,7 +331,7 @@ void LiftoffAssembler::PatchPrepareStackFrame(
   if (V8_LIKELY(frame_size < 4 * KB)) {
     // This is the standard case for small frames: just subtract from SP and be
     // done with it.
-    patching_assembler.Add64(sp, sp, Operand(-frame_size));
+    patching_assembler.Add(sp, sp, Operand(-frame_size));
     return;
   }
 
@@ -339,7 +339,7 @@ void LiftoffAssembler::PatchPrepareStackFrame(
   // space if we first allocate the frame and then do the stack check (we will
   // need some remaining stack space for throwing the exception). That's why we
   // check the available stack space before we allocate the frame. To do this we
-  // replace the {__ Add64(sp, sp, -frame_size)} with a jump to OOL code that
+  // replace the {__ Add(sp, sp, -frame_size)} with a jump to OOL code that
   // does this "extended stack check".
   //
   // The OOL code can simply be generated here with the normal assembler,
@@ -364,7 +364,7 @@ void LiftoffAssembler::PatchPrepareStackFrame(
        FieldMemOperand(kWasmInstanceRegister,
                        WasmInstanceObject::kRealStackLimitAddressOffset));
     Ld(stack_limit, MemOperand(stack_limit));
-    Add64(stack_limit, stack_limit, Operand(frame_size));
+    Add(stack_limit, stack_limit, Operand(frame_size));
     Branch(&continuation, uge, sp, Operand(stack_limit));
   }
 
@@ -377,10 +377,10 @@ void LiftoffAssembler::PatchPrepareStackFrame(
 
   // Now allocate the stack space. Note that this might do more than just
   // decrementing the SP;
-  Add64(sp, sp, Operand(-frame_size));
+  Add(sp, sp, Operand(-frame_size));
 
   // Jump back to the start of the function, from {pc_offset()} to
-  // right after the reserved space for the {__ Add64(sp, sp, -framesize)}
+  // right after the reserved space for the {__ Add(sp, sp, -framesize)}
   // (which is a Branch now).
   int func_start_offset = offset + 2 * kInstrSize;
   imm32 = func_start_offset - pc_offset();
@@ -509,7 +509,7 @@ void LiftoffAssembler::StoreTaggedPointer(Register dst_addr,
   JumpIfSmi(src.gp(), &exit);
   CheckPageFlag(src.gp(), scratch,
                 MemoryChunk::kPointersToHereAreInterestingMask, eq, &exit);
-  Add64(scratch, dst_op.rm(), dst_op.offset());
+  Add(scratch, dst_op.rm(), dst_op.offset());
   CallRecordWriteStubSaveRegisters(
       dst_addr, scratch, RememberedSetAction::kEmit, SaveFPRegsMode::kSave,
       StubCallMode::kCallWasmRuntimeStub);
@@ -561,7 +561,7 @@ void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
       VU.set(kScratchReg, E8, m1);
       Register src_reg = src_op.offset() == 0 ? src_op.rm() : kScratchReg;
       if (src_op.offset() != 0) {
-        TurboAssembler::Add64(src_reg, src_op.rm(), src_op.offset());
+        TurboAssembler::Add(src_reg, src_op.rm(), src_op.offset());
       }
       vl(dst.fp().toV(), src_reg, 0, E8);
       break;
@@ -625,7 +625,7 @@ void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
       VU.set(kScratchReg, E8, m1);
       Register dst_reg = dst_op.offset() == 0 ? dst_op.rm() : kScratchReg;
       if (dst_op.offset() != 0) {
-        Add64(kScratchReg, dst_op.rm(), dst_op.offset());
+        Add(kScratchReg, dst_op.rm(), dst_op.offset());
       }
       vs(src.fp().toV(), dst_reg, 0, VSew::E8);
       break;
@@ -644,9 +644,9 @@ inline Register CalculateActualAddress(LiftoffAssembler* lasm,
                                        Register result_reg) {
   DCHECK_NE(offset_reg, no_reg);
   DCHECK_NE(addr_reg, no_reg);
-  __ Add64(result_reg, addr_reg, Operand(offset_reg));
+  __ Add(result_reg, addr_reg, Operand(offset_reg));
   if (offset_imm != 0) {
-    __ Add64(result_reg, result_reg, Operand(offset_imm));
+    __ Add(result_reg, result_reg, Operand(offset_imm));
   }
   return result_reg;
 }
@@ -998,7 +998,7 @@ void LiftoffAssembler::Spill(int offset, LiftoffRegister reg, ValueKind kind) {
       VU.set(kScratchReg, E8, m1);
       Register dst_reg = dst.offset() == 0 ? dst.rm() : kScratchReg;
       if (dst.offset() != 0) {
-        Add64(kScratchReg, dst.rm(), dst.offset());
+        Add(kScratchReg, dst.rm(), dst.offset());
       }
       vs(reg.fp().toV(), dst_reg, 0, VSew::E8);
       break;
@@ -1054,7 +1054,7 @@ void LiftoffAssembler::Fill(LiftoffRegister reg, int offset, ValueKind kind) {
       VU.set(kScratchReg, E8, m1);
       Register src_reg = src.offset() == 0 ? src.rm() : kScratchReg;
       if (src.offset() != 0) {
-        TurboAssembler::Add64(src_reg, src.rm(), src.offset());
+        TurboAssembler::Add(src_reg, src.rm(), src.offset());
       }
       vl(reg.fp().toV(), src_reg, 0, E8);
       break;
@@ -1087,8 +1087,8 @@ void LiftoffAssembler::FillStackSlotsWithZero(int start, int size) {
     // General case for bigger counts (12 instructions).
     // Use a0 for start address (inclusive), a1 for end address (exclusive).
     Push(a1, a0);
-    Add64(a0, fp, Operand(-start - size));
-    Add64(a1, fp, Operand(-start));
+    Add(a0, fp, Operand(-start - size));
+    Add(a1, fp, Operand(-start));
 
     Label loop;
     bind(&loop);
@@ -1174,8 +1174,8 @@ I32_BINOP(xor, xor_)
   }
 
 // clang-format off
-I32_BINOP_I(add, Add32)
-I32_BINOP_I(sub, Sub32)
+I32_BINOP_I(add, Add)
+I32_BINOP_I(sub, Sub)
 I32_BINOP_I(and, And)
 I32_BINOP_I(or, Or)
 I32_BINOP_I(xor, Xor)
@@ -1324,7 +1324,7 @@ I64_SHIFTOP_I(shr, srli)
 
 void LiftoffAssembler::emit_i64_addi(LiftoffRegister dst, LiftoffRegister lhs,
                                      int64_t imm) {
-  TurboAssembler::Add64(dst.gp(), lhs.gp(), Operand(imm));
+  TurboAssembler::Add(dst.gp(), lhs.gp(), Operand(imm));
 }
 
 /* RV32Gtodo should delete?
@@ -1612,7 +1612,7 @@ void LiftoffAssembler::emit_i32_cond_jumpi(LiftoffCondition liftoff_cond,
 void LiftoffAssembler::emit_i32_subi_jump_negative(Register value,
                                                    int subtrahend,
                                                    Label* result_negative) {
-  Sub64(value, value, Operand(subtrahend));
+  Sub(value, value, Operand(subtrahend));
   TurboAssembler::Branch(result_negative, lt, value, Operand(zero_reg));
 }
 
@@ -3604,7 +3604,7 @@ void LiftoffAssembler::PushRegisters(LiftoffRegList regs) {
   int32_t num_gp_regs = gp_regs.GetNumRegsSet();
   if (num_gp_regs) {
     int32_t offset = num_gp_regs * kSystemPointerSize;
-    Add64(sp, sp, Operand(-offset));
+    Add(sp, sp, Operand(-offset));
     while (!gp_regs.is_empty()) {
       LiftoffRegister reg = gp_regs.GetFirstRegSet();
       offset -= kSystemPointerSize;
@@ -3616,7 +3616,7 @@ void LiftoffAssembler::PushRegisters(LiftoffRegList regs) {
   LiftoffRegList fp_regs = regs & kFpCacheRegList;
   int32_t num_fp_regs = fp_regs.GetNumRegsSet();
   if (num_fp_regs) {
-    Add64(sp, sp, Operand(-(num_fp_regs * kStackSlotSize)));
+    Add(sp, sp, Operand(-(num_fp_regs * kStackSlotSize)));
     int32_t offset = 0;
     while (!fp_regs.is_empty()) {
       LiftoffRegister reg = fp_regs.GetFirstRegSet();
@@ -3637,7 +3637,7 @@ void LiftoffAssembler::PopRegisters(LiftoffRegList regs) {
     fp_regs.clear(reg);
     fp_offset += sizeof(double);
   }
-  if (fp_offset) Add64(sp, sp, Operand(fp_offset));
+  if (fp_offset) Add(sp, sp, Operand(fp_offset));
   LiftoffRegList gp_regs = regs & kGpCacheRegList;
   int32_t gp_offset = 0;
   while (!gp_regs.is_empty()) {
@@ -3646,7 +3646,7 @@ void LiftoffAssembler::PopRegisters(LiftoffRegList regs) {
     gp_regs.clear(reg);
     gp_offset += kSystemPointerSize;
   }
-  Add64(sp, sp, Operand(gp_offset));
+  Add(sp, sp, Operand(gp_offset));
 }
 
 void LiftoffAssembler::RecordSpillsInSafepoint(
@@ -3675,7 +3675,7 @@ void LiftoffAssembler::CallC(const ValueKindSig* sig,
                              const LiftoffRegister* rets,
                              ValueKind out_argument_kind, int stack_bytes,
                              ExternalReference ext_ref) {
-  Add64(sp, sp, Operand(-stack_bytes));
+  Add(sp, sp, Operand(-stack_bytes));
 
   int arg_bytes = 0;
   for (ValueKind param_kind : sig->parameters()) {
@@ -3710,7 +3710,7 @@ void LiftoffAssembler::CallC(const ValueKindSig* sig,
     liftoff::Load(this, *next_result_reg, MemOperand(sp, 0), out_argument_kind);
   }
 
-  Add64(sp, sp, Operand(stack_bytes));
+  Add(sp, sp, Operand(stack_bytes));
 }
 
 void LiftoffAssembler::CallNativeWasmCode(Address addr) {
@@ -3748,12 +3748,12 @@ void LiftoffAssembler::CallRuntimeStub(WasmCode::RuntimeStubId sid) {
 }
 
 void LiftoffAssembler::AllocateStackSlot(Register addr, uint32_t size) {
-  Add64(sp, sp, Operand(-size));
+  Add(sp, sp, Operand(-size));
   TurboAssembler::Move(addr, sp);
 }
 
 void LiftoffAssembler::DeallocateStackSlot(uint32_t size) {
-  Add64(sp, sp, Operand(size));
+  Add(sp, sp, Operand(size));
 }
 
 void LiftoffAssembler::MaybeOSR() {}

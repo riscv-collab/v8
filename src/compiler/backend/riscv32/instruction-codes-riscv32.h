@@ -12,12 +12,10 @@ namespace compiler {
 // RISC-V-specific opcodes that specify which assembly sequence to emit.
 // Most opcodes specify a single instruction.
 #define TARGET_ARCH_OPCODE_LIST(V)          \
-  V(RiscvAdd32)                             \
-  V(RiscvAdd64)                             \
-  V(RiscvAddOvf64)                          \
-  V(RiscvSub32)                             \
-  V(RiscvSub64)                             \
-  V(RiscvSubOvf64)                          \
+  V(RiscvAdd)                               \
+  V(RiscvAddOvf)                            \
+  V(RiscvSub)                               \
+  V(RiscvSubOvf)                            \
   V(RiscvMul32)                             \
   V(RiscvMulOvf32)                          \
   V(RiscvMulHigh32)                         \

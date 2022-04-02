@@ -139,7 +139,7 @@ void TurboAssembler::LoadRoot(Register destination, RootIndex index,
 void TurboAssembler::PushCommonFrame(Register marker_reg) {
   if (marker_reg.is_valid()) {
     Push(ra, fp, marker_reg);
-    Add64(fp, sp, Operand(kSystemPointerSize));
+    Add(fp, sp, Operand(kSystemPointerSize));
   } else {
     Push(ra, fp);
     Mv(fp, sp);
@@ -155,7 +155,7 @@ void TurboAssembler::PushStandardFrame(Register function_reg) {
     Push(ra, fp, cp, kJavaScriptCallArgCountRegister);
     offset += kSystemPointerSize;
   }
-  Add64(fp, sp, Operand(offset));
+  Add(fp, sp, Operand(offset));
 }
 
 int MacroAssembler::SafepointRegisterStackIndex(int reg_code) {
@@ -191,7 +191,7 @@ void MacroAssembler::RecordWriteField(Register object, int offset,
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
     DCHECK(!AreAliased(object, value, scratch));
-    Add64(scratch, object, offset - kHeapObjectTag);
+    Add(scratch, object, offset - kHeapObjectTag);
     And(scratch, scratch, Operand(kTaggedSize - 1));
     BranchShort(&ok, eq, scratch, Operand(zero_reg));
     Abort(AbortReason::kUnalignedCellInWriteBarrier);
@@ -318,7 +318,7 @@ void MacroAssembler::RecordWrite(Register object, Operand offset,
     UseScratchRegisterScope temps(this);
     Register temp = temps.Acquire();
     DCHECK(!AreAliased(object, value, temp));
-    Add64(temp, object, offset);
+    Add(temp, object, offset);
     LoadTaggedPointerField(temp, MemOperand(temp));
     Assert(eq, AbortReason::kWrongAddressOrValuePassedToRecordWrite, temp,
            Operand(value));
@@ -364,7 +364,7 @@ void MacroAssembler::RecordWrite(Register object, Operand offset,
   DCHECK(!AreAliased(object, slot_address, value));
   // TODO(cbruni): Turn offset into int.
   DCHECK(offset.IsImmediate());
-  Add64(slot_address, object, offset);
+  Add(slot_address, object, offset);
   CallRecordWriteStub(object, slot_address, remembered_set_action, fp_mode);
   if (ra_status == kRAHasNotBeenSaved) {
     pop(ra);
@@ -377,37 +377,7 @@ void MacroAssembler::RecordWrite(Register object, Operand offset,
 // ---------------------------------------------------------------------------
 // Instruction macros.
 
-void TurboAssembler::Add32(Register rd, Register rs, const Operand& rt) {
-  if (rt.is_reg()) {
-    if (FLAG_riscv_c_extension && (rd.code() == rs.code()) &&
-        ((rd.code() & 0b11000) == 0b01000) &&
-        ((rt.rm().code() & 0b11000) == 0b01000)) {
-      c_addw(rd, rt.rm());
-    } else {
-      addw(rd, rs, rt.rm());
-    }
-  } else {
-    if (FLAG_riscv_c_extension && is_int6(rt.immediate()) &&
-        (rd.code() == rs.code()) && (rd != zero_reg) &&
-        !MustUseReg(rt.rmode())) {
-      c_addiw(rd, static_cast<int8_t>(rt.immediate()));
-    } else if (is_int12(rt.immediate()) && !MustUseReg(rt.rmode())) {
-      addiw(rd, rs, static_cast<int32_t>(rt.immediate()));
-    } else if ((-4096 <= rt.immediate() && rt.immediate() <= -2049) ||
-               (2048 <= rt.immediate() && rt.immediate() <= 4094)) {
-      addiw(rd, rs, rt.immediate() / 2);
-      addiw(rd, rd, rt.immediate() - (rt.immediate() / 2));
-    } else {
-      // li handles the relocation.
-      UseScratchRegisterScope temps(this);
-      Register scratch = temps.Acquire();
-      Li(scratch, rt.immediate());
-      addw(rd, rs, scratch);
-    }
-  }
-}
-
-void TurboAssembler::Add64(Register rd, Register rs, const Operand& rt) {
+void TurboAssembler::Add(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
     if (FLAG_riscv_c_extension && (rd.code() == rs.code()) &&
         (rt.rm() != zero_reg) && (rs != zero_reg)) {
@@ -446,49 +416,7 @@ void TurboAssembler::Add64(Register rd, Register rs, const Operand& rt) {
   }
 }
 
-void TurboAssembler::Sub32(Register rd, Register rs, const Operand& rt) {
-  if (rt.is_reg()) {
-    if (FLAG_riscv_c_extension && (rd.code() == rs.code()) &&
-        ((rd.code() & 0b11000) == 0b01000) &&
-        ((rt.rm().code() & 0b11000) == 0b01000)) {
-      c_subw(rd, rt.rm());
-    } else {
-      subw(rd, rs, rt.rm());
-    }
-  } else {
-    DCHECK(is_int32(rt.immediate()));
-    if (FLAG_riscv_c_extension && (rd.code() == rs.code()) &&
-        (rd != zero_reg) && is_int6(-rt.immediate()) &&
-        !MustUseReg(rt.rmode())) {
-      c_addiw(
-          rd,
-          static_cast<int8_t>(
-              -rt.immediate()));  // No c_subiw instr, use c_addiw(x, y, -imm).
-    } else if (is_int12(-rt.immediate()) && !MustUseReg(rt.rmode())) {
-      addiw(rd, rs,
-            static_cast<int32_t>(
-                -rt.immediate()));  // No subiw instr, use addiw(x, y, -imm).
-    } else if ((-4096 <= -rt.immediate() && -rt.immediate() <= -2049) ||
-               (2048 <= -rt.immediate() && -rt.immediate() <= 4094)) {
-      addiw(rd, rs, -rt.immediate() / 2);
-      addiw(rd, rd, -rt.immediate() - (-rt.immediate() / 2));
-    } else {
-      UseScratchRegisterScope temps(this);
-      Register scratch = temps.Acquire();
-      if (-rt.immediate() >> 12 == 0 && !MustUseReg(rt.rmode())) {
-        // Use load -imm and addu when loading -imm generates one instruction.
-        Li(scratch, -rt.immediate());
-        addw(rd, rs, scratch);
-      } else {
-        // li handles the relocation.
-        Li(scratch, rt.immediate());
-        subw(rd, rs, scratch);
-      }
-    }
-  }
-}
-
-void TurboAssembler::Sub64(Register rd, Register rs, const Operand& rt) {
+void TurboAssembler::Sub(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
     if (FLAG_riscv_c_extension && (rd.code() == rs.code()) &&
         ((rd.code() & 0b11000) == 0b01000) &&
@@ -801,7 +729,7 @@ void TurboAssembler::Seq(Register rd, Register rs, const Operand& rt) {
   } else if (IsZero(rt)) {
     seqz(rd, rs);
   } else {
-    Sub64(rd, rs, rt);
+    Sub(rd, rs, rt);
     seqz(rd, rd);
   }
 }
@@ -812,7 +740,7 @@ void TurboAssembler::Sne(Register rd, Register rs, const Operand& rt) {
   } else if (IsZero(rt)) {
     snez(rd, rs);
   } else {
-    Sub64(rd, rs, rt);
+    Sub(rd, rs, rt);
     snez(rd, rd);
   }
 }
@@ -1053,7 +981,7 @@ void TurboAssembler::CalcScaledAddress(Register rd, Register rt, Register rs,
   Register tmp = rd == rt ? temps.Acquire() : rd;
   DCHECK(tmp != rt);
   slli(tmp, rs, sa);
-  Add64(rd, rt, tmp);
+  Add(rd, rt, tmp);
 }
 
 // ------------Pseudo-instructions-------------
@@ -1341,7 +1269,7 @@ void MacroAssembler::LoadWordPair(Register rd, const MemOperand& rs) {
   Lwu(rd, rs);
   Lw(scratch, MemOperand(rs.rm(), rs.offset() + kSystemPointerSize / 2));
   slli(scratch, scratch, 32);
-  Add64(rd, rd, scratch);
+  Add(rd, rd, scratch);
 }
 
 void TurboAssembler::Usd(Register rd, const MemOperand& rs) {
@@ -1549,7 +1477,7 @@ void TurboAssembler::Ll(Register rd, const MemOperand& rs) {
   } else {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
-    Add64(scratch, rs.rm(), rs.offset());
+    Add(scratch, rs.rm(), rs.offset());
     lr_w(false, false, rd, scratch);
   }
 }
@@ -1561,7 +1489,7 @@ void TurboAssembler::Lld(Register rd, const MemOperand& rs) {
   } else {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
-    Add64(scratch, rs.rm(), rs.offset());
+    Add(scratch, rs.rm(), rs.offset());
     lr_d(false, false, rd, scratch);
   }
 }
@@ -1573,7 +1501,7 @@ void TurboAssembler::Sc(Register rd, const MemOperand& rs) {
   } else {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
-    Add64(scratch, rs.rm(), rs.offset());
+    Add(scratch, rs.rm(), rs.offset());
     sc_w(false, false, rd, scratch, rd);
   }
 }
@@ -1585,7 +1513,7 @@ void TurboAssembler::Scd(Register rd, const MemOperand& rs) {
   } else {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
-    Add64(scratch, rs.rm(), rs.offset());
+    Add(scratch, rs.rm(), rs.offset());
     sc_d(false, false, rd, scratch, rd);
   }
 }
@@ -1714,7 +1642,7 @@ void TurboAssembler::MultiPush(RegList regs) {
 #define S_REGS(V) \
   V(s11) V(s10) V(s9) V(s8) V(s7) V(s6) V(s5) V(s4) V(s3) V(s2) V(s1)
 
-  Sub64(sp, sp, Operand(stack_offset));
+  Sub(sp, sp, Operand(stack_offset));
 
   // Certain usage of MultiPush requires that registers are pushed onto the
   // stack in a particular: ra, fp, sp, gp, .... (basically in the decreasing
@@ -1787,7 +1715,7 @@ void TurboAssembler::MultiPushFPU(RegList regs) {
   int16_t num_to_push = base::bits::CountPopulation(regs);
   int16_t stack_offset = num_to_push * kDoubleSize;
 
-  Sub64(sp, sp, Operand(stack_offset));
+  Sub(sp, sp, Operand(stack_offset));
   for (int16_t i = kNumRegisters - 1; i >= 0; i--) {
     if ((regs & (1 << i)) != 0) {
       stack_offset -= kDoubleSize;
@@ -2672,7 +2600,7 @@ void TurboAssembler::Ctz32(Register rd, Register rs) {
   {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
-    Add64(scratch, rs, -1);
+    Add(scratch, rs, -1);
     Xor(rd, scratch, rs);
     And(rd, rd, scratch);
     // Count number of leading zeroes.
@@ -2684,7 +2612,7 @@ void TurboAssembler::Ctz32(Register rd, Register rs) {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
     li(scratch, 32);
-    Sub32(rd, scratch, rd);
+    Sub(rd, scratch, rd);
   }
 }
 
@@ -2696,7 +2624,7 @@ void TurboAssembler::Ctz64(Register rd, Register rs) {
   {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
-    Add64(scratch, rs, -1);
+    Add(scratch, rs, -1);
     Xor(rd, scratch, rs);
     And(rd, rd, scratch);
     // Count number of leading zeroes.
@@ -2708,7 +2636,7 @@ void TurboAssembler::Ctz64(Register rd, Register rs) {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
     li(scratch, 64);
-    Sub64(rd, scratch, rd);
+    Sub(rd, scratch, rd);
   }
 }
 
@@ -2745,16 +2673,16 @@ void TurboAssembler::Popcnt32(Register rd, Register rs, Register scratch) {
   li(scratch2, 0x55555555);  // B0 = 0x55555555;
   Srl32(scratch, rs, 1);
   And(scratch, scratch, scratch2);
-  Sub32(scratch, rs, scratch);
+  Sub(scratch, rs, scratch);
   li(scratch2, 0x33333333);  // B1 = 0x33333333;
   slli(rd, scratch2, 4);
   or_(scratch2, scratch2, rd);
   And(rd, scratch, scratch2);
   Srl32(scratch, scratch, 2);
   And(scratch, scratch, scratch2);
-  Add32(scratch, rd, scratch);
+  Add(scratch, rd, scratch);
   srliw(rd, scratch, 4);
-  Add32(rd, rd, scratch);
+  Add(rd, rd, scratch);
   li(scratch2, 0xF);
   Mul32(scratch2, value, scratch2);  // B2 = 0x0F0F0F0F;
   And(rd, rd, scratch2);
@@ -2782,15 +2710,15 @@ void TurboAssembler::Popcnt64(Register rd, Register rs, Register scratch) {
   Mul64(scratch2, value, scratch2);  // B0 = 0x5555555555555555l;
   Srl64(scratch, rs, 1);
   And(scratch, scratch, scratch2);
-  Sub64(scratch, rs, scratch);
+  Sub(scratch, rs, scratch);
   li(scratch2, 3);
   Mul64(scratch2, value, scratch2);  // B1 = 0x3333333333333333l;
   And(rd, scratch, scratch2);
   Srl64(scratch, scratch, 2);
   And(scratch, scratch, scratch2);
-  Add64(scratch, rd, scratch);
+  Add(scratch, rd, scratch);
   Srl64(rd, scratch, 4);
-  Add64(rd, rd, scratch);
+  Add(rd, rd, scratch);
   li(scratch2, 0xF);
   li(value, 0x0101010101010101l);    // value = 0x0101010101010101l;
   Mul64(scratch2, value, scratch2);  // B2 = 0x0F0F0F0F0F0F0F0Fl;
@@ -2821,7 +2749,7 @@ void TurboAssembler::TruncateDoubleToI(Isolate* isolate, Zone* zone,
   // If we fell through then inline version didn't succeed - call stub
   // instead.
   push(ra);
-  Sub64(sp, sp, Operand(kDoubleSize));  // Put input on stack.
+  Sub(sp, sp, Operand(kDoubleSize));  // Put input on stack.
   fsd(double_input, sp, 0);
 
   if (stub_mode == StubCallMode::kCallWasmRuntimeStub) {
@@ -2831,7 +2759,7 @@ void TurboAssembler::TruncateDoubleToI(Isolate* isolate, Zone* zone,
   }
   ld(result, sp, 0);
 
-  Add64(sp, sp, Operand(kDoubleSize));
+  Add(sp, sp, Operand(kDoubleSize));
   pop(ra);
 
   bind(&done);
@@ -3235,7 +3163,7 @@ void TurboAssembler::LoadRootRegisterOffset(Register destination,
   if (offset == 0) {
     Move(destination, kRootRegister);
   } else {
-    Add64(destination, kRootRegister, Operand(offset));
+    Add(destination, kRootRegister, Operand(offset));
   }
 }
 
@@ -3339,7 +3267,7 @@ void MacroAssembler::JumpIfIsInRange(Register value, unsigned lower_limit,
   if (lower_limit != 0) {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
-    Sub64(scratch, value, Operand(lower_limit));
+    Sub(scratch, value, Operand(lower_limit));
     Branch(on_in_range, Uless_equal, scratch,
            Operand(higher_limit - lower_limit));
   } else {
@@ -3519,7 +3447,7 @@ void TurboAssembler::BranchAndLinkLong(Label* L) {
 }
 
 void TurboAssembler::DropAndRet(int drop) {
-  Add64(sp, sp, drop * kSystemPointerSize);
+  Add(sp, sp, drop * kSystemPointerSize);
   Ret();
 }
 
@@ -3551,7 +3479,7 @@ void TurboAssembler::Drop(int count, Condition cond, Register reg,
     Branch(&skip, NegateCondition(cond), reg, op);
   }
 
-  Add64(sp, sp, Operand(count * kSystemPointerSize));
+  Add(sp, sp, Operand(count * kSystemPointerSize));
 
   if (cond != al) {
     bind(&skip);
@@ -3608,7 +3536,7 @@ void TurboAssembler::PushArray(Register array, Register size,
     CalcScaledAddress(scratch2, array, scratch, kSystemPointerSizeLog2);
     Ld(scratch2, MemOperand(scratch2));
     push(scratch2);
-    Add64(scratch, scratch, Operand(1));
+    Add(scratch, scratch, Operand(1));
     bind(&entry);
     Branch(&loop, less, scratch, Operand(size));
   } else {
@@ -3619,7 +3547,7 @@ void TurboAssembler::PushArray(Register array, Register size,
     Ld(scratch2, MemOperand(scratch2));
     push(scratch2);
     bind(&entry);
-    Add64(scratch, scratch, Operand(-1));
+    Add(scratch, scratch, Operand(-1));
     Branch(&loop, greater_equal, scratch, Operand(zero_reg));
   }
 }
@@ -3657,7 +3585,7 @@ void MacroAssembler::PushStackHandler() {
 void MacroAssembler::PopStackHandler() {
   STATIC_ASSERT(StackHandlerConstants::kNextOffset == 0);
   pop(a1);
-  Add64(sp, sp,
+  Add(sp, sp,
         Operand(static_cast<int64_t>(StackHandlerConstants::kSize -
                                      kSystemPointerSize)));
   UseScratchRegisterScope temps(this);
@@ -3728,7 +3656,7 @@ void MacroAssembler::StackOverflowCheck(Register num_args, Register scratch1,
   LoadStackLimit(scratch1, StackLimitKind::kRealStackLimit);
   // Make scratch1 the space we have left. The stack might already be overflowed
   // here which will cause scratch1 to become negative.
-  Sub64(scratch1, sp, scratch1);
+  Sub(scratch1, sp, scratch1);
   // Check if the arguments will overflow the stack.
   Sll64(scratch2, num_args, kSystemPointerSizeLog2);
   // Signed comparison.
@@ -3761,7 +3689,7 @@ void MacroAssembler::InvokePrologue(Register expected_parameter_count,
   }
   // If overapplication or if the actual argument count is equal to the
   // formal parameter count, no need to push extra undefined values.
-  Sub64(expected_parameter_count, expected_parameter_count,
+  Sub(expected_parameter_count, expected_parameter_count,
         actual_parameter_count);
   Branch(&regular_invoke, le, expected_parameter_count, Operand(zero_reg));
 
@@ -3778,16 +3706,16 @@ void MacroAssembler::InvokePrologue(Register expected_parameter_count,
     Register src = a6, dest = a7;
     Move(src, sp);
     Sll64(t0, expected_parameter_count, kSystemPointerSizeLog2);
-    Sub64(sp, sp, Operand(t0));
+    Sub(sp, sp, Operand(t0));
     // Update stack pointer.
     Move(dest, sp);
     Move(t0, actual_parameter_count);
     bind(&copy);
     Ld(t1, MemOperand(src, 0));
     Sd(t1, MemOperand(dest, 0));
-    Sub64(t0, t0, Operand(1));
-    Add64(src, src, Operand(kSystemPointerSize));
-    Add64(dest, dest, Operand(kSystemPointerSize));
+    Sub(t0, t0, Operand(1));
+    Add(src, src, Operand(kSystemPointerSize));
+    Add(dest, dest, Operand(kSystemPointerSize));
     Branch(&copy, gt, t0, Operand(zero_reg));
   }
 
@@ -3797,8 +3725,8 @@ void MacroAssembler::InvokePrologue(Register expected_parameter_count,
     Label loop;
     bind(&loop);
     Sd(t0, MemOperand(a7, 0));
-    Sub64(expected_parameter_count, expected_parameter_count, Operand(1));
-    Add64(a7, a7, Operand(kSystemPointerSize));
+    Sub(expected_parameter_count, expected_parameter_count, Operand(1));
+    Add(a7, a7, Operand(kSystemPointerSize));
     Branch(&loop, gt, expected_parameter_count, Operand(zero_reg));
   }
   Branch(&regular_invoke);
@@ -3956,7 +3884,7 @@ void MacroAssembler::GetInstanceTypeRange(Register map, Register type_reg,
                                           InstanceType lower_limit,
                                           Register range) {
   Lhu(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  Sub64(range, type_reg, Operand(lower_limit));
+  Sub(range, type_reg, Operand(lower_limit));
 }
 //------------------------------------------------------------------------------
 // Wasm
@@ -4248,7 +4176,7 @@ void MacroAssembler::EmitIncrementCounter(StatsCounter* counter, int value,
     // dummy_stats_counter_ field.
     li(scratch2, ExternalReference::Create(counter));
     Lw(scratch1, MemOperand(scratch2));
-    Add32(scratch1, scratch1, Operand(value));
+    Add(scratch1, scratch1, Operand(value));
     Sw(scratch1, MemOperand(scratch2));
   }
 }
@@ -4264,7 +4192,7 @@ void MacroAssembler::EmitDecrementCounter(StatsCounter* counter, int value,
     // dummy_stats_counter_ field.
     li(scratch2, ExternalReference::Create(counter));
     Lw(scratch1, MemOperand(scratch2));
-    Sub32(scratch1, scratch1, Operand(value));
+    Sub(scratch1, scratch1, Operand(value));
     Sw(scratch1, MemOperand(scratch2));
   }
 }
@@ -4444,7 +4372,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
   if (save_doubles) {
     // The stack is already aligned to 0 modulo 8 for stores with sdc1.
     int space = kNumCallerSavedFPU * kDoubleSize;
-    Sub64(sp, sp, Operand(space));
+    Sub(sp, sp, Operand(space));
     int count = 0;
     for (int i = 0; i < kNumFPURegisters; i++) {
       if (kCallerSavedFPU & (1 << i)) {
@@ -4459,7 +4387,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
   // (used by DirectCEntry to hold the return value if a struct is
   // returned) and align the frame preparing for calling the runtime function.
   DCHECK_GE(stack_space, 0);
-  Sub64(sp, sp, Operand((stack_space + 2) * kSystemPointerSize));
+  Sub(sp, sp, Operand((stack_space + 2) * kSystemPointerSize));
   if (frame_alignment > 0) {
     DCHECK(base::bits::IsPowerOfTwo(frame_alignment));
     And(sp, sp, Operand(-frame_alignment));  // Align stack.
@@ -4483,7 +4411,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles, Register argument_count,
   // Optionally restore all double registers.
   if (save_doubles) {
     // Remember: we only need to restore kCallerSavedFPU.
-    Sub64(scratch, fp,
+    Sub(scratch, fp,
           Operand(ExitFrameConstants::kFixedFrameSizeFromFp +
                   kNumCallerSavedFPU * kDoubleSize));
     int cout = 0;
@@ -4858,12 +4786,12 @@ void TurboAssembler::PrepareCallCFunction(int num_reg_arguments,
     // Make stack end at alignment and make room for stack arguments and the
     // original value of sp.
     Mv(scratch, sp);
-    Sub64(sp, sp, Operand((stack_passed_arguments + 1) * kSystemPointerSize));
+    Sub(sp, sp, Operand((stack_passed_arguments + 1) * kSystemPointerSize));
     DCHECK(base::bits::IsPowerOfTwo(frame_alignment));
     And(sp, sp, Operand(-frame_alignment));
     Sd(scratch, MemOperand(sp, stack_passed_arguments * kSystemPointerSize));
   } else {
-    Sub64(sp, sp, Operand(stack_passed_arguments * kSystemPointerSize));
+    Sub(sp, sp, Operand(stack_passed_arguments * kSystemPointerSize));
   }
 }
 
@@ -4975,7 +4903,7 @@ void TurboAssembler::CallCFunctionHelper(Register function,
   if (base::OS::ActivationFrameAlignment() > kSystemPointerSize) {
     Ld(sp, MemOperand(sp, stack_passed_arguments * kSystemPointerSize));
   } else {
-    Add64(sp, sp, Operand(stack_passed_arguments * kSystemPointerSize));
+    Add(sp, sp, Operand(stack_passed_arguments * kSystemPointerSize));
   }
 }
 
@@ -5019,7 +4947,7 @@ void TurboAssembler::ComputeCodeStartAddress(Register dst) {
   addi(ra, ra, kInstrSize * 2);  // ra = address of li
   int pc = pc_offset();
   li(dst, Operand(pc));
-  Sub64(dst, ra, dst);
+  Sub(dst, ra, dst);
 
   pop(ra);  // Restore ra
 }
@@ -5073,7 +5001,7 @@ void TurboAssembler::LoadCodeObjectEntry(Register destination,
     Branch(&if_code_is_off_heap, ne, scratch, Operand(zero_reg));
     // Not an off-heap trampoline object, the entry point is at
     // Code::raw_instruction_start().
-    Add64(destination, code_object, Code::kHeaderSize - kHeapObjectTag);
+    Add(destination, code_object, Code::kHeaderSize - kHeapObjectTag);
     Branch(&out);
 
     // An off-heap trampoline, the entry point is loaded from the builtin entry
@@ -5081,13 +5009,13 @@ void TurboAssembler::LoadCodeObjectEntry(Register destination,
     bind(&if_code_is_off_heap);
     Lw(scratch, FieldMemOperand(code_object, Code::kBuiltinIndexOffset));
     slli(destination, scratch, kSystemPointerSizeLog2);
-    Add64(destination, destination, kRootRegister);
+    Add(destination, destination, kRootRegister);
     Ld(destination,
        MemOperand(destination, IsolateData::builtin_entry_table_offset()));
 
     bind(&out);
   } else {
-    Add64(destination, code_object, Code::kHeaderSize - kHeapObjectTag);
+    Add(destination, code_object, Code::kHeaderSize - kHeapObjectTag);
   }
 }
 
@@ -5151,7 +5079,7 @@ void TurboAssembler::DecompressTaggedSigned(const Register& destination,
   if (FLAG_debug_code) {
     // Corrupt the top 32 bits. Made up of 16 fixed bits and 16 pc offset bits.
     /* RV32Gtodo: here need to re-impl
-    Add64(destination, destination,
+    Add(destination, destination,
           Operand(((kDebugZapValue << 16) | (pc_offset() & 0xffff)) << 32));
     */
   }
@@ -5161,21 +5089,21 @@ void TurboAssembler::DecompressTaggedPointer(const Register& destination,
                                              const MemOperand& field_operand) {
   ASM_CODE_COMMENT(this);
   Lwu(destination, field_operand);
-  Add64(destination, kPtrComprCageBaseRegister, destination);
+  Add(destination, kPtrComprCageBaseRegister, destination);
 }
 
 void TurboAssembler::DecompressTaggedPointer(const Register& destination,
                                              const Register& source) {
   ASM_CODE_COMMENT(this);
   And(destination, source, Operand(0xFFFFFFFF));
-  Add64(destination, kPtrComprCageBaseRegister, Operand(destination));
+  Add(destination, kPtrComprCageBaseRegister, Operand(destination));
 }
 
 void TurboAssembler::DecompressAnyTagged(const Register& destination,
                                          const MemOperand& field_operand) {
   ASM_CODE_COMMENT(this);
   Lwu(destination, field_operand);
-  Add64(destination, kPtrComprCageBaseRegister, destination);
+  Add(destination, kPtrComprCageBaseRegister, destination);
 }
 
 void MacroAssembler::DropArguments(Register count, ArgumentsCountType type,
@@ -5189,16 +5117,16 @@ void MacroAssembler::DropArguments(Register count, ArgumentsCountType type,
       STATIC_ASSERT(kSmiTagSize == 1 && kSmiTag == 0);
       DCHECK_NE(scratch, no_reg);
       SmiScale(scratch, count, kPointerSizeLog2);
-      Add64(sp, sp, scratch);
+      Add(sp, sp, scratch);
       break;
     }
     case kCountIsBytes: {
-      Add64(sp, sp, count);
+      Add(sp, sp, count);
       break;
     }
   }
   if (mode == kCountExcludesReceiver) {
-    Add64(sp, sp, kSystemPointerSize);
+    Add(sp, sp, kSystemPointerSize);
   }
 }
 

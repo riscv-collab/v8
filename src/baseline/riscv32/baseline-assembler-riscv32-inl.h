@@ -78,7 +78,7 @@ MemOperand BaselineAssembler::RegisterFrameOperand(
 }
 void BaselineAssembler::RegisterFrameAddress(
     interpreter::Register interpreter_register, Register rscratch) {
-  return __ Add64(rscratch, fp,
+  return __ Add(rscratch, fp,
                   interpreter_register.ToOperand() * kSystemPointerSize);
 }
 MemOperand BaselineAssembler::FeedbackVectorOperand() {
@@ -386,7 +386,7 @@ void BaselineAssembler::AddToInterruptBudgetAndJumpIfNotExceeded(
   __ Lw(interrupt_budget,
         FieldMemOperand(feedback_cell, FeedbackCell::kInterruptBudgetOffset));
   // Remember to set flags as part of the add!
-  __ Add32(interrupt_budget, interrupt_budget, weight);
+  __ Add(interrupt_budget, interrupt_budget, weight);
   __ Sw(interrupt_budget,
         FieldMemOperand(feedback_cell, FeedbackCell::kInterruptBudgetOffset));
   if (skip_interrupt_label) {
@@ -408,7 +408,7 @@ void BaselineAssembler::AddToInterruptBudgetAndJumpIfNotExceeded(
   __ Lw(interrupt_budget,
         FieldMemOperand(feedback_cell, FeedbackCell::kInterruptBudgetOffset));
   // Remember to set flags as part of the add!
-  __ Add32(interrupt_budget, interrupt_budget, weight);
+  __ Add(interrupt_budget, interrupt_budget, weight);
   __ Sw(interrupt_budget,
         FieldMemOperand(feedback_cell, FeedbackCell::kInterruptBudgetOffset));
   if (skip_interrupt_label)
@@ -417,11 +417,7 @@ void BaselineAssembler::AddToInterruptBudgetAndJumpIfNotExceeded(
 
 void BaselineAssembler::AddSmi(Register lhs, Smi rhs) {
   ASM_CODE_COMMENT(masm_);
-  if (SmiValuesAre31Bits()) {
-    __ Add32(lhs, lhs, Operand(rhs));
-  } else {
-    __ Add64(lhs, lhs, Operand(rhs));
-  }
+  __ Add(lhs, lhs, Operand(rhs));
 }
 
 void BaselineAssembler::Switch(Register reg, int case_value_base,
@@ -429,7 +425,7 @@ void BaselineAssembler::Switch(Register reg, int case_value_base,
   ASM_CODE_COMMENT(masm_);
   Label fallthrough;
   if (case_value_base != 0) {
-    __ Sub64(reg, reg, Operand(case_value_base));
+    __ Sub(reg, reg, Operand(case_value_base));
   }
 
   // Mostly copied from code-generator-riscv64.cc

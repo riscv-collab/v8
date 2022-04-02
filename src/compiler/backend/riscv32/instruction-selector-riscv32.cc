@@ -89,10 +89,9 @@ class RiscvOperandGenerator final : public OperandGenerator {
       case kRiscvSar64:
       case kRiscvShr64:
         return is_uint6(value);
-      case kRiscvAdd32:
+      case kRiscvAdd:
       case kRiscvAnd32:
       case kRiscvAnd:
-      case kRiscvAdd64:
       case kRiscvOr32:
       case kRiscvOr:
       case kRiscvTst:
@@ -398,7 +397,7 @@ void EmitLoad(InstructionSelector* selector, Node* node, InstructionCode opcode,
                    g.UseRegister(base), g.UseImmediate(index));
   } else {
     InstructionOperand addr_reg = g.TempRegister();
-    selector->Emit(kRiscvAdd64 | AddressingModeField::encode(kMode_None),
+    selector->Emit(kRiscvAdd | AddressingModeField::encode(kMode_None),
                    addr_reg, g.UseRegister(index), g.UseRegister(base));
     // Emit desired load opcode, using temp addr_reg.
     selector->Emit(opcode | AddressingModeField::encode(kMode_MRI),
@@ -420,7 +419,7 @@ void EmitS128Load(InstructionSelector* selector, Node* node,
                    g.UseImmediate(lmul));
   } else {
     InstructionOperand addr_reg = g.TempRegister();
-    selector->Emit(kRiscvAdd64 | AddressingModeField::encode(kMode_None),
+    selector->Emit(kRiscvAdd | AddressingModeField::encode(kMode_None),
                    addr_reg, g.UseRegister(index), g.UseRegister(base));
     // Emit desired load opcode, using temp addr_reg.
     selector->Emit(opcode | AddressingModeField::encode(kMode_MRI),
@@ -439,7 +438,7 @@ void InstructionSelector::VisitStoreLane(Node* node) {
   Node* base = node->InputAt(0);
   Node* index = node->InputAt(1);
   InstructionOperand addr_reg = g.TempRegister();
-  Emit(kRiscvAdd64, addr_reg, g.UseRegister(base), g.UseRegister(index));
+  Emit(kRiscvAdd, addr_reg, g.UseRegister(base), g.UseRegister(index));
   InstructionOperand inputs[4] = {
       g.UseRegister(node->InputAt(2)),
       g.UseImmediate(f.laneidx),
@@ -459,7 +458,7 @@ void InstructionSelector::VisitLoadLane(Node* node) {
   Node* base = node->InputAt(0);
   Node* index = node->InputAt(1);
   InstructionOperand addr_reg = g.TempRegister();
-  Emit(kRiscvAdd64, addr_reg, g.UseRegister(base), g.UseRegister(index));
+  Emit(kRiscvAdd, addr_reg, g.UseRegister(base), g.UseRegister(index));
   opcode |= AddressingModeField::encode(kMode_MRI);
   Emit(opcode, g.DefineSameAsFirst(node), g.UseRegister(node->InputAt(2)),
        g.UseImmediate(params.laneidx), addr_reg, g.TempImmediate(0));
@@ -652,7 +651,7 @@ void InstructionSelector::VisitStore(Node* node) {
            g.UseRegisterOrImmediateZero(value));
     } else {
       InstructionOperand addr_reg = g.TempRegister();
-      Emit(kRiscvAdd64 | AddressingModeField::encode(kMode_None), addr_reg,
+      Emit(kRiscvAdd | AddressingModeField::encode(kMode_None), addr_reg,
            g.UseRegister(index), g.UseRegister(base));
       // Emit desired store opcode, using temp addr_reg.
       Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
@@ -947,22 +946,13 @@ void InstructionSelector::VisitWord64Clz(Node* node) {
 #endif
 
 void InstructionSelector::VisitInt32Add(Node* node) {
-  VisitBinop(this, node, kRiscvAdd32, true, kRiscvAdd32);
+  VisitBinop(this, node, kRiscvAdd, true, kRiscvAdd);
 }
-#if 0
-void InstructionSelector::VisitInt64Add(Node* node) {
-  VisitBinop(this, node, kRiscvAdd64, true, kRiscvAdd64);
-}
-#endif
 
 void InstructionSelector::VisitInt32Sub(Node* node) {
-  VisitBinop(this, node, kRiscvSub32);
+  VisitBinop(this, node, kRiscvSub);
 }
-#if 0
-void InstructionSelector::VisitInt64Sub(Node* node) {
-  VisitBinop(this, node, kRiscvSub64);
-}
-#endif
+
 void InstructionSelector::VisitInt32Mul(Node* node) {
   RiscvOperandGenerator g(this);
   Int32BinopMatcher m(node);
@@ -979,7 +969,7 @@ void InstructionSelector::VisitInt32Mul(Node* node) {
       Emit(kRiscvShl32 | AddressingModeField::encode(kMode_None), temp,
            g.UseRegister(m.left().node()),
            g.TempImmediate(base::bits::WhichPowerOfTwo(value + 1)));
-      Emit(kRiscvSub32 | AddressingModeField::encode(kMode_None),
+      Emit(kRiscvSub | AddressingModeField::encode(kMode_None),
            g.DefineAsRegister(node), temp, g.UseRegister(m.left().node()));
       return;
     }
@@ -1079,7 +1069,7 @@ void InstructionSelector::VisitInt64Mul(Node* node) {
       Emit(kRiscvShl64 | AddressingModeField::encode(kMode_None), temp,
            g.UseRegister(m.left().node()),
            g.TempImmediate(base::bits::WhichPowerOfTwo(value + 1)));
-      Emit(kRiscvSub64 | AddressingModeField::encode(kMode_None),
+      Emit(kRiscvSub | AddressingModeField::encode(kMode_None),
            g.DefineAsRegister(node), temp, g.UseRegister(m.left().node()));
       return;
     }
@@ -1779,7 +1769,7 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) {
          g.DefineAsRegister(node), g.UseRegister(base), g.UseImmediate(index));
   } else {
     InstructionOperand addr_reg = g.TempRegister();
-    Emit(kRiscvAdd64 | AddressingModeField::encode(kMode_None), addr_reg,
+    Emit(kRiscvAdd | AddressingModeField::encode(kMode_None), addr_reg,
          g.UseRegister(index), g.UseRegister(base));
     // Emit desired load opcode, using temp addr_reg.
     Emit(opcode | AddressingModeField::encode(kMode_MRI),
@@ -1835,7 +1825,7 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
          g.UseRegisterOrImmediateZero(value));
   } else {
     InstructionOperand addr_reg = g.TempRegister();
-    Emit(kRiscvAdd64 | AddressingModeField::encode(kMode_None), addr_reg,
+    Emit(kRiscvAdd | AddressingModeField::encode(kMode_None), addr_reg,
          g.UseRegister(index), g.UseRegister(base));
     // Emit desired store opcode, using temp addr_reg.
     Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
@@ -2078,7 +2068,7 @@ void VisitAtomicLoad(InstructionSelector* selector, Node* node,
                    g.UseImmediate(index));
   } else {
     InstructionOperand addr_reg = g.TempRegister();
-    selector->Emit(kRiscvAdd64 | AddressingModeField::encode(kMode_None),
+    selector->Emit(kRiscvAdd | AddressingModeField::encode(kMode_None),
                    addr_reg, g.UseRegister(index), g.UseRegister(base));
     // Emit desired load opcode, using temp addr_reg.
     selector->Emit(opcode | AddressingModeField::encode(kMode_MRI) |
@@ -2101,7 +2091,7 @@ void VisitAtomicStore(InstructionSelector* selector, Node* node,
                    g.UseRegisterOrImmediateZero(value));
   } else {
     InstructionOperand addr_reg = g.TempRegister();
-    selector->Emit(kRiscvAdd64 | AddressingModeField::encode(kMode_None),
+    selector->Emit(kRiscvAdd | AddressingModeField::encode(kMode_None),
                    addr_reg, g.UseRegister(index), g.UseRegister(base));
     // Emit desired store opcode, using temp addr_reg.
     selector->Emit(opcode | AddressingModeField::encode(kMode_MRI) |
@@ -2304,19 +2294,19 @@ void InstructionSelector::VisitWordCompareZero(Node* user, Node* value,
             switch (node->opcode()) {
               case IrOpcode::kInt32AddWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
-                return VisitBinop(this, node, kRiscvAdd64, cont);
+                return VisitBinop(this, node, kRiscvAdd, cont);
               case IrOpcode::kInt32SubWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
-                return VisitBinop(this, node, kRiscvSub64, cont);
+                return VisitBinop(this, node, kRiscvSub, cont);
               case IrOpcode::kInt32MulWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
                 return VisitBinop(this, node, kRiscvMulOvf32, cont);
               case IrOpcode::kInt64AddWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
-                return VisitBinop(this, node, kRiscvAddOvf64, cont);
+                return VisitBinop(this, node, kRiscvAddOvf, cont);
               case IrOpcode::kInt64SubWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
-                return VisitBinop(this, node, kRiscvSubOvf64, cont);
+                return VisitBinop(this, node, kRiscvSubOvf, cont);
               default:
                 break;
             }
@@ -2357,7 +2347,7 @@ void InstructionSelector::VisitSwitch(Node* node, const SwitchInfo& sw) {
       InstructionOperand index_operand = value_operand;
       if (sw.min_value()) {
         index_operand = g.TempRegister();
-        Emit(kRiscvSub32, index_operand, value_operand,
+        Emit(kRiscvSub, index_operand, value_operand,
              g.TempImmediate(sw.min_value()));
       }
       // Generate a table lookup.
@@ -2404,19 +2394,19 @@ void InstructionSelector::VisitUint32LessThanOrEqual(Node* node) {
 void InstructionSelector::VisitInt32AddWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
-    return VisitBinop(this, node, kRiscvAdd64, &cont);
+    return VisitBinop(this, node, kRiscvAdd, &cont);
   }
   FlagsContinuation cont;
-  VisitBinop(this, node, kRiscvAdd64, &cont);
+  VisitBinop(this, node, kRiscvAdd, &cont);
 }
 
 void InstructionSelector::VisitInt32SubWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
-    return VisitBinop(this, node, kRiscvSub64, &cont);
+    return VisitBinop(this, node, kRiscvSub, &cont);
   }
   FlagsContinuation cont;
-  VisitBinop(this, node, kRiscvSub64, &cont);
+  VisitBinop(this, node, kRiscvSub, &cont);
 }
 
 void InstructionSelector::VisitInt32MulWithOverflow(Node* node) {
@@ -2432,19 +2422,19 @@ void InstructionSelector::VisitInt32MulWithOverflow(Node* node) {
 void InstructionSelector::VisitInt64AddWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
-    return VisitBinop(this, node, kRiscvAddOvf64, &cont);
+    return VisitBinop(this, node, kRiscvAddOvf, &cont);
   }
   FlagsContinuation cont;
-  VisitBinop(this, node, kRiscvAddOvf64, &cont);
+  VisitBinop(this, node, kRiscvAddOvf, &cont);
 }
 
 void InstructionSelector::VisitInt64SubWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
-    return VisitBinop(this, node, kRiscvSubOvf64, &cont);
+    return VisitBinop(this, node, kRiscvSubOvf, &cont);
   }
   FlagsContinuation cont;
-  VisitBinop(this, node, kRiscvSubOvf64, &cont);
+  VisitBinop(this, node, kRiscvSubOvf, &cont);
 }
 
 void InstructionSelector::VisitWord64Equal(Node* const node) {

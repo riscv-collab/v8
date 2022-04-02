@@ -151,24 +151,18 @@ const MachInst2 kFPArithInstructions[] = {
 // ----------------------------------------------------------------------------
 
 const MachInst2 kAddSubInstructions[] = {
-    {&RawMachineAssembler::Int32Add, "Int32Add", kRiscvAdd32,
+    {&RawMachineAssembler::Int32Add, "Int32Add", kRiscvAdd,
      MachineType::Int32()},
-    {&RawMachineAssembler::Int64Add, "Int64Add", kRiscvAdd64,
-     MachineType::Int64()},
-    {&RawMachineAssembler::Int32Sub, "Int32Sub", kRiscvSub32,
-     MachineType::Int32()},
-    {&RawMachineAssembler::Int64Sub, "Int64Sub", kRiscvSub64,
-     MachineType::Int64()}};
+    {&RawMachineAssembler::Int32Sub, "Int32Sub", kRiscvSub,
+     MachineType::Int32()}};
 
 // ----------------------------------------------------------------------------
 // IntArithTest instructions, one node.
 // ----------------------------------------------------------------------------
 
 const MachInst1 kAddSubOneInstructions[] = {
-    {&RawMachineAssembler::Int32Neg, "Int32Neg", kRiscvSub32,
-     MachineType::Int32()},
-    {&RawMachineAssembler::Int64Neg, "Int64Neg", kRiscvSub64,
-     MachineType::Int64()}};
+    {&RawMachineAssembler::Int32Neg, "Int32Neg", kRiscvSub,
+     MachineType::Int32()}};
 
 // ----------------------------------------------------------------------------
 // Arithmetic compare instructions.
@@ -962,7 +956,7 @@ TEST_F(InstructionSelectorTest, ChangeUint32ToUint64AfterLoad) {
         m.Load(MachineType::Uint8(), m.Parameter(0), m.Parameter(1))));
     Stream s = m.Build();
     ASSERT_EQ(2U, s.size());
-    EXPECT_EQ(kRiscvAdd64, s[0]->arch_opcode());
+    EXPECT_EQ(kRiscvAdd, s[0]->arch_opcode());
     EXPECT_EQ(kMode_None, s[0]->addressing_mode());
     EXPECT_EQ(2U, s[0]->InputCount());
     EXPECT_EQ(1U, s[0]->OutputCount());
@@ -979,7 +973,7 @@ TEST_F(InstructionSelectorTest, ChangeUint32ToUint64AfterLoad) {
         m.Load(MachineType::Uint16(), m.Parameter(0), m.Parameter(1))));
     Stream s = m.Build();
     ASSERT_EQ(2U, s.size());
-    EXPECT_EQ(kRiscvAdd64, s[0]->arch_opcode());
+    EXPECT_EQ(kRiscvAdd, s[0]->arch_opcode());
     EXPECT_EQ(kMode_None, s[0]->addressing_mode());
     EXPECT_EQ(2U, s[0]->InputCount());
     EXPECT_EQ(1U, s[0]->OutputCount());
@@ -996,7 +990,7 @@ TEST_F(InstructionSelectorTest, ChangeUint32ToUint64AfterLoad) {
         m.Load(MachineType::Uint32(), m.Parameter(0), m.Parameter(1))));
     Stream s = m.Build();
     ASSERT_EQ(3U, s.size());
-    EXPECT_EQ(kRiscvAdd64, s[0]->arch_opcode());
+    EXPECT_EQ(kRiscvAdd, s[0]->arch_opcode());
     EXPECT_EQ(kMode_None, s[0]->addressing_mode());
     EXPECT_EQ(2U, s[0]->InputCount());
     EXPECT_EQ(1U, s[0]->OutputCount());

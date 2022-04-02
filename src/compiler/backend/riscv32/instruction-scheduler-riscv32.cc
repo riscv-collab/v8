@@ -16,7 +16,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
   switch (instr->arch_opcode()) {
     case kRiscvAbsD:
     case kRiscvAbsS:
-    case kRiscvAdd32:
+    case kRiscvAdd:
     case kRiscvAddD:
     case kRiscvAddS:
     case kRiscvAnd:
@@ -48,8 +48,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvCvtSW:
     case kRiscvMulHigh64:
     case kRiscvMulHighU32:
-    case kRiscvAdd64:
-    case kRiscvAddOvf64:
+    case kRiscvAddOvf:
     case kRiscvClz64:
     case kRiscvCtz64:
     case kRiscvDiv64:
@@ -68,8 +67,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvSar64:
     case kRiscvShl64:
     case kRiscvShr64:
-    case kRiscvSub64:
-    case kRiscvSubOvf64:
+    case kRiscvSubOvf:
     case kRiscvF64x2Abs:
     case kRiscvF64x2Neg:
     case kRiscvF64x2Sqrt:
@@ -340,7 +338,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvShr32:
     case kRiscvSqrtD:
     case kRiscvSqrtS:
-    case kRiscvSub32:
+    case kRiscvSub:
     case kRiscvSubD:
     case kRiscvSubS:
     case kRiscvTruncLD:
@@ -1171,15 +1169,13 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
     case kIeee754Float64Tanh:
       return PrepareCallCFunctionLatency() + MovToFloatParametersLatency() +
              CallCFunctionLatency() + MovFromFloatResultLatency();
-    case kRiscvAdd32:
-    case kRiscvAdd64:
+    case kRiscvAdd:
       return Add64Latency(instr->InputAt(1)->IsRegister());
-    case kRiscvAddOvf64:
+    case kRiscvAddOvf:
       return AddOverflow64Latency();
-    case kRiscvSub32:
-    case kRiscvSub64:
+    case kRiscvSub:
       return Sub64Latency(instr->InputAt(1)->IsRegister());
-    case kRiscvSubOvf64:
+    case kRiscvSubOvf:
       return SubOverflow64Latency();
     case kRiscvMul32:
       return Mul32Latency();
