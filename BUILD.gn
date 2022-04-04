@@ -1189,7 +1189,6 @@ config("toolchain") {
     defines += [ "CAN_USE_FPU_INSTRUCTIONS" ]
   }
 
-
   if (v8_current_cpu == "x86") {
     defines += [ "V8_TARGET_ARCH_IA32" ]
     if (is_win) {

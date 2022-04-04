@@ -63,9 +63,13 @@ jobs:
       - working-directory: ./v8
         run: echo $GITHUB_REF && echo $GITHUB_SHA &&  git log -10
 
+      - name: presubmit diff
+        working-directory: ./v8
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools git cl for --diff --no-python
+
       - name: presubmit
         working-directory: ./v8
-        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools git cl presubmit
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools git cl for --dry-run --no-python
 
       - name: clean
         working-directory: ./v8
