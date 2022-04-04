@@ -326,7 +326,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool* predicate,
 #define ASSEMBLE_ATOMIC_BINOP(load_linked, store_conditional, bin_instr)       \
   do {                                                                         \
     Label binop;                                                               \
-    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));       \
+    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));         \
     __ sync();                                                                 \
     __ bind(&binop);                                                           \
     __ load_linked(i.OutputRegister(0), MemOperand(i.TempRegister(0), 0));     \
@@ -341,15 +341,14 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool* predicate,
                                   size, bin_instr, representation)             \
   do {                                                                         \
     Label binop;                                                               \
-    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));       \
+    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));         \
     if (representation == 32) {                                                \
       __ And(i.TempRegister(3), i.TempRegister(0), 0x3);                       \
     } else {                                                                   \
       DCHECK_EQ(representation, 64);                                           \
       __ And(i.TempRegister(3), i.TempRegister(0), 0x7);                       \
     }                                                                          \
-    __ Sub(i.TempRegister(0), i.TempRegister(0),                             \
-             Operand(i.TempRegister(3)));                                      \
+    __ Sub(i.TempRegister(0), i.TempRegister(0), Operand(i.TempRegister(3)));  \
     __ Sll32(i.TempRegister(3), i.TempRegister(3), 3);                         \
     __ sync();                                                                 \
     __ bind(&binop);                                                           \
@@ -370,7 +369,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool* predicate,
     Label exchange;                                                            \
     __ sync();                                                                 \
     __ bind(&exchange);                                                        \
-    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));       \
+    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));         \
     __ load_linked(i.OutputRegister(0), MemOperand(i.TempRegister(0), 0));     \
     __ Move(i.TempRegister(1), i.InputRegister(2));                            \
     __ store_conditional(i.TempRegister(1), MemOperand(i.TempRegister(0), 0)); \
@@ -382,15 +381,14 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool* predicate,
     load_linked, store_conditional, sign_extend, size, representation)         \
   do {                                                                         \
     Label exchange;                                                            \
-    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));       \
+    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));         \
     if (representation == 32) {                                                \
       __ And(i.TempRegister(1), i.TempRegister(0), 0x3);                       \
     } else {                                                                   \
       DCHECK_EQ(representation, 64);                                           \
       __ And(i.TempRegister(1), i.TempRegister(0), 0x7);                       \
     }                                                                          \
-    __ Sub(i.TempRegister(0), i.TempRegister(0),                             \
-             Operand(i.TempRegister(1)));                                      \
+    __ Sub(i.TempRegister(0), i.TempRegister(0), Operand(i.TempRegister(1)));  \
     __ Sll32(i.TempRegister(1), i.TempRegister(1), 3);                         \
     __ sync();                                                                 \
     __ bind(&exchange);                                                        \
@@ -409,7 +407,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool* predicate,
   do {                                                                         \
     Label compareExchange;                                                     \
     Label exit;                                                                \
-    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));       \
+    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));         \
     __ sync();                                                                 \
     __ bind(&compareExchange);                                                 \
     __ load_linked(i.OutputRegister(0), MemOperand(i.TempRegister(0), 0));     \
@@ -428,15 +426,14 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool* predicate,
   do {                                                                         \
     Label compareExchange;                                                     \
     Label exit;                                                                \
-    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));       \
+    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));         \
     if (representation == 32) {                                                \
       __ And(i.TempRegister(1), i.TempRegister(0), 0x3);                       \
     } else {                                                                   \
       DCHECK_EQ(representation, 64);                                           \
       __ And(i.TempRegister(1), i.TempRegister(0), 0x7);                       \
     }                                                                          \
-    __ Sub(i.TempRegister(0), i.TempRegister(0),                             \
-             Operand(i.TempRegister(1)));                                      \
+    __ Sub(i.TempRegister(0), i.TempRegister(0), Operand(i.TempRegister(1)));  \
     __ Sll32(i.TempRegister(1), i.TempRegister(1), 3);                         \
     __ sync();                                                                 \
     __ bind(&compareExchange);                                                 \
@@ -1898,8 +1895,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
   case kRiscvWord64Atomic##op##Uint64:                                 \
     ASSEMBLE_ATOMIC_BINOP(Lld, Scd, inst64);                           \
     break;
-      ATOMIC_BINOP_CASE(Add, Add, Add) //todo: delete 64
-      ATOMIC_BINOP_CASE(Sub, Sub, Sub) //todo: delete 64
+      ATOMIC_BINOP_CASE(Add, Add, Add)  // todo: delete 64
+      ATOMIC_BINOP_CASE(Sub, Sub, Sub)  // todo: delete 64
       ATOMIC_BINOP_CASE(And, And, And)
       ATOMIC_BINOP_CASE(Or, Or, Or)
       ATOMIC_BINOP_CASE(Xor, Xor, Xor)
@@ -3926,7 +3923,7 @@ void CodeGenerator::AssembleConstructFrame() {
                             WasmInstanceObject::kRealStackLimitAddressOffset));
         __ Ld(kScratchReg, MemOperand(kScratchReg));
         __ Add(kScratchReg, kScratchReg,
-                 Operand(required_slots * kSystemPointerSize));
+               Operand(required_slots * kSystemPointerSize));
         __ BranchShort(&done, uge, sp, Operand(kScratchReg));
       }
 

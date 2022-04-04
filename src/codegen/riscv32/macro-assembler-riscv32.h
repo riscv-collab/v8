@@ -927,7 +927,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void DecompressAnyTagged(const Register& destination,
                            const MemOperand& field_operand);
   void CmpTagged(const Register& rd, const Register& rs1, const Register& rs2) {
-      Sub(rd, rs1, rs2);
+    Sub(rd, rs1, rs2);
   }
   // W1sm into RVV
   void WasmRvvExtractLane(Register dst, VRegister src, int8_t idx, VSew sew,

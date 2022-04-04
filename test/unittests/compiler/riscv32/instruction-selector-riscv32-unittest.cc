@@ -160,9 +160,9 @@ const MachInst2 kAddSubInstructions[] = {
 // IntArithTest instructions, one node.
 // ----------------------------------------------------------------------------
 
-const MachInst1 kAddSubOneInstructions[] = {
-    {&RawMachineAssembler::Int32Neg, "Int32Neg", kRiscvSub,
-     MachineType::Int32()}};
+const MachInst1 kAddSubOneInstructions[] = {{&RawMachineAssembler::Int32Neg,
+                                             "Int32Neg", kRiscvSub,
+                                             MachineType::Int32()}};
 
 // ----------------------------------------------------------------------------
 // Arithmetic compare instructions.

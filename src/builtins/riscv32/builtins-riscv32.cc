@@ -231,9 +231,8 @@ void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
   __ Move(a6, a0);
 
   // Set up pointer to first argument (skip receiver)..
-  __ Add(
-      t2, fp,
-      Operand(StandardFrameConstants::kCallerSPOffset + kSystemPointerSize));
+  __ Add(t2, fp,
+         Operand(StandardFrameConstants::kCallerSPOffset + kSystemPointerSize));
 
   // ----------- S t a t e -------------
   //  --                 a3: new target
@@ -1030,7 +1029,7 @@ static void AdvanceBytecodeOffsetOrReturn(MacroAssembler* masm,
   __ Add(scratch2, bytecode_array, bytecode_offset);
   __ Lbu(bytecode, MemOperand(scratch2));
   __ Add(bytecode_size_table, bytecode_size_table,
-           Operand(kByteSize * interpreter::Bytecodes::kBytecodeCount));
+         Operand(kByteSize * interpreter::Bytecodes::kBytecodeCount));
   __ BranchShort(&process_bytecode);
 
   __ bind(&extra_wide);
@@ -1039,7 +1038,7 @@ static void AdvanceBytecodeOffsetOrReturn(MacroAssembler* masm,
   __ Add(scratch2, bytecode_array, bytecode_offset);
   __ Lbu(bytecode, MemOperand(scratch2));
   __ Add(bytecode_size_table, bytecode_size_table,
-           Operand(2 * kByteSize * interpreter::Bytecodes::kBytecodeCount));
+         Operand(2 * kByteSize * interpreter::Bytecodes::kBytecodeCount));
 
   __ bind(&process_bytecode);
 
@@ -1417,7 +1416,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ li(kInterpreterDispatchTableRegister,
         ExternalReference::interpreter_dispatch_table_address(masm->isolate()));
   __ Add(a1, kInterpreterBytecodeArrayRegister,
-           kInterpreterBytecodeOffsetRegister);
+         kInterpreterBytecodeOffsetRegister);
   __ Lbu(a7, MemOperand(a1));
   __ CalcScaledAddress(kScratchReg, kInterpreterDispatchTableRegister, a7,
                        kSystemPointerSizeLog2);
@@ -1438,7 +1437,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // Either return, or advance to the next bytecode and dispatch.
   Label do_return;
   __ Add(a1, kInterpreterBytecodeArrayRegister,
-           kInterpreterBytecodeOffsetRegister);
+         kInterpreterBytecodeOffsetRegister);
   __ Lbu(a1, MemOperand(a1));
   AdvanceBytecodeOffsetOrReturn(masm, kInterpreterBytecodeArrayRegister,
                                 kInterpreterBytecodeOffsetRegister, a1, a2, a3,
@@ -1721,7 +1720,7 @@ static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
 
   // Dispatch to the target bytecode.
   __ Add(a1, kInterpreterBytecodeArrayRegister,
-           kInterpreterBytecodeOffsetRegister);
+         kInterpreterBytecodeOffsetRegister);
   __ Lbu(a7, MemOperand(a1));
   __ CalcScaledAddress(a1, kInterpreterDispatchTableRegister, a7,
                        kSystemPointerSizeLog2);
@@ -1746,7 +1745,7 @@ void Builtins::Generate_InterpreterEnterAtNextBytecode(MacroAssembler* masm) {
 
   // Load the current bytecode.
   __ Add(a1, kInterpreterBytecodeArrayRegister,
-           kInterpreterBytecodeOffsetRegister);
+         kInterpreterBytecodeOffsetRegister);
   __ Lbu(a1, MemOperand(a1));
 
   // Advance to the next bytecode.
@@ -1829,7 +1828,7 @@ void Generate_ContinueToBuiltinHelper(MacroAssembler* masm,
   // address from the builtins table.
   __ Pop(t6);
   __ Add(sp, sp,
-           Operand(BuiltinContinuationFrameConstants::kFixedFrameSizeFromFp));
+         Operand(BuiltinContinuationFrameConstants::kFixedFrameSizeFromFp));
   __ Pop(ra);
   __ LoadEntryFromBuiltinIndex(t6);
   __ Jump(t6);
@@ -2326,8 +2325,8 @@ void Builtins::Generate_CallOrConstructForwardVarargs(MacroAssembler* masm,
 
     // Point to the first argument to copy (skipping the receiver).
     __ Add(a6, a6,
-             Operand(CommonFrameConstants::kFixedFrameSizeAboveFp +
-                     kSystemPointerSize));
+           Operand(CommonFrameConstants::kFixedFrameSizeAboveFp +
+                   kSystemPointerSize));
     __ CalcScaledAddress(a6, a6, a2, kSystemPointerSizeLog2);
 
     // Move the arguments already in the stack,
@@ -3014,7 +3013,7 @@ void Builtins::Generate_DoubleToI(MacroAssembler* masm) {
 
   // Express exponent as delta to (number of mantissa bits + 31).
   __ Sub(result_reg, result_reg,
-           Operand(HeapNumber::kExponentBias + HeapNumber::kMantissaBits + 31));
+         Operand(HeapNumber::kExponentBias + HeapNumber::kMantissaBits + 31));
 
   // If the delta is strictly positive, all bits would be shifted away,
   // which means that we can return 0.
@@ -3026,8 +3025,7 @@ void Builtins::Generate_DoubleToI(MacroAssembler* masm) {
   __ bind(&normal_exponent);
   const int kShiftBase = HeapNumber::kNonMantissaBitsInTopWord - 1;
   // Calculate shift.
-  __ Add(scratch, result_reg,
-           Operand(kShiftBase + HeapNumber::kMantissaBits));
+  __ Add(scratch, result_reg, Operand(kShiftBase + HeapNumber::kMantissaBits));
 
   // Save the sign.
   Register sign = result_reg;
@@ -3329,7 +3327,7 @@ void Builtins::Generate_CallApiCallback(MacroAssembler* masm) {
   // FunctionCallbackInfo::values_ (points at the first varargs argument passed
   // on the stack).
   __ Add(scratch, scratch,
-           Operand((FCA::kArgsLength + 1) * kSystemPointerSize));
+         Operand((FCA::kArgsLength + 1) * kSystemPointerSize));
   __ Sd(scratch, MemOperand(sp, 2 * kSystemPointerSize));
 
   // FunctionCallbackInfo::length_.
@@ -3412,7 +3410,7 @@ void Builtins::Generate_CallApiGetter(MacroAssembler* masm) {
   const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
 
   // Load address of v8::PropertyAccessorInfo::args_ array and name handle.
-  __ Move(a0, sp);                                    // a0 = Handle<Name>
+  __ Move(a0, sp);                                  // a0 = Handle<Name>
   __ Add(a1, a0, Operand(1 * kSystemPointerSize));  // a1 = v8::PCI::args_
 
   const int kApiStackSpace = 1;
@@ -3788,9 +3786,8 @@ void Generate_BaselineOrInterpreterEntry(MacroAssembler* masm,
                       kFunctionEntryBytecodeOffset));
   }
 
-  __ Sub(kInterpreterBytecodeOffsetRegister,
-           kInterpreterBytecodeOffsetRegister,
-           (BytecodeArray::kHeaderSize - kHeapObjectTag));
+  __ Sub(kInterpreterBytecodeOffsetRegister, kInterpreterBytecodeOffsetRegister,
+         (BytecodeArray::kHeaderSize - kHeapObjectTag));
 
   __ bind(&valid_bytecode_offset);
   // Get bytecode array from the stack frame.

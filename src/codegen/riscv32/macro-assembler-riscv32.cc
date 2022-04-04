@@ -3586,8 +3586,8 @@ void MacroAssembler::PopStackHandler() {
   STATIC_ASSERT(StackHandlerConstants::kNextOffset == 0);
   pop(a1);
   Add(sp, sp,
-        Operand(static_cast<int64_t>(StackHandlerConstants::kSize -
-                                     kSystemPointerSize)));
+      Operand(static_cast<int64_t>(StackHandlerConstants::kSize -
+                                   kSystemPointerSize)));
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
   li(scratch,
@@ -3690,7 +3690,7 @@ void MacroAssembler::InvokePrologue(Register expected_parameter_count,
   // If overapplication or if the actual argument count is equal to the
   // formal parameter count, no need to push extra undefined values.
   Sub(expected_parameter_count, expected_parameter_count,
-        actual_parameter_count);
+      actual_parameter_count);
   Branch(&regular_invoke, le, expected_parameter_count, Operand(zero_reg));
 
   Label stack_overflow;
@@ -4412,8 +4412,8 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles, Register argument_count,
   if (save_doubles) {
     // Remember: we only need to restore kCallerSavedFPU.
     Sub(scratch, fp,
-          Operand(ExitFrameConstants::kFixedFrameSizeFromFp +
-                  kNumCallerSavedFPU * kDoubleSize));
+        Operand(ExitFrameConstants::kFixedFrameSizeFromFp +
+                kNumCallerSavedFPU * kDoubleSize));
     int cout = 0;
     for (int i = 0; i < kNumFPURegisters; i++) {
       if (kCalleeSavedFPU & (1 << i)) {

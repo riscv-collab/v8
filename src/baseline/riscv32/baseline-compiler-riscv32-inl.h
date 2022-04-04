@@ -64,8 +64,8 @@ void BaselineCompiler::PrologueFillFrame() {
 void BaselineCompiler::VerifyFrameSize() {
   ASM_CODE_COMMENT(&masm_);
   __ masm()->Add(kScratchReg, sp,
-                   Operand(InterpreterFrameConstants::kFixedFrameSizeFromFp +
-                           bytecode_->frame_size()));
+                 Operand(InterpreterFrameConstants::kFixedFrameSizeFromFp +
+                         bytecode_->frame_size()));
   __ masm()->Assert(eq, AbortReason::kUnexpectedStackPointer, kScratchReg,
                     Operand(fp));
 }
