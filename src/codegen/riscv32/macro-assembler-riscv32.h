@@ -996,7 +996,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
                    RoundingMode mode);
 
   void RoundFloat(FPURegister dst, FPURegister src, FPURegister fpu_scratch,
-                   RoundingMode mode);
+                  RoundingMode mode);
 
   template <typename F>
   void RoundHelper(VRegister dst, VRegister src, Register scratch,

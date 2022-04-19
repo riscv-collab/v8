@@ -1898,7 +1898,7 @@ void TurboAssembler::RoundFloat(FPURegister dst, FPURegister src,
     UseScratchRegisterScope temps2(this);
     Register scratch = temps2.Acquire();
     // extract exponent value of the source floating-point to scratch
-      fmv_x_w(scratch, src);
+    fmv_x_w(scratch, src);
     ExtractBits(scratch2, scratch, kFloatMantissaBits, kFloatExponentBits);
   }
 
@@ -1906,7 +1906,7 @@ void TurboAssembler::RoundFloat(FPURegister dst, FPURegister src,
   // in mantissa, the result is the same as src, so move src to dest  (to avoid
   // generating another branch)
   if (dst != src) {
-      fmv_s(dst, src);
+    fmv_s(dst, src);
   }
   {
     Label not_NaN;
@@ -1919,9 +1919,9 @@ void TurboAssembler::RoundFloat(FPURegister dst, FPURegister src,
     // payload is 1. In RISC-V, feq_d will set scratch to 0 if src is a NaN. If
     // src is not a NaN, branch to the label and do nothing, but if it is,
     // fmin_d will set dst to the canonical NaN.
-      feq_s(scratch, src, src);
-      bnez(scratch, &not_NaN);
-      fmin_s(dst, src, src);
+    feq_s(scratch, src, src);
+    bnez(scratch, &not_NaN);
+    fmin_s(dst, src, src);
     bind(&not_NaN);
   }
 
@@ -1952,8 +1952,8 @@ void TurboAssembler::RoundFloat(FPURegister dst, FPURegister src,
   {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
-      fcvt_w_s(scratch, src, frm);
-      fcvt_s_w(dst, scratch, frm);
+    fcvt_w_s(scratch, src, frm);
+    fcvt_s_w(dst, scratch, frm);
   }
   // A special handling is needed if the input is a very small positive/negative
   // number that rounds to zero. JS semantics requires that the rounded result
@@ -1962,7 +1962,7 @@ void TurboAssembler::RoundFloat(FPURegister dst, FPURegister src,
   // Therefore, we use sign-bit injection to produce +/-0 correctly. Instead of
   // testing for zero w/ a branch, we just insert sign-bit for everyone on this
   // path (this is where old_src is needed)
-    fsgnj_s(dst, dst, old_src);
+  fsgnj_s(dst, dst, old_src);
 
   bind(&done);
 }
@@ -2259,7 +2259,7 @@ void TurboAssembler::InsertHighWordF64(FPURegister dst, Register src_high) {
 
 void TurboAssembler::InsertLowWordF64(FPURegister dst, Register src_low) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  
+
   StoreDouble(dst, MemOperand(sp, 0));
   Sw(src_low, MemOperand(sp, 4));
   LoadDouble(dst, MemOperand(sp, 0));

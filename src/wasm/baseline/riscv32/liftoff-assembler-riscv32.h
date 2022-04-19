@@ -1864,7 +1864,8 @@ void LiftoffAssembler::emit_i8x16_shuffle(LiftoffRegister dst,
   // }
   // vrgather_vv(dst_v, lhs_v, kSimd128ScratchReg);
   // vadd_vi(kSimd128ScratchReg, kSimd128ScratchReg,
-  //         -16);  // The indices in range [16, 31] select the i - 16-th element
+  //         -16);  // The indices in range [16, 31] select the i - 16-th
+  //         element
   //                // of rhs
   // vrgather_vv(kSimd128ScratchReg2, rhs_v, kSimd128ScratchReg);
   // vor_vv(dst_v, dst_v, kSimd128ScratchReg2);

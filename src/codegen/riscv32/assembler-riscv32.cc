@@ -3214,7 +3214,6 @@ void Assembler::RV_li(Register rd, int32_t imm) {
   }
 }
 
-
 int Assembler::li_estimate(int64_t imm, bool is_get_temp_reg) {
   int count = 0;
   // imitate Assembler::RV_li
