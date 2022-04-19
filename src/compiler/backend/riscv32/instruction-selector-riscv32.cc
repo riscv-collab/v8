@@ -897,11 +897,7 @@ void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
 #if 0
 void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
 #endif
-void InstructionSelector::VisitWord64ReverseBytes(Node* node) {
-  RiscvOperandGenerator g(this);
-  Emit(kRiscvByteSwap64, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
-}
+void InstructionSelector::VisitWord64ReverseBytes(Node* node) { UNREACHABLE();}
 
 void InstructionSelector::VisitWord32ReverseBytes(Node* node) {
   RiscvOperandGenerator g(this);
@@ -930,12 +926,6 @@ void InstructionSelector::VisitWord32Popcnt(Node* node) {
        g.UseRegister(node->InputAt(0)));
 }
 #if 0
-void InstructionSelector::VisitWord64Popcnt(Node* node) {
-  RiscvOperandGenerator g(this);
-  Emit(kRiscvPopcnt64, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
-}
-
 void InstructionSelector::VisitWord64Ror(Node* node) {
   VisitRRO(this, kRiscvRor64, node);
 }
@@ -1942,110 +1932,9 @@ void VisitWordCompare(InstructionSelector* selector, Node* node,
                  cont);
   }
 }
-#ifndef V8_COMPRESS_POINTERS
-bool IsNodeUnsigned(Node* n) {
-  NodeMatcher m(n);
 
-  if (m.IsLoad() || m.IsUnalignedLoad() || m.IsProtectedLoad()) {
-    LoadRepresentation load_rep = LoadRepresentationOf(n->op());
-    return load_rep.IsUnsigned();
-  } else if (m.IsWord32AtomicLoad() || m.IsWord64AtomicLoad()) {
-    AtomicLoadParameters atomic_load_params = AtomicLoadParametersOf(n->op());
-    LoadRepresentation load_rep = atomic_load_params.representation();
-    return load_rep.IsUnsigned();
-  } else {
-    return m.IsUint32Div() || m.IsUint32LessThan() ||
-           m.IsUint32LessThanOrEqual() || m.IsUint32Mod() ||
-           m.IsUint32MulHigh() || m.IsChangeFloat64ToUint32() ||
-           m.IsTruncateFloat64ToUint32() || m.IsTruncateFloat32ToUint32();
-  }
-}
-#endif
-
-// Shared routine for multiple word compare operations.
-void VisitFullWord32Compare(InstructionSelector* selector, Node* node,
-                            InstructionCode opcode, FlagsContinuation* cont) {
-  RiscvOperandGenerator g(selector);
-  InstructionOperand leftOp = g.TempRegister();
-  InstructionOperand rightOp = g.TempRegister();
-
-  selector->Emit(kRiscvShl64, leftOp, g.UseRegister(node->InputAt(0)),
-                 g.TempImmediate(32));
-  selector->Emit(kRiscvShl64, rightOp, g.UseRegister(node->InputAt(1)),
-                 g.TempImmediate(32));
-
-  VisitCompare(selector, opcode, leftOp, rightOp, cont);
-}
-
-#ifndef V8_COMPRESS_POINTERS
-void VisitOptimizedWord32Compare(InstructionSelector* selector, Node* node,
-                                 InstructionCode opcode,
-                                 FlagsContinuation* cont) {
-  if (FLAG_debug_code) {
-    RiscvOperandGenerator g(selector);
-    InstructionOperand leftOp = g.TempRegister();
-    InstructionOperand rightOp = g.TempRegister();
-    InstructionOperand optimizedResult = g.TempRegister();
-    InstructionOperand fullResult = g.TempRegister();
-    FlagsCondition condition = cont->condition();
-    InstructionCode testOpcode = opcode |
-                                 FlagsConditionField::encode(condition) |
-                                 FlagsModeField::encode(kFlags_set);
-
-    selector->Emit(testOpcode, optimizedResult, g.UseRegister(node->InputAt(0)),
-                   g.UseRegister(node->InputAt(1)));
-
-    selector->Emit(kRiscvShl64, leftOp, g.UseRegister(node->InputAt(0)),
-                   g.TempImmediate(32));
-    selector->Emit(kRiscvShl64, rightOp, g.UseRegister(node->InputAt(1)),
-                   g.TempImmediate(32));
-    selector->Emit(testOpcode, fullResult, leftOp, rightOp);
-
-    selector->Emit(kRiscvAssertEqual, g.NoOutput(), optimizedResult, fullResult,
-                   g.TempImmediate(static_cast<int>(
-                       AbortReason::kUnsupportedNonPrimitiveCompare)));
-  }
-
-  VisitWordCompare(selector, node, opcode, cont, false);
-}
-#endif
-void VisitWord32Compare(InstructionSelector* selector, Node* node,
-                        FlagsContinuation* cont) {
-  // RISC-V doesn't support Word32 compare instructions. Instead it relies
-  // that the values in registers are correctly sign-extended and uses
-  // Word64 comparison instead. This behavior is correct in most cases,
-  // but doesn't work when comparing signed with unsigned operands.
-  // We could simulate full Word32 compare in all cases but this would
-  // create an unnecessary overhead since unsigned integers are rarely
-  // used in JavaScript.
-  // The solution proposed here tries to match a comparison of signed
-  // with unsigned operand, and perform full Word32Compare only
-  // in those cases. Unfortunately, the solution is not complete because
-  // it might skip cases where Word32 full compare is needed, so
-  // basically it is a hack.
-  // When call to a host function in simulator, if the function return a
-  // int32 value, the simulator do not sign-extended to int64 because in
-  // simulator we do not know the function whether return a int32 or int64.
-  // so we need do a full word32 compare in this case.
-#ifndef V8_COMPRESS_POINTERS
-#ifndef USE_SIMULATOR
-  if (IsNodeUnsigned(node->InputAt(0)) != IsNodeUnsigned(node->InputAt(1))) {
-#else
-  if (IsNodeUnsigned(node->InputAt(0)) != IsNodeUnsigned(node->InputAt(1)) ||
-      node->InputAt(0)->opcode() == IrOpcode::kCall ||
-      node->InputAt(1)->opcode() == IrOpcode::kCall) {
-#endif
-    VisitFullWord32Compare(selector, node, kRiscvCmp, cont);
-  } else {
-    VisitOptimizedWord32Compare(selector, node, kRiscvCmp, cont);
-  }
-#else
-  VisitFullWord32Compare(selector, node, kRiscvCmp, cont);
-#endif
-}
-
-void VisitWord64Compare(InstructionSelector* selector, Node* node,
-                        FlagsContinuation* cont) {
+void VisitWordCompare(InstructionSelector* selector, Node* node,
+                      FlagsContinuation* cont) {
   VisitWordCompare(selector, node, kRiscvCmp, cont, false);
 }
 
@@ -2233,34 +2122,19 @@ void InstructionSelector::VisitWordCompareZero(Node* user, Node* value,
     switch (value->opcode()) {
       case IrOpcode::kWord32Equal:
         cont->OverwriteAndNegateIfEqual(kEqual);
-        return VisitWord32Compare(this, value, cont);
+        return VisitWordCompare(this, value, cont);
       case IrOpcode::kInt32LessThan:
         cont->OverwriteAndNegateIfEqual(kSignedLessThan);
-        return VisitWord32Compare(this, value, cont);
+        return VisitWordCompare(this, value, cont);
       case IrOpcode::kInt32LessThanOrEqual:
         cont->OverwriteAndNegateIfEqual(kSignedLessThanOrEqual);
-        return VisitWord32Compare(this, value, cont);
+        return VisitWordCompare(this, value, cont);
       case IrOpcode::kUint32LessThan:
         cont->OverwriteAndNegateIfEqual(kUnsignedLessThan);
-        return VisitWord32Compare(this, value, cont);
+        return VisitWordCompare(this, value, cont);
       case IrOpcode::kUint32LessThanOrEqual:
         cont->OverwriteAndNegateIfEqual(kUnsignedLessThanOrEqual);
-        return VisitWord32Compare(this, value, cont);
-      case IrOpcode::kWord64Equal:
-        cont->OverwriteAndNegateIfEqual(kEqual);
-        return VisitWord64Compare(this, value, cont);
-      case IrOpcode::kInt64LessThan:
-        cont->OverwriteAndNegateIfEqual(kSignedLessThan);
-        return VisitWord64Compare(this, value, cont);
-      case IrOpcode::kInt64LessThanOrEqual:
-        cont->OverwriteAndNegateIfEqual(kSignedLessThanOrEqual);
-        return VisitWord64Compare(this, value, cont);
-      case IrOpcode::kUint64LessThan:
-        cont->OverwriteAndNegateIfEqual(kUnsignedLessThan);
-        return VisitWord64Compare(this, value, cont);
-      case IrOpcode::kUint64LessThanOrEqual:
-        cont->OverwriteAndNegateIfEqual(kUnsignedLessThanOrEqual);
-        return VisitWord64Compare(this, value, cont);
+        return VisitWordCompare(this, value, cont);
       case IrOpcode::kFloat32Equal:
         cont->OverwriteAndNegateIfEqual(kEqual);
         return VisitFloat32Compare(this, value, cont);
@@ -2314,7 +2188,6 @@ void InstructionSelector::VisitWordCompareZero(Node* user, Node* value,
         }
         break;
       case IrOpcode::kWord32And:
-      case IrOpcode::kWord64And:
         return VisitWordCompare(this, value, kRiscvTst, cont, true);
       case IrOpcode::kStackPointerGreaterThan:
         cont->OverwriteAndNegateIfEqual(kStackPointerGreaterThanCondition);
@@ -2366,29 +2239,29 @@ void InstructionSelector::VisitWord32Equal(Node* const node) {
     return VisitWordCompareZero(m.node(), m.left().node(), &cont);
   }
 
-  VisitWord32Compare(this, node, &cont);
+  VisitWordCompare(this, node, &cont);
 }
 
 void InstructionSelector::VisitInt32LessThan(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kSignedLessThan, node);
-  VisitWord32Compare(this, node, &cont);
+  VisitWordCompare(this, node, &cont);
 }
 
 void InstructionSelector::VisitInt32LessThanOrEqual(Node* node) {
   FlagsContinuation cont =
       FlagsContinuation::ForSet(kSignedLessThanOrEqual, node);
-  VisitWord32Compare(this, node, &cont);
+  VisitWordCompare(this, node, &cont);
 }
 
 void InstructionSelector::VisitUint32LessThan(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kUnsignedLessThan, node);
-  VisitWord32Compare(this, node, &cont);
+  VisitWordCompare(this, node, &cont);
 }
 
 void InstructionSelector::VisitUint32LessThanOrEqual(Node* node) {
   FlagsContinuation cont =
       FlagsContinuation::ForSet(kUnsignedLessThanOrEqual, node);
-  VisitWord32Compare(this, node, &cont);
+  VisitWordCompare(this, node, &cont);
 }
 
 void InstructionSelector::VisitInt32AddWithOverflow(Node* node) {

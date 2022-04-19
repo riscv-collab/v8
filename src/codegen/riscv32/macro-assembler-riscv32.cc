@@ -870,7 +870,7 @@ void TurboAssembler::Sll64(Register rd, Register rs, const Operand& rt) {
   }
 }
 
-void TurboAssembler::Li(Register rd, int64_t imm) {
+void TurboAssembler::Li(Register rd, int32_t imm) {
   if (FLAG_riscv_c_extension && (rd != zero_reg) && is_int6(imm)) {
     c_li(rd, imm);
   } else {
@@ -950,57 +950,25 @@ void TurboAssembler::ByteSwap(Register rd, Register rs, int operand_size,
                               Register scratch) {
   DCHECK_NE(scratch, rs);
   DCHECK_NE(scratch, rd);
-  DCHECK(operand_size == 4 || operand_size == 8);
-  if (operand_size == 4) {
-    // Uint32_t x1 = 0x00FF00FF;
-    // x0 = (x0 << 16 | x0 >> 16);
-    // x0 = (((x0 & x1) << 8)  | ((x0 & (x1 << 8)) >> 8));
-    UseScratchRegisterScope temps(this);
-    BlockTrampolinePoolScope block_trampoline_pool(this);
-    DCHECK((rd != t6) && (rs != t6));
-    Register x0 = temps.Acquire();
-    Register x1 = temps.Acquire();
-    Register x2 = scratch;
-    li(x1, 0x00FF00FF);
-    slliw(x0, rs, 16);
-    srliw(rd, rs, 16);
-    or_(x0, rd, x0);   // x0 <- x0 << 16 | x0 >> 16
-    and_(x2, x0, x1);  // x2 <- x0 & 0x00FF00FF
-    slliw(x2, x2, 8);  // x2 <- (x0 & x1) << 8
-    slliw(x1, x1, 8);  // x1 <- 0xFF00FF00
-    and_(rd, x0, x1);  // x0 & 0xFF00FF00
-    srliw(rd, rd, 8);
-    or_(rd, rd, x2);  // (((x0 & x1) << 8)  | ((x0 & (x1 << 8)) >> 8))
-  } else {
-    // uinx24_t x1 = 0x0000FFFF0000FFFFl;
-    // uinx24_t x1 = 0x00FF00FF00FF00FFl;
-    // x0 = (x0 << 32 | x0 >> 32);
-    // x0 = (x0 & x1) << 16 | (x0 & (x1 << 16)) >> 16;
-    // x0 = (x0 & x1) << 8  | (x0 & (x1 << 8)) >> 8;
-    UseScratchRegisterScope temps(this);
-    BlockTrampolinePoolScope block_trampoline_pool(this);
-    DCHECK((rd != t6) && (rs != t6));
-    Register x0 = temps.Acquire();
-    Register x1 = temps.Acquire();
-    Register x2 = scratch;
-    li(x1, 0x0000FFFF0000FFFFl);
-    slli(x0, rs, 32);
-    srli(rd, rs, 32);
-    or_(x0, rd, x0);   // x0 <- x0 << 32 | x0 >> 32
-    and_(x2, x0, x1);  // x2 <- x0 & 0x0000FFFF0000FFFF
-    slli(x2, x2, 16);  // x2 <- (x0 & 0x0000FFFF0000FFFF) << 16
-    slli(x1, x1, 16);  // x1 <- 0xFFFF0000FFFF0000
-    and_(rd, x0, x1);  // rd <- x0 & 0xFFFF0000FFFF0000
-    srli(rd, rd, 16);  // rd <- x0 & (x1 << 16)) >> 16
-    or_(x0, rd, x2);   // (x0 & x1) << 16 | (x0 & (x1 << 16)) >> 16;
-    li(x1, 0x00FF00FF00FF00FFl);
-    and_(x2, x0, x1);  // x2 <- x0 & 0x00FF00FF00FF00FF
-    slli(x2, x2, 8);   // x2 <- (x0 & x1) << 8
-    slli(x1, x1, 8);   // x1 <- 0xFF00FF00FF00FF00
-    and_(rd, x0, x1);
-    srli(rd, rd, 8);  // rd <- (x0 & (x1 << 8)) >> 8
-    or_(rd, rd, x2);  // (((x0 & x1) << 8)  | ((x0 & (x1 << 8)) >> 8))
-  }
+  // Uint32_t x1 = 0x00FF00FF;
+  // x0 = (x0 << 16 | x0 >> 16);
+  // x0 = (((x0 & x1) << 8)  | ((x0 & (x1 << 8)) >> 8));
+  UseScratchRegisterScope temps(this);
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+  DCHECK((rd != t6) && (rs != t6));
+  Register x0 = temps.Acquire();
+  Register x1 = temps.Acquire();
+  Register x2 = scratch;
+  li(x1, 0x00FF00FF);
+  slliw(x0, rs, 16);
+  srliw(rd, rs, 16);
+  or_(x0, rd, x0);   // x0 <- x0 << 16 | x0 >> 16
+  and_(x2, x0, x1);  // x2 <- x0 & 0x00FF00FF
+  slliw(x2, x2, 8);  // x2 <- (x0 & x1) << 8
+  slliw(x1, x1, 8);  // x1 <- 0xFF00FF00
+  and_(rd, x0, x1);  // x0 & 0xFF00FF00
+  srliw(rd, rd, 8);
+  or_(rd, rd, x2);  // (((x0 & x1) << 8)  | ((x0 & (x1 << 8)) >> 8))
 }
 
 template <int NBYTES, bool LOAD_SIGNED>
@@ -1664,13 +1632,16 @@ void TurboAssembler::MultiPopFPU(DoubleRegList regs) {
 
 void TurboAssembler::ExtractBits(Register rt, Register rs, uint16_t pos,
                                  uint16_t size, bool sign_extend) {
-  DCHECK(pos < 64 && 0 < size && size <= 64 && 0 < pos + size &&
-         pos + size <= 64);
-  slli(rt, rs, 64 - (pos + size));
+  DCHECK_LT(pos, 32);
+  DCHECK_GT(size, 0);
+  DCHECK_LE(size, 32);
+  DCHECK_GT(pos + size, 0);
+  DCHECK_LE(pos + size, 32);
+  slli(rt, rs, 32 - (pos + size));
   if (sign_extend) {
-    srai(rt, rt, 64 - size);
+    srai(rt, rt, 32 - size);
   } else {
-    srli(rt, rt, 64 - size);
+    srli(rt, rt, 32 - size);
   }
 }
 
@@ -1873,40 +1844,61 @@ void TurboAssembler::Floor_w_d(Register rd, FPURegister fs, Register result) {
         tasm->fcvt_w_d(dst, src, RDN);
       });
 }
-
 // According to JS ECMA specification, for floating-point round operations, if
 // the input is NaN, +/-infinity, or +/-0, the same input is returned as the
 // rounded result; this differs from behavior of RISCV fcvt instructions (which
 // round out-of-range values to the nearest max or min value), therefore special
 // handling is needed by NaN, +/-Infinity, +/-0
-template <typename F>
-void TurboAssembler::RoundHelper(FPURegister dst, FPURegister src,
+void TurboAssembler::RoundDouble(FPURegister dst, FPURegister src,
                                  FPURegister fpu_scratch, RoundingMode frm) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+  UseScratchRegisterScope temps(this);
+
+  // Need at least two FPRs, so check against dst == src == fpu_scratch
+  DCHECK(!(dst == src && dst == fpu_scratch));
+
+  // TODO(riscv32): need judge the input is NaN, +/-infinity, or +/-0
+
+  // Since only input whose real exponent value is less than kMantissaBits
+  // (i.e., 23 or 52-bits) falls into this path, the value range of the input
+  // falls into that of 23- or 53-bit integers. So we round the input to integer
+  // values, then convert them back to floating-point.
+  {
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    fcvt_l_d(scratch, src, frm);
+    fcvt_d_l(dst, scratch, frm);
+  }
+
+  // A special handling is needed if the input is a very small positive/negative
+  // number that rounds to zero. JS semantics requires that the rounded result
+  // retains the sign of the input, so a very small positive (negative)
+  // floating-point number should be rounded to positive (negative) 0.
+  // Therefore, we use sign-bit injection to produce +/-0 correctly. Instead of
+  // testing for zero w/ a branch, we just insert sign-bit for everyone on this
+  // path (this is where old_src is needed)
+  fsgnj_d(dst, dst, src);
+}
+
+void TurboAssembler::RoundFloat(FPURegister dst, FPURegister src,
+                                FPURegister fpu_scratch, RoundingMode frm) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
   UseScratchRegisterScope temps(this);
   Register scratch2 = temps.Acquire();
 
-  DCHECK((std::is_same<float, F>::value) || (std::is_same<double, F>::value));
   // Need at least two FPRs, so check against dst == src == fpu_scratch
   DCHECK(!(dst == src && dst == fpu_scratch));
 
-  const int kFloatMantissaBits =
-      sizeof(F) == 4 ? kFloat32MantissaBits : kFloat64MantissaBits;
-  const int kFloatExponentBits =
-      sizeof(F) == 4 ? kFloat32ExponentBits : kFloat64ExponentBits;
-  const int kFloatExponentBias =
-      sizeof(F) == 4 ? kFloat32ExponentBias : kFloat64ExponentBias;
+  const int kFloatMantissaBits = kFloat32MantissaBits;
+  const int kFloatExponentBits = kFloat32ExponentBits;
+  const int kFloatExponentBias = kFloat32ExponentBias;
   Label done;
 
   {
     UseScratchRegisterScope temps2(this);
     Register scratch = temps2.Acquire();
     // extract exponent value of the source floating-point to scratch
-    if (std::is_same<F, double>::value) {
-      fmv_x_d(scratch, src);
-    } else {
       fmv_x_w(scratch, src);
-    }
     ExtractBits(scratch2, scratch, kFloatMantissaBits, kFloatExponentBits);
   }
 
@@ -1914,11 +1906,7 @@ void TurboAssembler::RoundHelper(FPURegister dst, FPURegister src,
   // in mantissa, the result is the same as src, so move src to dest  (to avoid
   // generating another branch)
   if (dst != src) {
-    if (std::is_same<F, double>::value) {
-      fmv_d(dst, src);
-    } else {
       fmv_s(dst, src);
-    }
   }
   {
     Label not_NaN;
@@ -1931,15 +1919,9 @@ void TurboAssembler::RoundHelper(FPURegister dst, FPURegister src,
     // payload is 1. In RISC-V, feq_d will set scratch to 0 if src is a NaN. If
     // src is not a NaN, branch to the label and do nothing, but if it is,
     // fmin_d will set dst to the canonical NaN.
-    if (std::is_same<F, double>::value) {
-      feq_d(scratch, src, src);
-      bnez(scratch, &not_NaN);
-      fmin_d(dst, src, src);
-    } else {
       feq_s(scratch, src, src);
       bnez(scratch, &not_NaN);
       fmin_s(dst, src, src);
-    }
     bind(&not_NaN);
   }
 
@@ -1970,13 +1952,8 @@ void TurboAssembler::RoundHelper(FPURegister dst, FPURegister src,
   {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
-    if (std::is_same<F, double>::value) {
-      fcvt_l_d(scratch, src, frm);
-      fcvt_d_l(dst, scratch, frm);
-    } else {
       fcvt_w_s(scratch, src, frm);
       fcvt_s_w(dst, scratch, frm);
-    }
   }
   // A special handling is needed if the input is a very small positive/negative
   // number that rounds to zero. JS semantics requires that the rounded result
@@ -1985,11 +1962,7 @@ void TurboAssembler::RoundHelper(FPURegister dst, FPURegister src,
   // Therefore, we use sign-bit injection to produce +/-0 correctly. Instead of
   // testing for zero w/ a branch, we just insert sign-bit for everyone on this
   // path (this is where old_src is needed)
-  if (std::is_same<F, double>::value) {
-    fsgnj_d(dst, dst, old_src);
-  } else {
     fsgnj_s(dst, dst, old_src);
-  }
 
   bind(&done);
 }
@@ -2096,42 +2069,42 @@ void TurboAssembler::Round_d(VRegister vdst, VRegister vsrc, Register scratch,
 
 void TurboAssembler::Floor_d_d(FPURegister dst, FPURegister src,
                                FPURegister fpu_scratch) {
-  RoundHelper<double>(dst, src, fpu_scratch, RDN);
+  RoundDouble(dst, src, fpu_scratch, RDN);
 }
 
 void TurboAssembler::Ceil_d_d(FPURegister dst, FPURegister src,
                               FPURegister fpu_scratch) {
-  RoundHelper<double>(dst, src, fpu_scratch, RUP);
+  RoundDouble(dst, src, fpu_scratch, RUP);
 }
 
 void TurboAssembler::Trunc_d_d(FPURegister dst, FPURegister src,
                                FPURegister fpu_scratch) {
-  RoundHelper<double>(dst, src, fpu_scratch, RTZ);
+  RoundDouble(dst, src, fpu_scratch, RTZ);
 }
 
 void TurboAssembler::Round_d_d(FPURegister dst, FPURegister src,
                                FPURegister fpu_scratch) {
-  RoundHelper<double>(dst, src, fpu_scratch, RNE);
+  RoundDouble(dst, src, fpu_scratch, RNE);
 }
 
 void TurboAssembler::Floor_s_s(FPURegister dst, FPURegister src,
                                FPURegister fpu_scratch) {
-  RoundHelper<float>(dst, src, fpu_scratch, RDN);
+  RoundFloat(dst, src, fpu_scratch, RDN);
 }
 
 void TurboAssembler::Ceil_s_s(FPURegister dst, FPURegister src,
                               FPURegister fpu_scratch) {
-  RoundHelper<float>(dst, src, fpu_scratch, RUP);
+  RoundFloat(dst, src, fpu_scratch, RUP);
 }
 
 void TurboAssembler::Trunc_s_s(FPURegister dst, FPURegister src,
                                FPURegister fpu_scratch) {
-  RoundHelper<float>(dst, src, fpu_scratch, RTZ);
+  RoundFloat(dst, src, fpu_scratch, RTZ);
 }
 
 void TurboAssembler::Round_s_s(FPURegister dst, FPURegister src,
                                FPURegister fpu_scratch) {
-  RoundHelper<float>(dst, src, fpu_scratch, RNE);
+  RoundFloat(dst, src, fpu_scratch, RNE);
 }
 
 void MacroAssembler::Madd_s(FPURegister fd, FPURegister fr, FPURegister fs,
@@ -2277,35 +2250,19 @@ void TurboAssembler::BranchFalseF(Register rs, Label* target) {
 }
 
 void TurboAssembler::InsertHighWordF64(FPURegister dst, Register src_high) {
-  UseScratchRegisterScope temps(this);
-  Register scratch = temps.Acquire();
-  Register scratch2 = temps.Acquire();
   BlockTrampolinePoolScope block_trampoline_pool(this);
 
-  DCHECK(src_high != scratch2 && src_high != scratch);
-
-  fmv_x_d(scratch, dst);
-  slli(scratch2, src_high, 32);
-  slli(scratch, scratch, 32);
-  srli(scratch, scratch, 32);
-  or_(scratch, scratch, scratch2);
-  fmv_d_x(dst, scratch);
+  StoreDouble(dst, MemOperand(sp, 0));
+  Sw(src_high, MemOperand(sp, 0));
+  LoadDouble(dst, MemOperand(sp, 0));
 }
 
 void TurboAssembler::InsertLowWordF64(FPURegister dst, Register src_low) {
-  UseScratchRegisterScope temps(this);
-  Register scratch = temps.Acquire();
-  Register scratch2 = temps.Acquire();
   BlockTrampolinePoolScope block_trampoline_pool(this);
-
-  DCHECK(src_low != scratch && src_low != scratch2);
-  fmv_x_d(scratch, dst);
-  slli(scratch2, src_low, 32);
-  srli(scratch2, scratch2, 32);
-  srli(scratch, scratch, 32);
-  slli(scratch, scratch, 32);
-  or_(scratch, scratch, scratch2);
-  fmv_d_x(dst, scratch);
+  
+  StoreDouble(dst, MemOperand(sp, 0));
+  Sw(src_low, MemOperand(sp, 4));
+  LoadDouble(dst, MemOperand(sp, 0));
 }
 
 void TurboAssembler::LoadFPRImmediate(FPURegister dst, uint32_t src) {
@@ -2620,43 +2577,6 @@ void TurboAssembler::Popcnt32(Register rd, Register rs, Register scratch) {
   And(rd, rd, scratch2);
   Mul32(rd, rd, value);
   Srl32(rd, rd, shift);
-}
-
-void TurboAssembler::Popcnt64(Register rd, Register rs, Register scratch) {
-  DCHECK_NE(scratch, rs);
-  DCHECK_NE(scratch, rd);
-  // uint64_t B0 = 0x5555555555555555l;     // (T)~(T)0/3
-  // uint64_t B1 = 0x3333333333333333l;     // (T)~(T)0/15*3
-  // uint64_t B2 = 0x0F0F0F0F0F0F0F0Fl;     // (T)~(T)0/255*15
-  // uint64_t value = 0x0101010101010101l;  // (T)~(T)0/255
-  // uint64_t shift = 24;                   // (sizeof(T) - 1) * BITS_PER_BYTE
-
-  uint64_t shift = 24;
-  UseScratchRegisterScope temps(this);
-  BlockTrampolinePoolScope block_trampoline_pool(this);
-  Register scratch2 = temps.Acquire();
-  Register value = temps.Acquire();
-  DCHECK((rd != value) && (rs != value));
-  li(value, 0x1111111111111111l);  // value = 0x1111111111111111l;
-  li(scratch2, 5);
-  Mul64(scratch2, value, scratch2);  // B0 = 0x5555555555555555l;
-  Srl64(scratch, rs, 1);
-  And(scratch, scratch, scratch2);
-  Sub(scratch, rs, scratch);
-  li(scratch2, 3);
-  Mul64(scratch2, value, scratch2);  // B1 = 0x3333333333333333l;
-  And(rd, scratch, scratch2);
-  Srl64(scratch, scratch, 2);
-  And(scratch, scratch, scratch2);
-  Add(scratch, rd, scratch);
-  Srl64(rd, scratch, 4);
-  Add(rd, rd, scratch);
-  li(scratch2, 0xF);
-  li(value, 0x0101010101010101l);    // value = 0x0101010101010101l;
-  Mul64(scratch2, value, scratch2);  // B2 = 0x0F0F0F0F0F0F0F0Fl;
-  And(rd, rd, scratch2);
-  Mul64(rd, rd, value);
-  srli(rd, rd, 32 + shift);
 }
 
 void TurboAssembler::TryInlineTruncateDoubleToI(Register result,

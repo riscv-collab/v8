@@ -67,7 +67,7 @@ constexpr uint64_t kSmiShiftMask = (1UL << kSmiShift) - 1;
 class Operand {
  public:
   // Immediate.
-  V8_INLINE explicit Operand(int64_t immediate,
+  V8_INLINE explicit Operand(int32_t immediate,
                              RelocInfo::Mode rmode = RelocInfo::NO_INFO)
       : rm_(no_reg), rmode_(rmode) {
     value_.immediate = immediate;
@@ -1051,7 +1051,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   // Assembler Pseudo Instructions (Tables 25.2, 25.3, RISC-V Unprivileged ISA)
   void nop();
-  void RV_li(Register rd, int64_t imm);
+  void RV_li(Register rd, int32_t imm);
   // Returns the number of instructions required to load the immediate
   static int li_estimate(int64_t imm, bool is_get_temp_reg = false);
   // Loads an immediate, always using 8 instructions, regardless of the value,

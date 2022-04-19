@@ -1585,18 +1585,6 @@ TEST_F(InstructionSelectorTest, Word32ReverseBytes) {
   }
 }
 
-TEST_F(InstructionSelectorTest, Word64ReverseBytes) {
-  {
-    StreamBuilder m(this, MachineType::Int64(), MachineType::Int64());
-    m.Return(m.Word64ReverseBytes(m.Parameter(0)));
-    Stream s = m.Build();
-    ASSERT_EQ(1U, s.size());
-    EXPECT_EQ(kRiscvByteSwap64, s[0]->arch_opcode());
-    EXPECT_EQ(1U, s[0]->InputCount());
-    EXPECT_EQ(1U, s[0]->OutputCount());
-  }
-}
-
 TEST_F(InstructionSelectorTest, ExternalReferenceLoad1) {
   // Test offsets we can use kMode_Root for.
   const int32_t kOffsets[] = {0, 1, 4, INT32_MIN, INT32_MAX};
