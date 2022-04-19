@@ -910,26 +910,6 @@ void Decoder::DecodeRType(Instruction* instr) {
     case RO_AND:
       Format(instr, "and       'rd, 'rs1, 'rs2");
       break;
-#ifdef V8_TARGET_ARCH_64_BIT
-    case RO_ADDW:
-      Format(instr, "addw      'rd, 'rs1, 'rs2");
-      break;
-    case RO_SUBW:
-      if (instr->Rs1Value() == zero_reg.code())
-        Format(instr, "negw      'rd, 'rs2");
-      else
-        Format(instr, "subw      'rd, 'rs1, 'rs2");
-      break;
-    case RO_SLLW:
-      Format(instr, "sllw      'rd, 'rs1, 'rs2");
-      break;
-    case RO_SRLW:
-      Format(instr, "srlw      'rd, 'rs1, 'rs2");
-      break;
-    case RO_SRAW:
-      Format(instr, "sraw      'rd, 'rs1, 'rs2");
-      break;
-#endif /* V8_TARGET_ARCH_64_BIT */
     // TODO(riscv): Add RISCV M extension macro
     case RO_MUL:
       Format(instr, "mul       'rd, 'rs1, 'rs2");
@@ -955,23 +935,6 @@ void Decoder::DecodeRType(Instruction* instr) {
     case RO_REMU:
       Format(instr, "remu      'rd, 'rs1, 'rs2");
       break;
-#ifdef V8_TARGET_ARCH_64_BIT
-    case RO_MULW:
-      Format(instr, "mulw      'rd, 'rs1, 'rs2");
-      break;
-    case RO_DIVW:
-      Format(instr, "divw      'rd, 'rs1, 'rs2");
-      break;
-    case RO_DIVUW:
-      Format(instr, "divuw     'rd, 'rs1, 'rs2");
-      break;
-    case RO_REMW:
-      Format(instr, "remw      'rd, 'rs1, 'rs2");
-      break;
-    case RO_REMUW:
-      Format(instr, "remuw     'rd, 'rs1, 'rs2");
-      break;
-#endif /*V8_TARGET_ARCH_64_BIT*/
     // TODO(riscv): End Add RISCV M extension macro
     default: {
       switch (instr->BaseOpcode()) {
@@ -1444,14 +1407,6 @@ void Decoder::DecodeIType(Instruction* instr) {
       case RO_LHU:
         Format(instr, "lhu       'rd, 'imm12('rs1)");
         break;
-#ifdef V8_TARGET_ARCH_64_BIT
-      case RO_LWU:
-        Format(instr, "lwu       'rd, 'imm12('rs1)");
-        break;
-      case RO_LD:
-        Format(instr, "ld        'rd, 'imm12('rs1)");
-        break;
-#endif /*V8_TARGET_ARCH_64_BIT*/
       case RO_ADDI:
         if (instr->Imm12Value() == 0) {
           if (instr->RdValue() == zero_reg.code() &&
@@ -1497,25 +1452,6 @@ void Decoder::DecodeIType(Instruction* instr) {
         }
         break;
       }
-#ifdef V8_TARGET_ARCH_64_BIT
-      case RO_ADDIW:
-        if (instr->Imm12Value() == 0)
-          Format(instr, "sext.w    'rd, 'rs1");
-        else
-          Format(instr, "addiw     'rd, 'rs1, 'imm12");
-        break;
-      case RO_SLLIW:
-        Format(instr, "slliw     'rd, 'rs1, 's32");
-        break;
-      case RO_SRLIW: {  //  RO_SRAIW
-        if (!instr->IsArithShift()) {
-          Format(instr, "srliw     'rd, 'rs1, 's32");
-        } else {
-          Format(instr, "sraiw     'rd, 'rs1, 's32");
-        }
-        break;
-      }
-#endif /*V8_TARGET_ARCH_64_BIT*/
       case RO_FENCE:
         if (instr->MemoryOrder(true) == PSIORW &&
             instr->MemoryOrder(false) == PSIORW)
@@ -1654,11 +1590,6 @@ void Decoder::DecodeSType(Instruction* instr) {
       case RO_SW:
         Format(instr, "sw        'rs2, 'offS('rs1)");
         break;
-#ifdef V8_TARGET_ARCH_64_BIT
-      case RO_SD:
-        Format(instr, "sd        'rs2, 'offS('rs1)");
-        break;
-#endif /*V8_TARGET_ARCH_64_BIT*/
       // TODO(riscv): use F Extension macro block
       case RO_FSW:
         Format(instr, "fsw       'fs2, 'offS('rs1)");

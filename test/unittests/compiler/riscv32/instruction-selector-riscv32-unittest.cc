@@ -1009,7 +1009,7 @@ static const MemoryAccess kMemoryAccesses[] = {
     {MachineType::Int32(), kRiscvLw, kRiscvSw},
     {MachineType::Float32(), kRiscvLoadFloat, kRiscvStoreFloat},
     {MachineType::Float64(), kRiscvLoadDouble, kRiscvStoreDouble},
-    {MachineType::Int64(), kRiscvLd, kRiscvSd}};
+    {MachineType::Int64(), kRiscvLw, kRiscvSd}};
 
 struct MemoryAccessImm {
   MachineType type;
@@ -1099,7 +1099,7 @@ const MemoryAccessImm kMemoryAccessesImm[] = {
       39,    52,    69,    71,    91,    92,    107,   109,  115,  124,
       286,   655,   1362,  1569,  2587,  3067,  3096,  3462, 3510, 4095}},
     {MachineType::Int64(),
-     kRiscvLd,
+     kRiscvLw,
      kRiscvSd,
      &InstructionSelectorTest::Stream::IsInteger,
      {-4095, -3340, -3231, -3224, -3088, -1758, -1203, -123, -117, -91,
@@ -1144,7 +1144,7 @@ const MemoryAccessImm1 kMemoryAccessImmMoreThan16bit[] = {
      &InstructionSelectorTest::Stream::IsDouble,
      {-65000, -55000, 32777, 55000, 65000}},
     {MachineType::Int64(),
-     kRiscvLd,
+     kRiscvLw,
      kRiscvSd,
      &InstructionSelectorTest::Stream::IsInteger,
      {-65000, -55000, 32777, 55000, 65000}}};
@@ -1572,7 +1572,7 @@ TEST_F(InstructionSelectorTest, ExternalReferenceLoad1) {
     Stream s = m.Build();
 
     ASSERT_EQ(1U, s.size());
-    EXPECT_EQ(kRiscvLd, s[0]->arch_opcode());
+    EXPECT_EQ(kRiscvLw, s[0]->arch_opcode());
     EXPECT_EQ(kMode_Root, s[0]->addressing_mode());
     EXPECT_EQ(1U, s[0]->InputCount());
     EXPECT_EQ(s.ToInt64(s[0]->InputAt(0)), offset);
@@ -1584,7 +1584,7 @@ TEST_F(InstructionSelectorTest, ExternalReferenceLoad2) {
   // Offset too large, we cannot use kMode_Root.
   StreamBuilder m(this, MachineType::Int64());
   // RV32Gtodo re-impl offset
-  int32_t offset = 0x10000000;
+  int32_t offset = 0x1000000;
   ExternalReference reference =
       bit_cast<ExternalReference>(int32_t(isolate()->isolate_root() + offset));
   Node* const value =
@@ -1594,7 +1594,7 @@ TEST_F(InstructionSelectorTest, ExternalReferenceLoad2) {
   Stream s = m.Build();
 
   ASSERT_EQ(1U, s.size());
-  EXPECT_EQ(kRiscvLd, s[0]->arch_opcode());
+  EXPECT_EQ(kRiscvLw, s[0]->arch_opcode());
   EXPECT_NE(kMode_Root, s[0]->addressing_mode());
 }
 

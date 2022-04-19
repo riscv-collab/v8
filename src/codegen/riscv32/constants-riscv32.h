@@ -213,6 +213,7 @@ const int kImm11Bits = 11;
 const int kShamtShift = 20;
 const int kShamtBits = 5;
 const int kShamtWShift = 20;
+// FIXME: remove this once we have a proper way to handle the wide shift amount
 const int kShamtWBits = 6;
 const int kArithShiftShift = 30;
 const int kImm20Shift = 12;
@@ -363,12 +364,9 @@ const uint32_t kFcsrMask = kFcsrFlagsMask | kFcsrFrmMask;
 
 const int kNopByte = 0x00000013;
 // Original MIPS constants
-// TODO(RISCV): to be cleaned up
 const int kImm16Shift = 0;
 const int kImm16Bits = 16;
 const uint32_t kImm16Mask = ((1 << kImm16Bits) - 1) << kImm16Shift;
-// end of TODO(RISCV): to be cleaned up
-
 // ----- RISCV Base Opcodes
 
 enum BaseOpcode : uint32_t {};
@@ -378,7 +376,7 @@ enum Opcode : uint32_t {
   LOAD = 0b0000011,      // I form: LB LH LW LBU LHU
   LOAD_FP = 0b0000111,   // I form: FLW FLD FLQ
   MISC_MEM = 0b0001111,  // I special form: FENCE FENCE.I
-  OP_IMM = 0b0010011,    // I form: ADDI SLTI SLTIU XORI ORI ANDI SLLI SRLI SARI
+  OP_IMM = 0b0010011,    // I form: ADDI SLTI SLTIU XORI ORI ANDI SLLI SRLI SRAI
   // Note: SLLI/SRLI/SRAI I form first, then func3 001/101 => R type
   AUIPC = 0b0010111,      // U form: AUIPC
   OP_IMM_32 = 0b0011011,  // I form: ADDIW SLLIW SRLIW SRAIW
@@ -450,20 +448,6 @@ enum Opcode : uint32_t {
   RO_ECALL = SYSTEM | (0b000 << kFunct3Shift),
   // RO_EBREAK = SYSTEM | (0b000 << kFunct3Shift), // Same as ECALL, use imm12
 
-  // RV64I Base Instruction Set (in addition to RV32I)
-  RO_LWU = LOAD | (0b110 << kFunct3Shift),
-  RO_LD = LOAD | (0b011 << kFunct3Shift),
-  RO_SD = STORE | (0b011 << kFunct3Shift),
-  RO_ADDIW = OP_IMM_32 | (0b000 << kFunct3Shift),
-  RO_SLLIW = OP_IMM_32 | (0b001 << kFunct3Shift),
-  RO_SRLIW = OP_IMM_32 | (0b101 << kFunct3Shift),
-  // RO_SRAIW = OP_IMM_32 | (0b101 << kFunct3Shift), // Same as SRLIW, use func7
-  RO_ADDW = OP_32 | (0b000 << kFunct3Shift) | (0b0000000 << kFunct7Shift),
-  RO_SUBW = OP_32 | (0b000 << kFunct3Shift) | (0b0100000 << kFunct7Shift),
-  RO_SLLW = OP_32 | (0b001 << kFunct3Shift) | (0b0000000 << kFunct7Shift),
-  RO_SRLW = OP_32 | (0b101 << kFunct3Shift) | (0b0000000 << kFunct7Shift),
-  RO_SRAW = OP_32 | (0b101 << kFunct3Shift) | (0b0100000 << kFunct7Shift),
-
   // RV32/RV64 Zifencei Standard Extension
   RO_FENCE_I = MISC_MEM | (0b001 << kFunct3Shift),
 
@@ -484,13 +468,6 @@ enum Opcode : uint32_t {
   RO_DIVU = OP | (0b101 << kFunct3Shift) | (0b0000001 << kFunct7Shift),
   RO_REM = OP | (0b110 << kFunct3Shift) | (0b0000001 << kFunct7Shift),
   RO_REMU = OP | (0b111 << kFunct3Shift) | (0b0000001 << kFunct7Shift),
-
-  // RV64M Standard Extension (in addition to RV32M)
-  RO_MULW = OP_32 | (0b000 << kFunct3Shift) | (0b0000001 << kFunct7Shift),
-  RO_DIVW = OP_32 | (0b100 << kFunct3Shift) | (0b0000001 << kFunct7Shift),
-  RO_DIVUW = OP_32 | (0b101 << kFunct3Shift) | (0b0000001 << kFunct7Shift),
-  RO_REMW = OP_32 | (0b110 << kFunct3Shift) | (0b0000001 << kFunct7Shift),
-  RO_REMUW = OP_32 | (0b111 << kFunct3Shift) | (0b0000001 << kFunct7Shift),
 
   // RV32A Standard Extension
   RO_LR_W = AMO | (0b010 << kFunct3Shift) | (0b00010 << kFunct5Shift),
@@ -592,7 +569,8 @@ enum Opcode : uint32_t {
   RO_FMV_D_X = OP_FP | (0b000 << kFunct3Shift) | (0b1111001 << kFunct7Shift) |
                (0b00000 << kRs2Shift),
 
-  // RV64C Standard Extension
+  // TODO: This is RV64C standard extension and should be adapted to RV32C
+  // RV32C Standard Extension
   RO_C_ADDI4SPN = C0 | (0b000 << kRvcFunct3Shift),
   RO_C_FLD = C0 | (0b001 << kRvcFunct3Shift),
   RO_C_LW = C0 | (0b010 << kRvcFunct3Shift),

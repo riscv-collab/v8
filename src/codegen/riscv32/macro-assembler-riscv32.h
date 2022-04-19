@@ -476,7 +476,8 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void SmiUntag(Register dst, Register src) {
     DCHECK(SmiValuesAre32Bits() || SmiValuesAre31Bits());
     if (COMPRESS_POINTERS_BOOL) {
-      sraiw(dst, src, kSmiShift);
+      // TODO: use c_srai?
+      srai(dst, src, kSmiShift);
     } else {
       srai(dst, src, kSmiShift);
     }

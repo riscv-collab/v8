@@ -117,7 +117,6 @@ namespace compiler {
   V(RiscvUlhu)                              \
   V(RiscvSh)                                \
   V(RiscvUsh)                               \
-  V(RiscvLd)                                \
   V(RiscvUld)                               \
   V(RiscvLw)                                \
   V(RiscvUlw)                               \

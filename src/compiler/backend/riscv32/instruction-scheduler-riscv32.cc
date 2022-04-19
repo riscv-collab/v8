@@ -351,7 +351,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
 
     case kRiscvLb:
     case kRiscvLbu:
-    case kRiscvLd:
     case kRiscvLoadDouble:
     case kRiscvLh:
     case kRiscvLhu:
@@ -1411,7 +1410,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
     case kRiscvLh:
     case kRiscvLwu:
     case kRiscvLw:
-    case kRiscvLd:
     case kRiscvSb:
     case kRiscvSh:
     case kRiscvSw:

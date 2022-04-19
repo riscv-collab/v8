@@ -232,7 +232,7 @@ void GenAndRunTestForLRSC(T value, Func test_generator) {
   if (std::is_same<int32_t, T>::value) {
     assm.sw(a1, a0, 0);
   } else if (std::is_same<int64_t, T>::value) {
-    assm.sd(a1, a0, 0);
+    UNREACHABLE();
   }
   test_generator(assm);
 
@@ -284,7 +284,7 @@ OUTPUT_T GenAndRunTestForAMO(INPUT_T input0, INPUT_T input1,
     assm.sw(a1, a0, 0);
   } else if (std::is_same<int64_t, INPUT_T>::value ||
              std::is_same<uint64_t, INPUT_T>::value) {
-    assm.sd(a1, a0, 0);
+    UNREACHABLE();
   }
   test_generator(assm);
 
@@ -301,7 +301,7 @@ OUTPUT_T GenAndRunTestForAMO(INPUT_T input0, INPUT_T input1,
     assm.lw(a0, a0, 0);
   } else if (std::is_same<int64_t, INPUT_T>::value ||
              std::is_same<uint64_t, INPUT_T>::value) {
-    assm.ld(a0, a0, 0);
+    UNREACHABLE();
   }
 
   assm.jr(ra);

@@ -216,7 +216,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   int JumpOffset(Instr instr);
   int CJumpOffset(Instr instr);
   int CBranchOffset(Instr instr);
-  static int LdOffset(Instr instr);
+  static int LwOffset(Instr instr);
   static int AuipcOffset(Instr instr);
   static int JalrOffset(Instr instr);
 
@@ -471,20 +471,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void csrrsi(Register rd, ControlStatusReg csr, uint8_t imm5);
   void csrrci(Register rd, ControlStatusReg csr, uint8_t imm5);
 
-  // RV64I
-  void lwu(Register rd, Register rs1, int16_t imm12);
-  void ld(Register rd, Register rs1, int16_t imm12);
-  void sd(Register source, Register base, int16_t imm12);
-  void addiw(Register rd, Register rs1, int16_t imm12);
-  void slliw(Register rd, Register rs1, uint8_t shamt);
-  void srliw(Register rd, Register rs1, uint8_t shamt);
-  void sraiw(Register rd, Register rs1, uint8_t shamt);
-  void addw(Register rd, Register rs1, Register rs2);
-  void subw(Register rd, Register rs1, Register rs2);
-  void sllw(Register rd, Register rs1, Register rs2);
-  void srlw(Register rd, Register rs1, Register rs2);
-  void sraw(Register rd, Register rs1, Register rs2);
-
   // RV32M Standard Extension
   void mul(Register rd, Register rs1, Register rs2);
   void mulh(Register rd, Register rs1, Register rs2);
@@ -652,8 +638,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline void c_bnez(Register rs1, Label* L) { c_bnez(rs1, branch_offset(L)); }
   void c_beqz(Register rs1, int16_t imm9);
   inline void c_beqz(Register rs1, Label* L) { c_beqz(rs1, branch_offset(L)); }
-  void c_srli(Register rs1, int8_t shamt6);
-  void c_srai(Register rs1, int8_t shamt6);
+  void c_srli(Register rs1, int8_t shamt5);
+  void c_srai(Register rs1, int8_t shamt5);
   void c_andi(Register rs1, int8_t imm6);
   void NOP();
   void EBREAK();
@@ -1062,9 +1048,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void mv(Register rd, Register rs) { addi(rd, rs, 0); }
   void not_(Register rd, Register rs) { xori(rd, rs, -1); }
   void neg(Register rd, Register rs) { sub(rd, zero_reg, rs); }
-  void negw(Register rd, Register rs) { subw(rd, zero_reg, rs); }
-  void sext_w(Register rd, Register rs) { addiw(rd, rs, 0); }
   void seqz(Register rd, Register rs) { sltiu(rd, rs, 1); }
+  void sext_w(Register rd, Register rs) { addi(rd, rs, 0); }
   void snez(Register rd, Register rs) { sltu(rd, zero_reg, rs); }
   void sltz(Register rd, Register rs) { slt(rd, rs, zero_reg); }
   void sgtz(Register rd, Register rs) { slt(rd, zero_reg, rs); }
@@ -1277,11 +1262,10 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   static bool IsJalr(Instr instr);
   static bool IsLui(Instr instr);
   static bool IsAuipc(Instr instr);
-  static bool IsAddiw(Instr instr);
   static bool IsAddi(Instr instr);
   static bool IsOri(Instr instr);
   static bool IsSlli(Instr instr);
-  static bool IsLd(Instr instr);
+  static bool IsLw(Instr instr);
   void CheckTrampolinePool();
 
   // Get the code target object for a pc-relative call or jump.

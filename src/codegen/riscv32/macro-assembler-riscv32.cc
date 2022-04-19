@@ -891,9 +891,9 @@ void TurboAssembler::Ror(Register rd, Register rs, const Operand& rt) {
   Register scratch = temps.Acquire();
   BlockTrampolinePoolScope block_trampoline_pool(this);
   if (rt.is_reg()) {
-    negw(scratch, rt.rm());
-    sllw(scratch, rs, scratch);
-    srlw(rd, rs, rt.rm());
+    neg(scratch, rt.rm());
+    sll(scratch, rs, scratch);
+    srl(rd, rs, rt.rm());
     or_(rd, scratch, rd);
     sext_w(rd, rd);
   } else {
@@ -904,8 +904,8 @@ void TurboAssembler::Ror(Register rd, Register rs, const Operand& rt) {
     } else if (ror_value < 0) {
       ror_value += 32;
     }
-    srliw(scratch, rs, ror_value);
-    slliw(rd, rs, 32 - ror_value);
+    srli(scratch, rs, ror_value);
+    slli(rd, rs, 32 - ror_value);
     or_(rd, scratch, rd);
     sext_w(rd, rd);
   }
@@ -916,7 +916,7 @@ void TurboAssembler::Dror(Register rd, Register rs, const Operand& rt) {
   Register scratch = temps.Acquire();
   BlockTrampolinePoolScope block_trampoline_pool(this);
   if (rt.is_reg()) {
-    negw(scratch, rt.rm());
+    neg(scratch, rt.rm());
     sll(scratch, rs, scratch);
     srl(rd, rs, rt.rm());
     or_(rd, scratch, rd);
@@ -1478,7 +1478,7 @@ void TurboAssembler::li(Register rd, Operand j, LiFlags mode) {
       RecordEntry((uint64_t)j.immediate(), j.rmode());
       auipc(rd, 0);
       // Record a value into constant pool.
-      ld(rd, rd, 0);
+      lw(rd, rd, 0);
     } else {
       if ((count - reverse_count) > 1) {
         Li(rd, ~j.immediate());
@@ -2393,30 +2393,30 @@ void TurboAssembler::Clz32(Register rd, Register xx) {
   DCHECK(xx != y && xx != n);
   Move(x, xx);
   li(n, Operand(32));
-  srliw(y, x, 16);
+  srli(y, x, 16);
   BranchShort(&L0, eq, y, Operand(zero_reg));
   Move(x, y);
-  addiw(n, n, -16);
+  addi(n, n, -16);
   bind(&L0);
-  srliw(y, x, 8);
+  srli(y, x, 8);
   BranchShort(&L1, eq, y, Operand(zero_reg));
-  addiw(n, n, -8);
+  addi(n, n, -8);
   Move(x, y);
   bind(&L1);
-  srliw(y, x, 4);
+  srli(y, x, 4);
   BranchShort(&L2, eq, y, Operand(zero_reg));
-  addiw(n, n, -4);
+  addi(n, n, -4);
   Move(x, y);
   bind(&L2);
-  srliw(y, x, 2);
+  srli(y, x, 2);
   BranchShort(&L3, eq, y, Operand(zero_reg));
-  addiw(n, n, -2);
+  addi(n, n, -2);
   Move(x, y);
   bind(&L3);
-  srliw(y, x, 1);
-  subw(rd, n, x);
+  srli(y, x, 1);
+  sub(rd, n, x);
   BranchShort(&L4, eq, y, Operand(zero_reg));
-  addiw(rd, n, -2);
+  addi(rd, n, -2);
   bind(&L4);
 }
 
@@ -2485,7 +2485,7 @@ void TurboAssembler::Popcnt32(Register rd, Register rs, Register scratch) {
   Srl32(scratch, scratch, 2);
   And(scratch, scratch, scratch2);
   Add(scratch, rd, scratch);
-  srliw(rd, scratch, 4);
+  srli(rd, scratch, 4);
   Add(rd, rd, scratch);
   li(scratch2, 0xF);
   Mul32(scratch2, value, scratch2);  // B2 = 0x0F0F0F0F;
@@ -2524,7 +2524,7 @@ void TurboAssembler::TruncateDoubleToI(Isolate* isolate, Zone* zone,
   } else {
     Call(BUILTIN_CODE(isolate, DoubleToI), RelocInfo::CODE_TARGET);
   }
-  ld(result, sp, 0);
+  lw(result, sp, 0);
 
   Add(sp, sp, Operand(kDoubleSize));
   pop(ra);
@@ -3916,7 +3916,7 @@ void MacroAssembler::JumpToOffHeapInstructionStream(Address entry) {
     RecordEntry(entry, RelocInfo::OFF_HEAP_TARGET);
     RecordRelocInfo(RelocInfo::OFF_HEAP_TARGET, entry);
     auipc(kOffHeapTrampolineRegister, 0);
-    ld(kOffHeapTrampolineRegister, kOffHeapTrampolineRegister, 0);
+    lw(kOffHeapTrampolineRegister, kOffHeapTrampolineRegister, 0);
   }
   Jump(kOffHeapTrampolineRegister);
 }

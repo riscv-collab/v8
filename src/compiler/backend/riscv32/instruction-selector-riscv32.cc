@@ -104,7 +104,6 @@ class RiscvOperandGenerator final : public OperandGenerator {
       case kRiscvSh:
       case kRiscvLw:
       case kRiscvSw:
-      case kRiscvLd:
       case kRiscvSd:
       case kRiscvLoadFloat:
       case kRiscvStoreFloat:

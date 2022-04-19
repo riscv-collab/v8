@@ -337,9 +337,6 @@ bool Assembler::IsLui(Instr instr) { return (instr & kBaseOpcodeMask) == LUI; }
 bool Assembler::IsAuipc(Instr instr) {
   return (instr & kBaseOpcodeMask) == AUIPC;
 }
-bool Assembler::IsAddiw(Instr instr) {
-  return (instr & (kBaseOpcodeMask | kFunct3Mask)) == RO_ADDIW;
-}
 bool Assembler::IsAddi(Instr instr) {
   return (instr & (kBaseOpcodeMask | kFunct3Mask)) == RO_ADDI;
 }
@@ -349,9 +346,8 @@ bool Assembler::IsOri(Instr instr) {
 bool Assembler::IsSlli(Instr instr) {
   return (instr & (kBaseOpcodeMask | kFunct3Mask)) == RO_SLLI;
 }
-
-bool Assembler::IsLd(Instr instr) {
-  return (instr & (kBaseOpcodeMask | kFunct3Mask)) == RO_LD;
+bool Assembler::IsLw(Instr instr) {
+  return (instr & (kBaseOpcodeMask | kFunct3Mask)) == RO_LW;
 }
 
 int Assembler::target_at(int pos, bool is_internal) {
@@ -462,8 +458,8 @@ static inline Instr SetBranchOffset(int32_t pos, int32_t target_pos,
   return instr | (imm12 & kBImm12Mask);
 }
 
-static inline Instr SetLdOffset(int32_t offset, Instr instr) {
-  DCHECK(Assembler::IsLd(instr));
+static inline Instr SetLwOffset(int32_t offset, Instr instr) {
+  DCHECK(Assembler::IsLw(instr));
   DCHECK(is_int12(offset));
   instr &= ~kImm12Mask;
   int32_t imm12 = offset << kImm12Shift;
@@ -777,8 +773,8 @@ int Assembler::PatchBranchlongOffset(Address pc, Instr instr_auipc,
   return 2;
 }
 
-int Assembler::LdOffset(Instr instr) {
-  DCHECK(IsLd(instr));
+int Assembler::LwOffset(Instr instr) {
+  DCHECK(IsLw(instr));
   int32_t imm12 = static_cast<int32_t>(instr & kImm12Mask) >> 20;
   return imm12;
 }
@@ -1726,56 +1722,6 @@ void Assembler::csrrsi(Register rd, ControlStatusReg csr, uint8_t imm5) {
 
 void Assembler::csrrci(Register rd, ControlStatusReg csr, uint8_t imm5) {
   GenInstrCSR_ii(0b111, rd, csr, imm5);
-}
-
-// RV64I
-
-void Assembler::lwu(Register rd, Register rs1, int16_t imm12) {
-  GenInstrLoad_ri(0b110, rd, rs1, imm12);
-}
-
-void Assembler::ld(Register rd, Register rs1, int16_t imm12) {
-  GenInstrLoad_ri(0b011, rd, rs1, imm12);
-}
-
-void Assembler::sd(Register source, Register base, int16_t imm12) {
-  GenInstrStore_rri(0b011, base, source, imm12);
-}
-
-void Assembler::addiw(Register rd, Register rs1, int16_t imm12) {
-  GenInstrI(0b000, OP_IMM_32, rd, rs1, imm12);
-}
-
-void Assembler::slliw(Register rd, Register rs1, uint8_t shamt) {
-  GenInstrShiftW_ri(0, 0b001, rd, rs1, shamt & 0x1f);
-}
-
-void Assembler::srliw(Register rd, Register rs1, uint8_t shamt) {
-  GenInstrShiftW_ri(0, 0b101, rd, rs1, shamt & 0x1f);
-}
-
-void Assembler::sraiw(Register rd, Register rs1, uint8_t shamt) {
-  GenInstrShiftW_ri(1, 0b101, rd, rs1, shamt & 0x1f);
-}
-
-void Assembler::addw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0000000, 0b000, rd, rs1, rs2);
-}
-
-void Assembler::subw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0100000, 0b000, rd, rs1, rs2);
-}
-
-void Assembler::sllw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0000000, 0b001, rd, rs1, rs2);
-}
-
-void Assembler::srlw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0000000, 0b101, rd, rs1, rs2);
-}
-
-void Assembler::sraw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0100000, 0b101, rd, rs1, rs2);
 }
 
 // RV32M Standard Extension
@@ -3535,9 +3481,9 @@ void Assembler::set_target_address_at(Address pc, Address constant_pool,
                                       ICacheFlushMode icache_flush_mode) {
   Instr* instr = reinterpret_cast<Instr*>(pc);
   if (IsAuipc(*instr)) {
-    if (IsLd(*reinterpret_cast<Instr*>(pc + 4))) {
+    if (IsLw(*reinterpret_cast<Instr*>(pc + 4))) {
       int32_t Hi20 = AuipcOffset(*instr);
-      int32_t Lo12 = LdOffset(*reinterpret_cast<Instr*>(pc + 4));
+      int32_t Lo12 = LwOffset(*reinterpret_cast<Instr*>(pc + 4));
       Memory<Address>(pc + Hi20 + Lo12) = target;
       if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
         FlushInstructionCache(pc + Hi20 + Lo12, 2 * kInstrSize);
@@ -3561,9 +3507,9 @@ void Assembler::set_target_address_at(Address pc, Address constant_pool,
 Address Assembler::target_address_at(Address pc, Address constant_pool) {
   Instr* instr = reinterpret_cast<Instr*>(pc);
   if (IsAuipc(*instr)) {
-    if (IsLd(*reinterpret_cast<Instr*>(pc + 4))) {
+    if (IsLw(*reinterpret_cast<Instr*>(pc + 4))) {
       int32_t Hi20 = AuipcOffset(*instr);
-      int32_t Lo12 = LdOffset(*reinterpret_cast<Instr*>(pc + 4));
+      int32_t Lo12 = LwOffset(*reinterpret_cast<Instr*>(pc + 4));
       return Memory<Address>(pc + Hi20 + Lo12);
     } else {
       DCHECK(IsJalr(*reinterpret_cast<Instr*>(pc + 4)));
@@ -3648,9 +3594,9 @@ bool UseScratchRegisterScope::hasAvailable() const {
 bool Assembler::IsConstantPoolAt(Instruction* instr) {
   // The constant pool marker is made of two instructions. These instructions
   // will never be emitted by the JIT, so checking for the first one is enough:
-  // 0: ld x0, x0, #offset
+  // 0: lw x0, x0, #offset
   Instr instr_value = *reinterpret_cast<Instr*>(instr);
-  bool result = IsLd(instr_value) && (instr->Rs1Value() == kRegCode_zero_reg) &&
+  bool result = IsLw(instr_value) && (instr->Rs1Value() == kRegCode_zero_reg) &&
                 (instr->RdValue() == kRegCode_zero_reg);
 #ifdef DEBUG
   // It is still worth asserting the marker is complete.
@@ -3693,14 +3639,14 @@ void ConstantPool::EmitPrologue(Alignment require_alignment) {
   const int marker_size = 1;
   int word_count =
       ComputeSize(Jump::kOmitted, require_alignment) / kInt32Size - marker_size;
-  assm_->ld(zero_reg, zero_reg, word_count);
+  assm_->lw(zero_reg, zero_reg, word_count);
   assm_->EmitPoolGuard();
 }
 
 int ConstantPool::PrologueSize(Jump require_jump) const {
   // Prologue is:
   //   j over  ;; if require_jump
-  //   ld x0, x0, #pool_size
+  //   lw x0, x0, #pool_size
   //   j 0x0
   int prologue_size = require_jump == Jump::kRequired ? kInstrSize : 0;
   prologue_size += 2 * kInstrSize;
@@ -3711,11 +3657,11 @@ void ConstantPool::SetLoadOffsetToConstPoolEntry(int load_offset,
                                                  Instruction* entry_offset,
                                                  const ConstantPoolKey& key) {
   Instr instr_auipc = assm_->instr_at(load_offset);
-  Instr instr_ld = assm_->instr_at(load_offset + 4);
-  // Instruction to patch must be 'ld rd, offset(rd)' with 'offset == 0'.
+  Instr instr_lw = assm_->instr_at(load_offset + 4);
+  // Instruction to patch must be 'lw rd, offset(rd)' with 'offset == 0'.
   DCHECK(assm_->IsAuipc(instr_auipc));
-  DCHECK(assm_->IsLd(instr_ld));
-  DCHECK_EQ(assm_->LdOffset(instr_ld), 0);
+  DCHECK(assm_->IsLw(instr_lw));
+  DCHECK_EQ(assm_->LwOffset(instr_lw), 0);
   DCHECK_EQ(assm_->AuipcOffset(instr_auipc), 0);
   int32_t distance = static_cast<int32_t>(
       reinterpret_cast<Address>(entry_offset) -
@@ -3724,7 +3670,7 @@ void ConstantPool::SetLoadOffsetToConstPoolEntry(int load_offset,
   int32_t Hi20 = (((int32_t)distance + 0x800) >> 12);
   int32_t Lo12 = (int32_t)distance << 20 >> 20;
   assm_->instr_at_put(load_offset, SetAuipcOffset(Hi20, instr_auipc));
-  assm_->instr_at_put(load_offset + 4, SetLdOffset(Lo12, instr_ld));
+  assm_->instr_at_put(load_offset + 4, SetLwOffset(Lo12, instr_lw));
 }
 
 void ConstantPool::Check(Emission force_emit, Jump require_jump,

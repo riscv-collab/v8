@@ -208,25 +208,6 @@ TEST(CSR) {
   VERIFY_RUN();
 }
 
-TEST(RV64I) {
-  SET_UP();
-
-  COMPARE(lwu(a0, s3, -268), "ef49e503       lwu       a0, -268(s3)");
-  COMPARE(ld(a1, s3, -268), "ef49b583       ld        a1, -268(s3)");
-  COMPARE(sd(fp, sp, -268), "ee813a23       sd        fp, -268(sp)");
-  COMPARE(addiw(gp, s3, -268), "ef49819b       addiw     gp, s3, -268");
-  COMPARE(slliw(tp, s3, 17), "0119921b       slliw     tp, s3, 17");
-  COMPARE(srliw(ra, s3, 10), "00a9d09b       srliw     ra, s3, 10");
-  COMPARE(sraiw(sp, s3, 17), "4119d11b       sraiw     sp, s3, 17");
-  COMPARE(addw(t1, zero_reg, s4), "0140033b       addw      t1, zero_reg, s4");
-  COMPARE(subw(t2, s3, s4), "414983bb       subw      t2, s3, s4");
-  COMPARE(sllw(s7, s3, s4), "01499bbb       sllw      s7, s3, s4");
-  COMPARE(srlw(s10, s3, s4), "0149dd3b       srlw      s10, s3, s4");
-  COMPARE(sraw(a7, s3, s4), "4149d8bb       sraw      a7, s3, s4");
-
-  VERIFY_RUN();
-}
-
 TEST(RV32M) {
   SET_UP();
 
@@ -238,18 +219,6 @@ TEST(RV32M) {
   COMPARE(divu(a0, s3, t4), "03d9d533       divu      a0, s3, t4");
   COMPARE(rem(a0, s3, t4), "03d9e533       rem       a0, s3, t4");
   COMPARE(remu(a0, s3, t4), "03d9f533       remu      a0, s3, t4");
-
-  VERIFY_RUN();
-}
-
-TEST(RV64M) {
-  SET_UP();
-
-  COMPARE(mulw(a0, s3, s4), "0349853b       mulw      a0, s3, s4");
-  COMPARE(divw(a0, s3, s4), "0349c53b       divw      a0, s3, s4");
-  COMPARE(divuw(a0, s3, s4), "0349d53b       divuw     a0, s3, s4");
-  COMPARE(remw(a0, s3, s4), "0349e53b       remw      a0, s3, s4");
-  COMPARE(remuw(a0, s3, s4), "0349f53b       remuw     a0, s3, s4");
 
   VERIFY_RUN();
 }
@@ -411,7 +380,6 @@ TEST(PSEUDO) {
   COMPARE(mv(t0, a4), "00070293       mv        t0, a4");
   COMPARE(not_(t0, a5), "fff7c293       not       t0, a5");
   COMPARE(neg(ra, a6), "410000b3       neg       ra, a6");
-  COMPARE(negw(t2, fp), "408003bb       negw      t2, fp");
   COMPARE(sext_w(t0, s1), "0004829b       sext.w    t0, s1");
   COMPARE(seqz(sp, s2), "00193113       seqz      sp, s2");
   COMPARE(snez(fp, s3), "01303433       snez      fp, s3");

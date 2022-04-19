@@ -781,9 +781,10 @@ void LiftoffAssembler::AtomicLoad(LiftoffRegister dst, Register src_addr,
       lw(dst.gp(), src_reg, 0);
       fence(PSR, PSR | PSW);
       return;
+    // TODO
     case LoadType::kI64Load:
       fence(PSR | PSW, PSR | PSW);
-      ld(dst.gp(), src_reg, 0);
+      lw(dst.gp(), src_reg, 0);
       fence(PSR, PSR | PSW);
       return;
     default:
@@ -815,7 +816,7 @@ void LiftoffAssembler::AtomicStore(Register dst_addr, Register offset_reg,
       return;
     case StoreType::kI64Store:
       fence(PSR | PSW, PSW);
-      sd(src.gp(), dst_reg, 0);
+      sw(src.gp(), dst_reg, 0);
       return;
     default:
       UNREACHABLE();
@@ -1157,8 +1158,8 @@ void LiftoffAssembler::emit_i32_remu(Register dst, Register lhs, Register rhs,
   }
 
 // clang-format off
-I32_BINOP(add, addw)
-I32_BINOP(sub, subw)
+I32_BINOP(add, add)
+I32_BINOP(sub, sub)
 I32_BINOP(and, and_)
 I32_BINOP(or, or_)
 I32_BINOP(xor, xor_)
@@ -1206,13 +1207,13 @@ bool LiftoffAssembler::emit_i32_popcnt(Register dst, Register src) {
     instruction(dst, src, amount & 31);                                 \
   }
 
-I32_SHIFTOP(shl, sllw)
-I32_SHIFTOP(sar, sraw)
-I32_SHIFTOP(shr, srlw)
+I32_SHIFTOP(shl, sll)
+I32_SHIFTOP(sar, sra)
+I32_SHIFTOP(shr, srl)
 
-I32_SHIFTOP_I(shl, slliw)
-I32_SHIFTOP_I(sar, sraiw)
-I32_SHIFTOP_I(shr, srliw)
+I32_SHIFTOP_I(shl, slli)
+I32_SHIFTOP_I(sar, srai)
+I32_SHIFTOP_I(shr, srli)
 
 #undef I32_SHIFTOP
 #undef I32_SHIFTOP_I
@@ -1326,12 +1327,6 @@ void LiftoffAssembler::emit_i64_addi(LiftoffRegister dst, LiftoffRegister lhs,
                                      int64_t imm) {
   TurboAssembler::Add(dst.gp(), lhs.gp(), Operand(imm));
 }
-
-/* RV32Gtodo should delete?
-void LiftoffAssembler::emit_u32_to_uintptr(Register dst, Register src) {
-  addw(dst, src, zero_reg);
-}
-*/
 
 void LiftoffAssembler::emit_f32_neg(DoubleRegister dst, DoubleRegister src) {
   TurboAssembler::Neg_s(dst, src);
@@ -1552,13 +1547,13 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
 }
 
 void LiftoffAssembler::emit_i32_signextend_i8(Register dst, Register src) {
-  slliw(dst, src, 32 - 8);
-  sraiw(dst, dst, 32 - 8);
+  slli(dst, src, 32 - 8);
+  srai(dst, dst, 32 - 8);
 }
 
 void LiftoffAssembler::emit_i32_signextend_i16(Register dst, Register src) {
-  slliw(dst, src, 32 - 16);
-  sraiw(dst, dst, 32 - 16);
+  slli(dst, src, 32 - 16);
+  srai(dst, dst, 32 - 16);
 }
 
 void LiftoffAssembler::emit_i64_signextend_i8(LiftoffRegister dst,
@@ -1788,6 +1783,12 @@ void LiftoffAssembler::LoadLane(LiftoffRegister dst, LiftoffRegister src,
     vmv_sx(v0, kScratchReg);
     vmerge_vx(dst.fp().toV(), scratch, dst.fp().toV());
   } else if (mem_type == MachineType::Int32()) {
+    Lw(scratch, src_op);
+    VU.set(kScratchReg, E32, m1);
+    li(kScratchReg, 0x1 << laneidx);
+    vmv_sx(v0, kScratchReg);
+    vmerge_vx(dst.fp().toV(), scratch, dst.fp().toV());
+  } else if (mem_type == MachineType::Int64()) {
     Lw(scratch, src_op);
     VU.set(kScratchReg, E32, m1);
     li(kScratchReg, 0x1 << laneidx);
