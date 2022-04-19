@@ -185,7 +185,7 @@ void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
     __ LoadTaggedPointerField(
         func_info, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
     __ Lw(func_info,
-           FieldMemOperand(func_info, SharedFunctionInfo::kFlagsOffset));
+          FieldMemOperand(func_info, SharedFunctionInfo::kFlagsOffset));
     __ DecodeField<SharedFunctionInfo::FunctionKindBits>(func_info);
     __ JumpIfIsInRange(
         func_info,
