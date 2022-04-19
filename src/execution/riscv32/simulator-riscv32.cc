@@ -1179,7 +1179,7 @@ struct type_sew_t<128> {
   set_rvv_vstart(0);                                                           \
   if (::v8::internal::FLAG_trace_sim) {                                        \
     __int128_t value = Vregister_[rvv_vd_reg()];                               \
-    SNPrintF(trace_buf_, "%016" PRIx64 "%016" PRIx64 " <-- 0x%016" PRIx64,     \
+    SNPrintF(trace_buf_, "%016" PRIx32 "%016" PRIx32 " <-- 0x%016" PRIx32,     \
              *(reinterpret_cast<int64_t*>(&value) + 1),                        \
              *reinterpret_cast<int64_t*>(&value),                              \
              (uint64_t)(get_register(rs1_reg())));                             \
@@ -1203,7 +1203,7 @@ struct type_sew_t<128> {
   set_rvv_vstart(0);                                                           \
   if (::v8::internal::FLAG_trace_sim) {                                        \
     __int128_t value = Vregister_[rvv_vd_reg()];                               \
-    SNPrintF(trace_buf_, "%016" PRIx64 "%016" PRIx64 " --> 0x%016" PRIx64,     \
+    SNPrintF(trace_buf_, "%016" PRIx32 "%016" PRIx32 " --> 0x%016" PRIx32,     \
              *(reinterpret_cast<int64_t*>(&value) + 1),                        \
              *reinterpret_cast<int64_t*>(&value),                              \
              (uint64_t)(get_register(rs1_reg())));                             \
@@ -1489,14 +1489,14 @@ class RiscvDebugger {
  private:
   Simulator* sim_;
 
-  int64_t GetRegisterValue(int regnum);
+  int32_t GetRegisterValue(int regnum);
   int64_t GetFPURegisterValue(int regnum);
   float GetFPURegisterValueFloat(int regnum);
   double GetFPURegisterValueDouble(int regnum);
 #if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
   __int128_t GetVRegisterValue(int regnum);
 #endif
-  bool GetValue(const char* desc, int64_t* value);
+  bool GetValue(const char* desc, int32_t* value);
 };
 
 #define UNSUPPORTED()                                                    \
@@ -1509,7 +1509,7 @@ class RiscvDebugger {
   PrintF(" %-44s\n", buffer.begin());                                    \
   base::OS::Abort();
 
-int64_t RiscvDebugger::GetRegisterValue(int regnum) {
+int32_t RiscvDebugger::GetRegisterValue(int regnum) {
   if (regnum == kNumSimuRegisters) {
     return sim_->get_pc();
   } else {
@@ -1551,21 +1551,25 @@ __int128_t RiscvDebugger::GetVRegisterValue(int regnum) {
 }
 #endif
 
-bool RiscvDebugger::GetValue(const char* desc, int64_t* value) {
+bool RiscvDebugger::GetValue(const char* desc, int32_t* value) {
   int regnum = Registers::Number(desc);
-  int fpuregnum = FPURegisters::Number(desc);
+  // RV32G todo need to port GetValue for sf and df registers
+  //  int fpuregnum = FPURegisters::Number(desc);
 
   if (regnum != kInvalidRegister) {
     *value = GetRegisterValue(regnum);
     return true;
-  } else if (fpuregnum != kInvalidFPURegister) {
-    *value = GetFPURegisterValue(fpuregnum);
-    return true;
+    // RV32G todo need to port GetValue for sf and df registers
+    /*
+      } else if (fpuregnum != kInvalidFPURegister) {
+        *value = GetFPURegisterValue(fpuregnum);
+        return true;
+    */
   } else if (strncmp(desc, "0x", 2) == 0) {
-    return SScanF(desc + 2, "%" SCNx64, reinterpret_cast<uint64_t*>(value)) ==
+    return SScanF(desc + 2, "%" SCNx32, reinterpret_cast<uint32_t*>(value)) ==
            1;
   } else {
-    return SScanF(desc, "%" SCNu64, reinterpret_cast<uint64_t*>(value)) == 1;
+    return SScanF(desc, "%" SCNu32, reinterpret_cast<uint32_t*>(value)) == 1;
   }
 }
 
@@ -1582,26 +1586,26 @@ void RiscvDebugger::PrintRegs(char name_prefix, int start_index,
   for (int i = 0; i < num_registers / 2; i++) {
     SNPrintF(name1, "%c%d", name_prefix, start_index + 2 * i);
     SNPrintF(name2, "%c%d", name_prefix, start_index + 2 * i + 1);
-    PrintF("%3s: 0x%016" PRIx64 "  %14" PRId64 " \t%3s: 0x%016" PRIx64
-           "  %14" PRId64 " \n",
+    PrintF("%3s: 0x%016" PRIx32 "  %14" PRId32 " \t%3s: 0x%016" PRIx32
+           "  %14" PRId32 " \n",
            REG_INFO(name1.begin()), REG_INFO(name2.begin()));
   }
   if (num_registers % 2 == 1) {
     SNPrintF(name1, "%c%d", name_prefix, end_index);
-    PrintF("%3s: 0x%016" PRIx64 "  %14" PRId64 " \n", REG_INFO(name1.begin()));
+    PrintF("%3s: 0x%016" PRIx32 "  %14" PRId32 " \n", REG_INFO(name1.begin()));
   }
 }
 
 void RiscvDebugger::PrintAllRegs() {
   PrintF("\n");
   // ra, sp, gp
-  PrintF("%3s: 0x%016" PRIx64 " %14" PRId64 "\t%3s: 0x%016" PRIx64 " %14" PRId64
-         "\t%3s: 0x%016" PRIx64 " %14" PRId64 "\n",
+  PrintF("%3s: 0x%016" PRIx32 " %14" PRId32 "\t%3s: 0x%016" PRIx32 " %14" PRId32
+         "\t%3s: 0x%016" PRIx32 " %14" PRId32 "\n",
          REG_INFO("ra"), REG_INFO("sp"), REG_INFO("gp"));
 
   // tp, fp, pc
-  PrintF("%3s: 0x%016" PRIx64 " %14" PRId64 "\t%3s: 0x%016" PRIx64 " %14" PRId64
-         "\t%3s: 0x%016" PRIx64 " %14" PRId64 "\n",
+  PrintF("%3s: 0x%016" PRIx32 " %14" PRId32 "\t%3s: 0x%016" PRIx32 " %14" PRId32
+         "\t%3s: 0x%016" PRIx32 " %14" PRId32 "\n",
          REG_INFO("tp"), REG_INFO("fp"), REG_INFO("pc"));
 
   // print register a0, .., a7
@@ -1660,7 +1664,7 @@ void RiscvDebugger::Debug() {
         PrintF("Call builtin:  %s\n", name);
       }
       dasm.InstructionDecode(buffer, reinterpret_cast<byte*>(sim_->get_pc()));
-      PrintF("  0x%016" PRIx64 "   %s\n", sim_->get_pc(), buffer.begin());
+      PrintF("  0x%016" PRIx32 "   %s\n", sim_->get_pc(), buffer.begin());
       last_pc = sim_->get_pc();
     }
     char* line = ReadLine("sim> ");
@@ -1700,7 +1704,8 @@ void RiscvDebugger::Debug() {
         done = true;
       } else if ((strcmp(cmd, "p") == 0) || (strcmp(cmd, "print") == 0)) {
         if (argc == 2) {
-          int64_t value;
+          int32_t value;
+          int64_t fvalue;
           double dvalue;
           if (strcmp(arg1, "all") == 0) {
             PrintAllRegs();
@@ -1714,18 +1719,18 @@ void RiscvDebugger::Debug() {
 #endif
             if (regnum != kInvalidRegister) {
               value = GetRegisterValue(regnum);
-              PrintF("%s: 0x%08" PRIx64 "  %" PRId64 "  \n", arg1, value,
+              PrintF("%s: 0x%08" PRIx32 "  %" PRId32 "  \n", arg1, value,
                      value);
             } else if (fpuregnum != kInvalidFPURegister) {
-              value = GetFPURegisterValue(fpuregnum);
+              fvalue = GetFPURegisterValue(fpuregnum);
               dvalue = GetFPURegisterValueDouble(fpuregnum);
               PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n",
-                     FPURegisters::Name(fpuregnum), value, dvalue);
+                     FPURegisters::Name(fpuregnum), fvalue, dvalue);
 
 #if 0  // RV32Gtodo isolate by the CAN_USE_RVV_INSTRUCTIONS
             } else if (vregnum != kInvalidVRegister) {
               __int128_t v = GetVRegisterValue(vregnum);
-              PrintF("\t%s:0x%016" PRIx64 "%016" PRIx64 "\n",
+              PrintF("\t%s:0x%016" PRIx32 "%016" PRIx32 "\n",
                      VRegisters::Name(vregnum), (uint64_t)(v >> 64),
                      (uint64_t)v);
 #endif
@@ -1758,7 +1763,7 @@ void RiscvDebugger::Debug() {
       } else if ((strcmp(cmd, "po") == 0) ||
                  (strcmp(cmd, "printobject") == 0)) {
         if (argc == 2) {
-          int64_t value;
+          int32_t value;
           StdoutStream os;
           if (GetValue(arg1, &value)) {
             Object obj(value);
@@ -1776,27 +1781,27 @@ void RiscvDebugger::Debug() {
           PrintF("printobject <value>\n");
         }
       } else if (strcmp(cmd, "stack") == 0 || strcmp(cmd, "mem") == 0) {
-        int64_t* cur = nullptr;
-        int64_t* end = nullptr;
+        int32_t* cur = nullptr;
+        int32_t* end = nullptr;
         int next_arg = 1;
 
         if (strcmp(cmd, "stack") == 0) {
-          cur = reinterpret_cast<int64_t*>(sim_->get_register(Simulator::sp));
+          cur = reinterpret_cast<int32_t*>(sim_->get_register(Simulator::sp));
         } else {  // Command "mem".
           if (argc < 2) {
             PrintF("Need to specify <address> to mem command\n");
             continue;
           }
-          int64_t value;
+          int32_t value;
           if (!GetValue(arg1, &value)) {
             PrintF("%s unrecognized\n", arg1);
             continue;
           }
-          cur = reinterpret_cast<int64_t*>(value);
+          cur = reinterpret_cast<int32_t*>(value);
           next_arg++;
         }
 
-        int64_t words;
+        int32_t words;
         if (argc == next_arg) {
           words = 10;
         } else {
@@ -1807,7 +1812,7 @@ void RiscvDebugger::Debug() {
         end = cur + words;
 
         while (cur < end) {
-          PrintF("  0x%012" PRIxPTR " :  0x%016" PRIx64 "  %14" PRId64 " ",
+          PrintF("  0x%012" PRIxPTR " :  0x%016" PRIx32 "  %14" PRId32 " ",
                  reinterpret_cast<intptr_t>(cur), *cur, *cur);
           Object obj(*cur);
           Heap* current_heap = sim_->isolate_->heap();
@@ -1842,7 +1847,7 @@ void RiscvDebugger::Debug() {
           int regnum = Registers::Number(arg1);
           if (regnum != kInvalidRegister || strncmp(arg1, "0x", 2) == 0) {
             // The argument is an address or a register name.
-            int64_t value;
+            int32_t value;
             if (GetValue(arg1, &value)) {
               cur = reinterpret_cast<byte*>(value);
               // Disassemble 10 instructions at <arg1>.
@@ -1850,7 +1855,7 @@ void RiscvDebugger::Debug() {
             }
           } else {
             // The argument is the number of instructions.
-            int64_t value;
+            int32_t value;
             if (GetValue(arg1, &value)) {
               cur = reinterpret_cast<byte*>(sim_->get_pc());
               // Disassemble <arg1> instructions.
@@ -1858,8 +1863,8 @@ void RiscvDebugger::Debug() {
             }
           }
         } else {
-          int64_t value1;
-          int64_t value2;
+          int32_t value1;
+          int32_t value2;
           if (GetValue(arg1, &value1) && GetValue(arg2, &value2)) {
             cur = reinterpret_cast<byte*>(value1);
             end = cur + (value2 * kInstrSize);
@@ -1880,7 +1885,7 @@ void RiscvDebugger::Debug() {
                  strcmp(cmd, "tbreak") == 0) {
         bool is_tbreak = strcmp(cmd, "tbreak") == 0;
         if (argc == 2) {
-          int64_t value;
+          int32_t value;
           if (GetValue(arg1, &value)) {
             sim_->SetBreakpoint(reinterpret_cast<Instruction*>(value),
                                 is_tbreak);
@@ -1897,7 +1902,7 @@ void RiscvDebugger::Debug() {
       } else if (strcmp(cmd, "flags") == 0) {
         PrintF("No flags on RISC-V !\n");
       } else if (strcmp(cmd, "stop") == 0) {
-        int64_t value;
+        int32_t value;
         if (argc == 3) {
           // Print information about all/the specified breakpoint(s).
           if (strcmp(arg1, "info") == 0) {
@@ -1957,15 +1962,15 @@ void RiscvDebugger::Debug() {
           cur = reinterpret_cast<byte*>(sim_->get_pc());
           end = cur + (10 * kInstrSize);
         } else if (argc == 2) {
-          int64_t value;
+          int32_t value;
           if (GetValue(arg1, &value)) {
             cur = reinterpret_cast<byte*>(value);
             // no length parameter passed, assume 10 instructions
             end = cur + (10 * kInstrSize);
           }
         } else {
-          int64_t value1;
-          int64_t value2;
+          int32_t value1;
+          int32_t value2;
           if (GetValue(arg1, &value1) && GetValue(arg2, &value2)) {
             cur = reinterpret_cast<byte*>(value1);
             end = cur + (value2 * kInstrSize);
@@ -2174,7 +2179,7 @@ void Simulator::FlushOnePage(base::CustomMatcherHashMap* i_cache,
 
 void Simulator::CheckICache(base::CustomMatcherHashMap* i_cache,
                             Instruction* instr) {
-  int64_t address = reinterpret_cast<int64_t>(instr);
+  int32_t address = reinterpret_cast<int32_t>(instr);
   void* page = reinterpret_cast<void*>(address & (~CachePage::kPageMask));
   void* line = reinterpret_cast<void*>(address & (~CachePage::kLineMask));
   int offset = (address & CachePage::kPageMask);
@@ -2221,7 +2226,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate), builtins_(isolate) {
   // The sp is initialized to point to the bottom (high address) of the
   // allocated stack area. To be safe in potential stack underflows we leave
   // some buffer below.
-  registers_[sp] = reinterpret_cast<int64_t>(stack_) + stack_size_ - 64;
+  registers_[sp] = reinterpret_cast<int32_t>(stack_) + stack_size_ - 32;
   // The ra and pc are initialized to a known bad value that will cause an
   // access violation if the simulator ever tries to execute it.
   registers_[pc] = bad_ra;
@@ -2252,7 +2257,7 @@ Simulator* Simulator::current(Isolate* isolate) {
 
 // Sets the register in the architecture state. It will also deal with
 // updating Simulator internal state for special registers such as PC.
-void Simulator::set_register(int reg, int64_t value) {
+void Simulator::set_register(int reg, int32_t value) {
   DCHECK((reg >= 0) && (reg < kNumSimuRegisters));
   if (reg == pc) {
     pc_modified_ = true;
@@ -2260,13 +2265,6 @@ void Simulator::set_register(int reg, int64_t value) {
 
   // Zero register always holds 0.
   registers_[reg] = (reg == 0) ? 0 : value;
-}
-
-void Simulator::set_dw_register(int reg, const int* dbl) {
-  DCHECK((reg >= 0) && (reg < kNumSimuRegisters));
-  registers_[reg] = dbl[1];
-  registers_[reg] = registers_[reg] << 32;
-  registers_[reg] += dbl[0];
 }
 
 void Simulator::set_fpu_register(int fpureg, int64_t value) {
@@ -2310,7 +2308,7 @@ void Simulator::set_fpu_register_double(int fpureg, double value) {
 
 // Get the register from the architecture state. This function does handle
 // the special case of accessing the PC register.
-int64_t Simulator::get_register(int reg) const {
+int32_t Simulator::get_register(int reg) const {
   DCHECK((reg >= 0) && (reg < kNumSimuRegisters));
   if (reg == 0)
     return 0;
@@ -2403,7 +2401,7 @@ uint32_t Simulator::get_dynamic_rounding_mode() {
   return read_csr_value(csr_frm);
 }
 
-void Simulator::write_csr_value(uint32_t csr, uint64_t val) {
+void Simulator::write_csr_value(uint32_t csr, uint32_t val) {
   uint32_t value = (uint32_t)val;
   switch (csr) {
     case csr_fflags:  // Floating-Point Accrued Exceptions (RW)
@@ -2423,7 +2421,7 @@ void Simulator::write_csr_value(uint32_t csr, uint64_t val) {
   }
 }
 
-void Simulator::set_csr_bits(uint32_t csr, uint64_t val) {
+void Simulator::set_csr_bits(uint32_t csr, uint32_t val) {
   uint32_t value = (uint32_t)val;
   switch (csr) {
     case csr_fflags:  // Floating-Point Accrued Exceptions (RW)
@@ -2443,7 +2441,7 @@ void Simulator::set_csr_bits(uint32_t csr, uint64_t val) {
   }
 }
 
-void Simulator::clear_csr_bits(uint32_t csr, uint64_t val) {
+void Simulator::clear_csr_bits(uint32_t csr, uint32_t val) {
   uint32_t value = (uint32_t)val;
   switch (csr) {
     case csr_fflags:  // Floating-Point Accrued Exceptions (RW)
@@ -2496,7 +2494,7 @@ T Simulator::FMaxMinHelper(T a, T b, MaxMinKind kind) {
 }
 
 // Raw access to the PC register.
-void Simulator::set_pc(int64_t value) {
+void Simulator::set_pc(int32_t value) {
   pc_modified_ = true;
   registers_[pc] = value;
   DCHECK(has_bad_pc() || ((value % kInstrSize) == 0) ||
@@ -2508,7 +2506,7 @@ bool Simulator::has_bad_pc() const {
 }
 
 // Raw access to the PC register without the special adjustment when reading.
-int64_t Simulator::get_pc() const { return registers_[pc]; }
+int32_t Simulator::get_pc() const { return registers_[pc]; }
 
 // The RISC-V spec leaves it open to the implementation on how to handle
 // unaligned reads and writes. For now, we simply disallow unaligned reads but
@@ -2523,8 +2521,9 @@ void Simulator::DieOrDebug() {
     base::OS::Abort();
   }
 }
-
-void Simulator::TraceRegWr(int64_t value, TraceType t) {
+// RV32G todo need to port for compatialbility of sf&df
+void Simulator::TraceRegWr(int32_t value, TraceType t) {
+#if 0
   if (::v8::internal::FLAG_trace_sim) {
     union {
       int64_t fmt_int64;
@@ -2537,61 +2536,64 @@ void Simulator::TraceRegWr(int64_t value, TraceType t) {
     switch (t) {
       case WORD:
         SNPrintF(trace_buf_,
-                 "%016" PRIx64 "    (%" PRId64 ")    int32:%" PRId32
+                 "%016" PRIx32 "    (%" PRId64 ")    int32:%" PRId32
                  " uint32:%" PRIu32,
                  v.fmt_int64, icount_, v.fmt_int32[0], v.fmt_int32[0]);
         break;
       case DWORD:
         SNPrintF(trace_buf_,
-                 "%016" PRIx64 "    (%" PRId64 ")    int64:%" PRId64
+                 "%016" PRIx32 "    (%" PRId64 ")    int64:%" PRId64
                  " uint64:%" PRIu64,
                  value, icount_, value, value);
         break;
       case FLOAT:
-        SNPrintF(trace_buf_, "%016" PRIx64 "    (%" PRId64 ")    flt:%e",
+        SNPrintF(trace_buf_, "%016" PRIx32 "    (%" PRId64 ")    flt:%e",
                  v.fmt_int64, icount_, v.fmt_float[0]);
         break;
       case DOUBLE:
-        SNPrintF(trace_buf_, "%016" PRIx64 "    (%" PRId64 ")    dbl:%e",
+        SNPrintF(trace_buf_, "%016" PRIx32 "    (%" PRId64 ")    dbl:%e",
                  v.fmt_int64, icount_, v.fmt_double);
         break;
       default:
         UNREACHABLE();
     }
   }
+#endif
 }
 
 // TODO(plind): consider making icount_ printing a flag option.
+// RV32G todo need to port for compatialbility of sf&df
 template <typename T>
-void Simulator::TraceMemRd(int64_t addr, T value, int64_t reg_value) {
+void Simulator::TraceMemRd(int32_t addr, T value, int32_t reg_value) {
+#if 0
   if (::v8::internal::FLAG_trace_sim) {
     if (std::is_integral<T>::value) {
       switch (sizeof(T)) {
         case 1:
           SNPrintF(trace_buf_,
-                   "%016" PRIx64 "    (%" PRId64 ")    int8:%" PRId8
-                   " uint8:%" PRIu8 " <-- [addr: %" PRIx64 "]",
+                   "%016" PRIx32 "    (%" PRId64 ")    int8:%" PRId8
+                   " uint8:%" PRIu8 " <-- [addr: %" PRIx32 "]",
                    reg_value, icount_, static_cast<int8_t>(value),
                    static_cast<uint8_t>(value), addr);
           break;
         case 2:
           SNPrintF(trace_buf_,
-                   "%016" PRIx64 "    (%" PRId64 ")    int16:%" PRId16
-                   " uint16:%" PRIu16 " <-- [addr: %" PRIx64 "]",
+                   "%016" PRIx32 "    (%" PRId64 ")    int16:%" PRId16
+                   " uint16:%" PRIu16 " <-- [addr: %" PRIx32 "]",
                    reg_value, icount_, static_cast<int16_t>(value),
                    static_cast<uint16_t>(value), addr);
           break;
         case 4:
           SNPrintF(trace_buf_,
-                   "%016" PRIx64 "    (%" PRId64 ")    int32:%" PRId32
-                   " uint32:%" PRIu32 " <-- [addr: %" PRIx64 "]",
+                   "%016" PRIx32 "    (%" PRId64 ")    int32:%" PRId32
+                   " uint32:%" PRIu32 " <-- [addr: %" PRIx32 "]",
                    reg_value, icount_, static_cast<int32_t>(value),
                    static_cast<uint32_t>(value), addr);
           break;
         case 8:
           SNPrintF(trace_buf_,
-                   "%016" PRIx64 "    (%" PRId64 ")    int64:%" PRId64
-                   " uint64:%" PRIu64 " <-- [addr: %" PRIx64 "]",
+                   "%016" PRIx32 "    (%" PRId64 ")    int64:%" PRId64
+                   " uint64:%" PRIu64 " <-- [addr: %" PRIx32 "]",
                    reg_value, icount_, static_cast<int64_t>(value),
                    static_cast<uint64_t>(value), addr);
           break;
@@ -2600,35 +2602,38 @@ void Simulator::TraceMemRd(int64_t addr, T value, int64_t reg_value) {
       }
     } else if (std::is_same<float, T>::value) {
       SNPrintF(trace_buf_,
-               "%016" PRIx64 "    (%" PRId64 ")    flt:%e <-- [addr: %" PRIx64
+               "%016" PRIx32 "    (%" PRId64 ")    flt:%e <-- [addr: %" PRIx32
                "]",
                reg_value, icount_, static_cast<float>(value), addr);
     } else if (std::is_same<double, T>::value) {
       SNPrintF(trace_buf_,
-               "%016" PRIx64 "    (%" PRId64 ")    dbl:%e <-- [addr: %" PRIx64
+               "%016" PRIx32 "    (%" PRId64 ")    dbl:%e <-- [addr: %" PRIx32
                "]",
                reg_value, icount_, static_cast<double>(value), addr);
     } else {
       UNREACHABLE();
     }
   }
+#endif
 }
 
+// RV32G todo need to port for compatialbility of sf&df
 template <typename T>
-void Simulator::TraceMemWr(int64_t addr, T value) {
+void Simulator::TraceMemWr(int32_t addr, T value) {
+#if 0
   if (::v8::internal::FLAG_trace_sim) {
     switch (sizeof(T)) {
       case 1:
         SNPrintF(trace_buf_,
                  "                    (%" PRIu64 ")    int8:%" PRId8
-                 " uint8:%" PRIu8 " --> [addr: %" PRIx64 "]",
+                 " uint8:%" PRIu8 " --> [addr: %" PRIx32 "]",
                  icount_, static_cast<int8_t>(value),
                  static_cast<uint8_t>(value), addr);
         break;
       case 2:
         SNPrintF(trace_buf_,
                  "                    (%" PRIu64 ")    int16:%" PRId16
-                 " uint16:%" PRIu16 " --> [addr: %" PRIx64 "]",
+                 " uint16:%" PRIu16 " --> [addr: %" PRIx32 "]",
                  icount_, static_cast<int16_t>(value),
                  static_cast<uint16_t>(value), addr);
         break;
@@ -2636,13 +2641,13 @@ void Simulator::TraceMemWr(int64_t addr, T value) {
         if (std::is_integral<T>::value) {
           SNPrintF(trace_buf_,
                    "                    (%" PRIu64 ")    int32:%" PRId32
-                   " uint32:%" PRIu32 " --> [addr: %" PRIx64 "]",
+                   " uint32:%" PRIu32 " --> [addr: %" PRIx32 "]",
                    icount_, static_cast<int32_t>(value),
                    static_cast<uint32_t>(value), addr);
         } else {
           SNPrintF(trace_buf_,
                    "                    (%" PRIu64
-                   ")    flt:%e --> [addr: %" PRIx64 "]",
+                   ")    flt:%e --> [addr: %" PRIx32 "]",
                    icount_, static_cast<float>(value), addr);
         }
         break;
@@ -2650,13 +2655,13 @@ void Simulator::TraceMemWr(int64_t addr, T value) {
         if (std::is_integral<T>::value) {
           SNPrintF(trace_buf_,
                    "                    (%" PRIu64 ")    int64:%" PRId64
-                   " uint64:%" PRIu64 " --> [addr: %" PRIx64 "]",
+                   " uint64:%" PRIu64 " --> [addr: %" PRIx32 "]",
                    icount_, static_cast<int64_t>(value),
                    static_cast<uint64_t>(value), addr);
         } else {
           SNPrintF(trace_buf_,
                    "                    (%" PRIu64
-                   ")    dbl:%e --> [addr: %" PRIx64 "]",
+                   ")    dbl:%e --> [addr: %" PRIx32 "]",
                    icount_, static_cast<double>(value), addr);
         }
         break;
@@ -2664,6 +2669,7 @@ void Simulator::TraceMemWr(int64_t addr, T value) {
         UNREACHABLE();
     }
   }
+#endif
 }
 
 // RISCV Memory Read/Write functions
@@ -2672,10 +2678,10 @@ void Simulator::TraceMemWr(int64_t addr, T value) {
 // (determined by EEI). For now, we assume the board does not support unaligned
 // load/store (e.g., trapping)
 template <typename T>
-T Simulator::ReadMem(int64_t addr, Instruction* instr) {
+T Simulator::ReadMem(int32_t addr, Instruction* instr) {
   if (addr >= 0 && addr < 0x400) {
     // This has to be a nullptr-dereference, drop into debugger.
-    PrintF("Memory read from bad address: 0x%08" PRIx64 " , pc=0x%08" PRIxPTR
+    PrintF("Memory read from bad address: 0x%08" PRIx32 " , pc=0x%08" PRIxPTR
            " \n",
            addr, reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
@@ -2683,7 +2689,7 @@ T Simulator::ReadMem(int64_t addr, Instruction* instr) {
 #if !defined(V8_COMPRESS_POINTERS) && defined(RISCV_HAS_NO_UNALIGNED)
   // check for natural alignment
   if (!FLAG_riscv_c_extension && ((addr & (sizeof(T) - 1)) != 0)) {
-    PrintF("Unaligned read at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n", addr,
+    PrintF("Unaligned read at 0x%08" PRIx32 " , pc=0x%08" V8PRIxPTR "\n", addr,
            reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
   }
@@ -2694,10 +2700,10 @@ T Simulator::ReadMem(int64_t addr, Instruction* instr) {
 }
 
 template <typename T>
-void Simulator::WriteMem(int64_t addr, T value, Instruction* instr) {
+void Simulator::WriteMem(int32_t addr, T value, Instruction* instr) {
   if (addr >= 0 && addr < 0x400) {
     // This has to be a nullptr-dereference, drop into debugger.
-    PrintF("Memory write to bad address: 0x%08" PRIx64 " , pc=0x%08" PRIxPTR
+    PrintF("Memory write to bad address: 0x%08" PRIx32 " , pc=0x%08" PRIxPTR
            " \n",
            addr, reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
@@ -2705,16 +2711,16 @@ void Simulator::WriteMem(int64_t addr, T value, Instruction* instr) {
 #if !defined(V8_COMPRESS_POINTERS) && defined(RISCV_HAS_NO_UNALIGNED)
   // check for natural alignment
   if (!FLAG_riscv_c_extension && ((addr & (sizeof(T) - 1)) != 0)) {
-    PrintF("Unaligned write at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n", addr,
+    PrintF("Unaligned write at 0x%08" PRIx32 " , pc=0x%08" V8PRIxPTR "\n", addr,
            reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
   }
 #endif
   T* ptr = reinterpret_cast<T*>(addr);
   TraceMemWr(addr, value);
-  // PrintF("Unaligned read at 0x%08" PRIx64 " , pc=0x%08" PRId64 "\n",
-  // (int64_t)ptr,
-  //        (int64_t)value);
+  // PrintF("Unaligned read at 0x%08" PRIx32 " , pc=0x%08" PRId64 "\n",
+  // (int32_t)ptr,
+  //        (int32_t)value);
   *ptr = value;
 }
 
@@ -2745,11 +2751,11 @@ void Simulator::Format(Instruction* instr, const char* format) {
 // calls return 64 bits of result. If they don't, the a1 result register
 // contains a bogus value, which is fine because it is caller-saved.
 
-using SimulatorRuntimeCall = ObjectPair (*)(
-    int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4,
-    int64_t arg5, int64_t arg6, int64_t arg7, int64_t arg8, int64_t arg9,
-    int64_t arg10, int64_t arg11, int64_t arg12, int64_t arg13, int64_t arg14,
-    int64_t arg15, int64_t arg16, int64_t arg17, int64_t arg18, int64_t arg19);
+using SimulatorRuntimeCall = int64_t (*)(
+    int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4,
+    int32_t arg5, int32_t arg6, int32_t arg7, int32_t arg8, int32_t arg9,
+    int32_t arg10, int32_t arg11, int32_t arg12, int32_t arg13, int32_t arg14,
+    int32_t arg15, int32_t arg16, int32_t arg17, int32_t arg18, int32_t arg19);
 
 // These prototypes handle the four types of FP calls.
 using SimulatorRuntimeCompareCall = int64_t (*)(double darg0, double darg1);
@@ -2778,28 +2784,28 @@ void Simulator::SoftwareInterrupt() {
   if (instr_.InstructionBits() == rtCallRedirInstr) {  // ECALL
     Redirection* redirection = Redirection::FromInstruction(instr_.instr());
 
-    int64_t* stack_pointer = reinterpret_cast<int64_t*>(get_register(sp));
+    int32_t* stack_pointer = reinterpret_cast<int32_t*>(get_register(sp));
 
-    const int64_t arg0 = get_register(a0);
-    const int64_t arg1 = get_register(a1);
-    const int64_t arg2 = get_register(a2);
-    const int64_t arg3 = get_register(a3);
-    const int64_t arg4 = get_register(a4);
-    const int64_t arg5 = get_register(a5);
-    const int64_t arg6 = get_register(a6);
-    const int64_t arg7 = get_register(a7);
-    const int64_t arg8 = stack_pointer[0];
-    const int64_t arg9 = stack_pointer[1];
-    const int64_t arg10 = stack_pointer[2];
-    const int64_t arg11 = stack_pointer[3];
-    const int64_t arg12 = stack_pointer[4];
-    const int64_t arg13 = stack_pointer[5];
-    const int64_t arg14 = stack_pointer[6];
-    const int64_t arg15 = stack_pointer[7];
-    const int64_t arg16 = stack_pointer[8];
-    const int64_t arg17 = stack_pointer[9];
-    const int64_t arg18 = stack_pointer[10];
-    const int64_t arg19 = stack_pointer[11];
+    const int32_t arg0 = get_register(a0);
+    const int32_t arg1 = get_register(a1);
+    const int32_t arg2 = get_register(a2);
+    const int32_t arg3 = get_register(a3);
+    const int32_t arg4 = get_register(a4);
+    const int32_t arg5 = get_register(a5);
+    const int32_t arg6 = get_register(a6);
+    const int32_t arg7 = get_register(a7);
+    const int32_t arg8 = stack_pointer[0];
+    const int32_t arg9 = stack_pointer[1];
+    const int32_t arg10 = stack_pointer[2];
+    const int32_t arg11 = stack_pointer[3];
+    const int32_t arg12 = stack_pointer[4];
+    const int32_t arg13 = stack_pointer[5];
+    const int32_t arg14 = stack_pointer[6];
+    const int32_t arg15 = stack_pointer[7];
+    const int32_t arg16 = stack_pointer[8];
+    const int32_t arg17 = stack_pointer[9];
+    const int32_t arg18 = stack_pointer[10];
+    const int32_t arg19 = stack_pointer[11];
     STATIC_ASSERT(kMaxCParameters == 20);
 
     bool fp_call =
@@ -2810,9 +2816,9 @@ void Simulator::SoftwareInterrupt() {
 
     // This is dodgy but it works because the C entry stubs are never moved.
     // See comment in codegen-arm.cc and bug 1242173.
-    int64_t saved_ra = get_register(ra);
+    int32_t saved_ra = get_register(ra);
 
-    int64_t pc = get_pc();
+    int32_t pc = get_pc();
 
     intptr_t external =
         reinterpret_cast<intptr_t>(redirection->external_function());
@@ -2855,7 +2861,7 @@ void Simulator::SoftwareInterrupt() {
           SimulatorRuntimeCompareCall target =
               reinterpret_cast<SimulatorRuntimeCompareCall>(external);
           iresult = target(dval0, dval1);
-          set_register(a0, static_cast<int64_t>(iresult));
+          set_register(a0, static_cast<int32_t>(iresult));
           //  set_register(a1, static_cast<int64_t>(iresult >> 32));
           break;
         }
@@ -2899,7 +2905,7 @@ void Simulator::SoftwareInterrupt() {
       }
     } else if (redirection->type() == ExternalReference::DIRECT_API_CALL) {
       if (::v8::internal::FLAG_trace_sim) {
-        PrintF("Call to host function %s at %p args %08" PRIx64 " \n",
+        PrintF("Call to host function %s at %p args %08" PRIx32 " \n",
                ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
                reinterpret_cast<void*>(external), arg0);
       }
@@ -2908,7 +2914,7 @@ void Simulator::SoftwareInterrupt() {
       target(arg0);
     } else if (redirection->type() == ExternalReference::PROFILING_API_CALL) {
       if (::v8::internal::FLAG_trace_sim) {
-        PrintF("Call to host function %s at %p args %08" PRIx64 "  %08" PRIx64
+        PrintF("Call to host function %s at %p args %08" PRIx32 "  %08" PRIx32
                " \n",
                ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
                reinterpret_cast<void*>(external), arg0, arg1);
@@ -2918,7 +2924,7 @@ void Simulator::SoftwareInterrupt() {
       target(arg0, Redirection::ReverseRedirection(arg1));
     } else if (redirection->type() == ExternalReference::DIRECT_GETTER_CALL) {
       if (::v8::internal::FLAG_trace_sim) {
-        PrintF("Call to host function %s at %p args %08" PRIx64 "  %08" PRIx64
+        PrintF("Call to host function %s at %p args %08" PRIx32 "  %08" PRIx32
                " \n",
                ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
                reinterpret_cast<void*>(external), arg0, arg1);
@@ -2929,8 +2935,8 @@ void Simulator::SoftwareInterrupt() {
     } else if (redirection->type() ==
                ExternalReference::PROFILING_GETTER_CALL) {
       if (::v8::internal::FLAG_trace_sim) {
-        PrintF("Call to host function %s at %p args %08" PRIx64 "  %08" PRIx64
-               "  %08" PRIx64 " \n",
+        PrintF("Call to host function %s at %p args %08" PRIx32 "  %08" PRIx32
+               "  %08" PRIx32 " \n",
                ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
                reinterpret_cast<void*>(external), arg0, arg1, arg2);
       }
@@ -2957,25 +2963,25 @@ void Simulator::SoftwareInterrupt() {
       if (::v8::internal::FLAG_trace_sim) {
         PrintF(
             "Call to host function %s at %p "
-            "args %08" PRIx64 " , %08" PRIx64 " , %08" PRIx64 " , %08" PRIx64
-            " , %08" PRIx64 " , %08" PRIx64 " , %08" PRIx64 " , %08" PRIx64
-            " , %08" PRIx64 " , %08" PRIx64 " , %016" PRIx64 " , %016" PRIx64
-            " , %016" PRIx64 " , %016" PRIx64 " , %016" PRIx64 " , %016" PRIx64
-            " , %016" PRIx64 " , %016" PRIx64 " , %016" PRIx64 " , %016" PRIx64
+            "args %08" PRIx32 " , %08" PRIx32 " , %08" PRIx32 " , %08" PRIx32
+            " , %08" PRIx32 " , %08" PRIx32 " , %08" PRIx32 " , %08" PRIx32
+            " , %08" PRIx32 " , %08" PRIx32 " , %016" PRIx32 " , %016" PRIx32
+            " , %016" PRIx32 " , %016" PRIx32 " , %016" PRIx32 " , %016" PRIx32
+            " , %016" PRIx32 " , %016" PRIx32 " , %016" PRIx32 " , %016" PRIx32
             " \n",
             ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
             reinterpret_cast<void*>(FUNCTION_ADDR(target)), arg0, arg1, arg2,
             arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12,
             arg13, arg14, arg15, arg16, arg17, arg18, arg19);
       }
-      ObjectPair result = target(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7,
-                                 arg8, arg9, arg10, arg11, arg12, arg13, arg14,
-                                 arg15, arg16, arg17, arg18, arg19);
+      int64_t result = target(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7,
+                              arg8, arg9, arg10, arg11, arg12, arg13, arg14,
+                              arg15, arg16, arg17, arg18, arg19);
       set_register(a0, (int32_t)result);
       set_register(a1, (int32_t)(result >> 32));
     }
     if (::v8::internal::FLAG_trace_sim) {
-      PrintF("Returned %08" PRIx64 "  : %08" PRIx64 " \n", get_register(a1),
+      PrintF("Returned %08" PRIx32 "  : %08" PRIx32 " \n", get_register(a1),
              get_register(a0));
     }
     set_register(ra, saved_ra);
@@ -3002,26 +3008,26 @@ void Simulator::SoftwareInterrupt() {
 }
 
 // Stop helper functions.
-bool Simulator::IsWatchpoint(uint64_t code) {
+bool Simulator::IsWatchpoint(uint32_t code) {
   return (code <= kMaxWatchpointCode);
 }
 
-void Simulator::PrintWatchpoint(uint64_t code) {
+void Simulator::PrintWatchpoint(uint32_t code) {
   RiscvDebugger dbg(this);
   ++break_count_;
-  PrintF("\n---- watchpoint %" PRId64 "  marker: %3d  (instr count: %8" PRId64
+  PrintF("\n---- watchpoint %" PRId32 "  marker: %3d  (instr count: %8" PRId32
          " ) ----------"
          "----------------------------------",
          code, break_count_, icount_);
   dbg.PrintAllRegs();  // Print registers and continue running.
 }
 
-void Simulator::HandleStop(uint64_t code) {
+void Simulator::HandleStop(uint32_t code) {
   // Stop if it is enabled, otherwise go on jumping over the stop
   // and the message address.
   if (IsEnabledStop(code)) {
     RiscvDebugger dbg(this);
-    PrintF("Simulator hit stop (%" PRId64 ")\n", code);
+    PrintF("Simulator hit stop (%" PRId32 ")\n", code);
     dbg.Debug();
   }
 }
@@ -3033,28 +3039,28 @@ bool Simulator::IsStopInstruction(Instruction* instr) {
          static_cast<uint32_t>(code) <= kMaxStopCode;
 }
 
-bool Simulator::IsEnabledStop(uint64_t code) {
+bool Simulator::IsEnabledStop(uint32_t code) {
   DCHECK_LE(code, kMaxStopCode);
   DCHECK_GT(code, kMaxWatchpointCode);
   return !(watched_stops_[code].count & kStopDisabledBit);
 }
 
-void Simulator::EnableStop(uint64_t code) {
+void Simulator::EnableStop(uint32_t code) {
   if (!IsEnabledStop(code)) {
     watched_stops_[code].count &= ~kStopDisabledBit;
   }
 }
 
-void Simulator::DisableStop(uint64_t code) {
+void Simulator::DisableStop(uint32_t code) {
   if (IsEnabledStop(code)) {
     watched_stops_[code].count |= kStopDisabledBit;
   }
 }
 
-void Simulator::IncreaseStopCounter(uint64_t code) {
+void Simulator::IncreaseStopCounter(uint32_t code) {
   DCHECK_LE(code, kMaxStopCode);
   if ((watched_stops_[code].count & ~(1 << 31)) == 0x7FFFFFFF) {
-    PrintF("Stop counter for code %" PRId64
+    PrintF("Stop counter for code %" PRId32
            "  has overflowed.\n"
            "Enabling this code and reseting the counter to 0.\n",
            code);
@@ -3066,7 +3072,7 @@ void Simulator::IncreaseStopCounter(uint64_t code) {
 }
 
 // Print a stop status.
-void Simulator::PrintStopInfo(uint64_t code) {
+void Simulator::PrintStopInfo(uint32_t code) {
   if (code <= kMaxWatchpointCode) {
     PrintF("That is a watchpoint, not a stop.\n");
     return;
@@ -3079,10 +3085,10 @@ void Simulator::PrintStopInfo(uint64_t code) {
   // Don't print the state of unused breakpoints.
   if (count != 0) {
     if (watched_stops_[code].desc) {
-      PrintF("stop %" PRId64 "  - 0x%" PRIx64 " : \t%s, \tcounter = %i, \t%s\n",
+      PrintF("stop %" PRId32 "  - 0x%" PRIx32 " : \t%s, \tcounter = %i, \t%s\n",
              code, code, state, count, watched_stops_[code].desc);
     } else {
-      PrintF("stop %" PRId64 "  - 0x%" PRIx64 " : \t%s, \tcounter = %i\n", code,
+      PrintF("stop %" PRId32 "  - 0x%" PRIx32 " : \t%s, \tcounter = %i\n", code,
              code, state, count);
     }
   }
@@ -3533,7 +3539,7 @@ void Simulator::DecodeRVRAType() {
   switch (instr_.InstructionBits() & kRATypeMask) {
     case RO_LR_W: {
       base::MutexGuard lock_guard(&GlobalMonitor::Get()->mutex);
-      int64_t addr = rs1();
+      int32_t addr = rs1();
       auto val = ReadMem<int32_t>(addr, instr_.instr());
       set_rd(sext32(val), false);
       TraceMemRd(addr, val, get_register(rd_reg()));
@@ -3543,7 +3549,7 @@ void Simulator::DecodeRVRAType() {
       break;
     }
     case RO_SC_W: {
-      int64_t addr = rs1();
+      int32_t addr = rs1();
       base::MutexGuard lock_guard(&GlobalMonitor::Get()->mutex);
       if (local_monitor_.NotifyStoreConditional(addr, TransactionSize::Word) &&
           GlobalMonitor::Get()->NotifyStoreConditional_Locked(
@@ -4424,24 +4430,24 @@ void Simulator::DecodeRVIType() {
           auto code = builtins_.code(builtin);
           if ((rs1_reg() != ra || imm12() != 0)) {
             if ((Address)get_pc() == code.InstructionStart()) {
-              int64_t arg0 = get_register(a0);
-              int64_t arg1 = get_register(a1);
-              int64_t arg2 = get_register(a2);
-              int64_t arg3 = get_register(a3);
-              int64_t arg4 = get_register(a4);
-              int64_t arg5 = get_register(a5);
-              int64_t arg6 = get_register(a6);
-              int64_t arg7 = get_register(a7);
-              int64_t* stack_pointer =
-                  reinterpret_cast<int64_t*>(get_register(sp));
-              int64_t arg8 = stack_pointer[0];
-              int64_t arg9 = stack_pointer[1];
+              int32_t arg0 = get_register(a0);
+              int32_t arg1 = get_register(a1);
+              int32_t arg2 = get_register(a2);
+              int32_t arg3 = get_register(a3);
+              int32_t arg4 = get_register(a4);
+              int32_t arg5 = get_register(a5);
+              int32_t arg6 = get_register(a6);
+              int32_t arg7 = get_register(a7);
+              int32_t* stack_pointer =
+                  reinterpret_cast<int32_t*>(get_register(sp));
+              int32_t arg8 = stack_pointer[0];
+              int32_t arg9 = stack_pointer[1];
               PrintF(
                   "Call to Builtin at %s "
-                  "a0 %08" PRIx64 " ,a1 %08" PRIx64 " ,a2 %08" PRIx64
-                  " ,a3 %08" PRIx64 " ,a4 %08" PRIx64 " ,a5 %08" PRIx64
-                  " ,a6 %08" PRIx64 " ,a7 %08" PRIx64 " ,0(sp) %08" PRIx64
-                  " ,8(sp) %08" PRIx64 " ,sp %08" PRIx64 ",fp %08" PRIx64 " \n",
+                  "a0 %08" PRIx32 " ,a1 %08" PRIx32 " ,a2 %08" PRIx32
+                  " ,a3 %08" PRIx32 " ,a4 %08" PRIx32 " ,a5 %08" PRIx32
+                  " ,a6 %08" PRIx32 " ,a7 %08" PRIx32 " ,0(sp) %08" PRIx32
+                  " ,8(sp) %08" PRIx32 " ,sp %08" PRIx32 ",fp %08" PRIx32 " \n",
                   builtins_.name(builtin), arg0, arg1, arg2, arg3, arg4, arg5,
                   arg6, arg7, arg8, arg9, get_register(sp), get_register(fp));
             }
@@ -4453,35 +4459,35 @@ void Simulator::DecodeRVIType() {
       break;
     }
     case RO_LB: {
-      int64_t addr = rs1() + imm12();
+      int32_t addr = rs1() + imm12();
       int8_t val = ReadMem<int8_t>(addr, instr_.instr());
       set_rd(sext_xlen(val), false);
       TraceMemRd(addr, val, get_register(rd_reg()));
       break;
     }
     case RO_LH: {
-      int64_t addr = rs1() + imm12();
+      int32_t addr = rs1() + imm12();
       int16_t val = ReadMem<int16_t>(addr, instr_.instr());
       set_rd(sext_xlen(val), false);
       TraceMemRd(addr, val, get_register(rd_reg()));
       break;
     }
     case RO_LW: {
-      int64_t addr = rs1() + imm12();
+      int32_t addr = rs1() + imm12();
       int32_t val = ReadMem<int32_t>(addr, instr_.instr());
       set_rd(sext_xlen(val), false);
       TraceMemRd(addr, val, get_register(rd_reg()));
       break;
     }
     case RO_LBU: {
-      int64_t addr = rs1() + imm12();
+      int32_t addr = rs1() + imm12();
       uint8_t val = ReadMem<uint8_t>(addr, instr_.instr());
       set_rd(zext_xlen(val), false);
       TraceMemRd(addr, val, get_register(rd_reg()));
       break;
     }
     case RO_LHU: {
-      int64_t addr = rs1() + imm12();
+      int32_t addr = rs1() + imm12();
       uint16_t val = ReadMem<uint16_t>(addr, instr_.instr());
       set_rd(zext_xlen(val), false);
       TraceMemRd(addr, val, get_register(rd_reg()));
@@ -4624,7 +4630,7 @@ void Simulator::DecodeRVIType() {
     }
     // TODO(riscv): use F Extension macro block
     case RO_FLW: {
-      int64_t addr = rs1() + imm12();
+      int32_t addr = rs1() + imm12();
       float val = ReadMem<float>(addr, instr_.instr());
       set_frd(val, false);
       TraceMemRd(addr, val, get_fpu_register(frd_reg()));
@@ -4632,7 +4638,7 @@ void Simulator::DecodeRVIType() {
     }
     // TODO(riscv): use D Extension macro block
     case RO_FLD: {
-      int64_t addr = rs1() + imm12();
+      int32_t addr = rs1() + imm12();
       double val = ReadMem<double>(addr, instr_.instr());
       set_drd(val, false);
       TraceMemRd(addr, val, get_fpu_register(frd_reg()));
@@ -4843,19 +4849,20 @@ void Simulator::DecodeCIType() {
       set_rvc_rd(sext_xlen(rvc_rs1() << rvc_shamt6()));
       break;
     case RO_C_FLDSP: {
-      int64_t addr = get_register(sp) + rvc_imm6_ldsp();
+      int32_t addr = get_register(sp) + rvc_imm6_ldsp();
       double val = ReadMem<double>(addr, instr_.instr());
       set_rvc_drd(val, false);
       TraceMemRd(addr, val, get_fpu_register(rvc_frd_reg()));
       break;
     }
     case RO_C_LWSP: {
-      int64_t addr = get_register(sp) + rvc_imm6_lwsp();
-      int64_t val = ReadMem<int32_t>(addr, instr_.instr());
+      int32_t addr = get_register(sp) + rvc_imm6_lwsp();
+      int32_t val = ReadMem<int32_t>(addr, instr_.instr());
       set_rvc_rd(sext_xlen(val), false);
       TraceMemRd(addr, val, get_register(rvc_rd_reg()));
       break;
     }
+    // RV32G todo : check this is a 64BIT C inst
     case RO_C_LDSP: {
       int64_t addr = get_register(sp) + rvc_imm6_ldsp();
       int64_t val = ReadMem<int64_t>(addr, instr_.instr());
@@ -4882,15 +4889,16 @@ void Simulator::DecodeCIWType() {
 void Simulator::DecodeCSSType() {
   switch (instr_.RvcOpcode()) {
     case RO_C_FSDSP: {
-      int64_t addr = get_register(sp) + rvc_imm6_sdsp();
+      int32_t addr = get_register(sp) + rvc_imm6_sdsp();
       WriteMem<double>(addr, static_cast<double>(rvc_drs2()), instr_.instr());
       break;
     }
     case RO_C_SWSP: {
-      int64_t addr = get_register(sp) + rvc_imm6_swsp();
+      int32_t addr = get_register(sp) + rvc_imm6_swsp();
       WriteMem<int32_t>(addr, (int32_t)rvc_rs2(), instr_.instr());
       break;
     }
+    // RV32G todo: check this is a 64BIT C inst
     case RO_C_SDSP: {
       int64_t addr = get_register(sp) + rvc_imm6_sdsp();
       WriteMem<int64_t>(addr, (int64_t)rvc_rs2(), instr_.instr());
@@ -4904,12 +4912,13 @@ void Simulator::DecodeCSSType() {
 void Simulator::DecodeCLType() {
   switch (instr_.RvcOpcode()) {
     case RO_C_LW: {
-      int64_t addr = rvc_rs1s() + rvc_imm5_w();
+      int32_t addr = rvc_rs1s() + rvc_imm5_w();
       int64_t val = ReadMem<int32_t>(addr, instr_.instr());
       set_rvc_rs2s(sext_xlen(val), false);
       TraceMemRd(addr, val, get_register(rvc_rs2s_reg()));
       break;
     }
+    // RV32G todo: check this is 64bit C inst
     case RO_C_LD: {
       int64_t addr = rvc_rs1s() + rvc_imm5_d();
       int64_t val = ReadMem<int64_t>(addr, instr_.instr());
@@ -4918,7 +4927,7 @@ void Simulator::DecodeCLType() {
       break;
     }
     case RO_C_FLD: {
-      int64_t addr = rvc_rs1s() + rvc_imm5_d();
+      int32_t addr = rvc_rs1s() + rvc_imm5_d();
       double val = ReadMem<double>(addr, instr_.instr());
       set_rvc_drs2s(val, false);
       break;
@@ -4931,17 +4940,18 @@ void Simulator::DecodeCLType() {
 void Simulator::DecodeCSType() {
   switch (instr_.RvcOpcode()) {
     case RO_C_SW: {
-      int64_t addr = rvc_rs1s() + rvc_imm5_w();
+      int32_t addr = rvc_rs1s() + rvc_imm5_w();
       WriteMem<int32_t>(addr, (int32_t)rvc_rs2s(), instr_.instr());
       break;
     }
+    // RV32G todo: check this is a 64bit C inst
     case RO_C_SD: {
       int64_t addr = rvc_rs1s() + rvc_imm5_d();
       WriteMem<int64_t>(addr, (int64_t)rvc_rs2s(), instr_.instr());
       break;
     }
     case RO_C_FSD: {
-      int64_t addr = rvc_rs1s() + rvc_imm5_d();
+      int32_t addr = rvc_rs1s() + rvc_imm5_d();
       WriteMem<double>(addr, static_cast<double>(rvc_drs2s()), instr_.instr());
       break;
     }
@@ -4965,13 +4975,13 @@ void Simulator::DecodeCBType() {
   switch (instr_.RvcOpcode()) {
     case RO_C_BNEZ:
       if (rvc_rs1() != 0) {
-        int64_t next_pc = get_pc() + rvc_imm8_b();
+        int32_t next_pc = get_pc() + rvc_imm8_b();
         set_pc(next_pc);
       }
       break;
     case RO_C_BEQZ:
       if (rvc_rs1() == 0) {
-        int64_t next_pc = get_pc() + rvc_imm8_b();
+        int32_t next_pc = get_pc() + rvc_imm8_b();
         set_pc(next_pc);
       }
       break;

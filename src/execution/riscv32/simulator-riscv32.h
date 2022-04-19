@@ -346,10 +346,9 @@ class Simulator : public SimulatorBase {
   // Accessors for register state. Reading the pc value adheres to the RISC-V
   // architecture specification and is off by a 8 from the currently executing
   // instruction.
-  void set_register(int reg, int64_t value);
+  void set_register(int reg, int32_t value);
   void set_register_word(int reg, int32_t value);
-  void set_dw_register(int dreg, const int* dbl);
-  V8_EXPORT_PRIVATE int64_t get_register(int reg) const;
+  V8_EXPORT_PRIVATE int32_t get_register(int reg) const;
   double get_double_from_register_pair(int reg);
 
   // Same for FPURegisters.
@@ -368,9 +367,9 @@ class Simulator : public SimulatorBase {
 
   // RV CSR manipulation
   uint32_t read_csr_value(uint32_t csr);
-  void write_csr_value(uint32_t csr, uint64_t value);
-  void set_csr_bits(uint32_t csr, uint64_t flags);
-  void clear_csr_bits(uint32_t csr, uint64_t flags);
+  void write_csr_value(uint32_t csr, uint32_t value);
+  void set_csr_bits(uint32_t csr, uint32_t flags);
+  void clear_csr_bits(uint32_t csr, uint32_t flags);
 
   void set_fflags(uint32_t flags) { set_csr_bits(csr_fflags, flags); }
   void clear_fflags(int32_t flags) { clear_csr_bits(csr_fflags, flags); }
@@ -452,8 +451,8 @@ class Simulator : public SimulatorBase {
   bool CompareFHelper(T input1, T input2, FPUCondition cc);
 
   // Special case of set_register and get_register to access the raw PC value.
-  void set_pc(int64_t value);
-  V8_EXPORT_PRIVATE int64_t get_pc() const;
+  void set_pc(int32_t value);
+  V8_EXPORT_PRIVATE int32_t get_pc() const;
 
   Address get_sp() const { return static_cast<Address>(get_register(sp)); }
 
@@ -527,11 +526,11 @@ class Simulator : public SimulatorBase {
 
   // RISCV Memory read/write methods
   template <typename T>
-  T ReadMem(int64_t addr, Instruction* instr);
+  T ReadMem(int32_t addr, Instruction* instr);
   template <typename T>
-  void WriteMem(int64_t addr, T value, Instruction* instr);
+  void WriteMem(int32_t addr, T value, Instruction* instr);
   template <typename T, typename OP>
-  T amo(int64_t addr, OP f, Instruction* instr, TraceType t) {
+  T amo(int32_t addr, OP f, Instruction* instr, TraceType t) {
     auto lhs = ReadMem<T>(addr, instr);
     // TODO(RISCV): trace memory read for AMO
     WriteMem<T>(addr, (T)f(lhs), instr);
@@ -541,41 +540,41 @@ class Simulator : public SimulatorBase {
   // Helper for debugging memory access.
   inline void DieOrDebug();
 
-  void TraceRegWr(int64_t value, TraceType t = DWORD);
-  void TraceMemWr(int64_t addr, int64_t value, TraceType t);
+  void TraceRegWr(int32_t value, TraceType t = DWORD);
+  void TraceMemWr(int32_t addr, int32_t value, TraceType t);
   template <typename T>
-  void TraceMemRd(int64_t addr, T value, int64_t reg_value);
+  void TraceMemRd(int32_t addr, T value, int32_t reg_value);
   template <typename T>
-  void TraceMemWr(int64_t addr, T value);
+  void TraceMemWr(int32_t addr, T value);
 
   SimInstruction instr_;
 
   // RISCV utlity API to access register value
   inline int32_t rs1_reg() const { return instr_.Rs1Value(); }
-  inline int64_t rs1() const { return get_register(rs1_reg()); }
+  inline int32_t rs1() const { return get_register(rs1_reg()); }
   inline float frs1() const { return get_fpu_register_float(rs1_reg()); }
   inline double drs1() const { return get_fpu_register_double(rs1_reg()); }
   inline int32_t rs2_reg() const { return instr_.Rs2Value(); }
-  inline int64_t rs2() const { return get_register(rs2_reg()); }
+  inline int32_t rs2() const { return get_register(rs2_reg()); }
   inline float frs2() const { return get_fpu_register_float(rs2_reg()); }
   inline double drs2() const { return get_fpu_register_double(rs2_reg()); }
   inline int32_t rs3_reg() const { return instr_.Rs3Value(); }
-  inline int64_t rs3() const { return get_register(rs3_reg()); }
+  inline int32_t rs3() const { return get_register(rs3_reg()); }
   inline float frs3() const { return get_fpu_register_float(rs3_reg()); }
   inline double drs3() const { return get_fpu_register_double(rs3_reg()); }
   inline int32_t rd_reg() const { return instr_.RdValue(); }
   inline int32_t frd_reg() const { return instr_.RdValue(); }
   inline int32_t rvc_rs1_reg() const { return instr_.RvcRs1Value(); }
-  inline int64_t rvc_rs1() const { return get_register(rvc_rs1_reg()); }
+  inline int32_t rvc_rs1() const { return get_register(rvc_rs1_reg()); }
   inline int32_t rvc_rs2_reg() const { return instr_.RvcRs2Value(); }
-  inline int64_t rvc_rs2() const { return get_register(rvc_rs2_reg()); }
+  inline int32_t rvc_rs2() const { return get_register(rvc_rs2_reg()); }
   inline double rvc_drs2() const {
     return get_fpu_register_double(rvc_rs2_reg());
   }
   inline int32_t rvc_rs1s_reg() const { return instr_.RvcRs1sValue(); }
-  inline int64_t rvc_rs1s() const { return get_register(rvc_rs1s_reg()); }
+  inline int32_t rvc_rs1s() const { return get_register(rvc_rs1s_reg()); }
   inline int32_t rvc_rs2s_reg() const { return instr_.RvcRs2sValue(); }
-  inline int64_t rvc_rs2s() const { return get_register(rvc_rs2s_reg()); }
+  inline int32_t rvc_rs2s() const { return get_register(rvc_rs2s_reg()); }
   inline double rvc_drs2s() const {
     return get_fpu_register_double(rvc_rs2s_reg());
   }
@@ -601,7 +600,7 @@ class Simulator : public SimulatorBase {
   inline int16_t rvc_imm5_d() const { return instr_.RvcImm5DValue(); }
   inline int16_t rvc_imm8_b() const { return instr_.RvcImm8BValue(); }
 
-  inline void set_rd(int64_t value, bool trace = true) {
+  inline void set_rd(int32_t value, bool trace = true) {
     set_register(rd_reg(), value);
     if (trace) TraceRegWr(get_register(rd_reg()), DWORD);
   }
@@ -613,15 +612,15 @@ class Simulator : public SimulatorBase {
     set_fpu_register_double(rd_reg(), value);
     if (trace) TraceRegWr(get_fpu_register(rd_reg()), DOUBLE);
   }
-  inline void set_rvc_rd(int64_t value, bool trace = true) {
+  inline void set_rvc_rd(int32_t value, bool trace = true) {
     set_register(rvc_rd_reg(), value);
     if (trace) TraceRegWr(get_register(rvc_rd_reg()), DWORD);
   }
-  inline void set_rvc_rs1s(int64_t value, bool trace = true) {
+  inline void set_rvc_rs1s(int32_t value, bool trace = true) {
     set_register(rvc_rs1s_reg(), value);
     if (trace) TraceRegWr(get_register(rvc_rs1s_reg()), DWORD);
   }
-  inline void set_rvc_rs2(int64_t value, bool trace = true) {
+  inline void set_rvc_rs2(int32_t value, bool trace = true) {
     set_register(rvc_rs2_reg(), value);
     if (trace) TraceRegWr(get_register(rvc_rs2_reg()), DWORD);
   }
@@ -629,7 +628,7 @@ class Simulator : public SimulatorBase {
     set_fpu_register_double(rvc_rd_reg(), value);
     if (trace) TraceRegWr(get_fpu_register(rvc_rd_reg()), DOUBLE);
   }
-  inline void set_rvc_rs2s(int64_t value, bool trace = true) {
+  inline void set_rvc_rs2s(int32_t value, bool trace = true) {
     set_register(rvc_rs2s_reg(), value);
     if (trace) TraceRegWr(get_register(rvc_rs2s_reg()), DWORD);
   }
@@ -891,15 +890,15 @@ class Simulator : public SimulatorBase {
   void CheckBreakpoints();
 
   // Stop helper functions.
-  bool IsWatchpoint(uint64_t code);
-  void PrintWatchpoint(uint64_t code);
-  void HandleStop(uint64_t code);
+  bool IsWatchpoint(uint32_t code);
+  void PrintWatchpoint(uint32_t code);
+  void HandleStop(uint32_t code);
   bool IsStopInstruction(Instruction* instr);
-  bool IsEnabledStop(uint64_t code);
-  void EnableStop(uint64_t code);
-  void DisableStop(uint64_t code);
-  void IncreaseStopCounter(uint64_t code);
-  void PrintStopInfo(uint64_t code);
+  bool IsEnabledStop(uint32_t code);
+  void EnableStop(uint32_t code);
+  void DisableStop(uint32_t code);
+  void IncreaseStopCounter(uint32_t code);
+  void PrintStopInfo(uint32_t code);
 
   // Executes one instruction.
   void InstructionDecode(Instruction* instr);
@@ -933,7 +932,7 @@ class Simulator : public SimulatorBase {
 
   // Architecture state.
   // Registers.
-  int64_t registers_[kNumSimuRegisters];
+  int32_t registers_[kNumSimuRegisters];
   // Coprocessor Registers.
   int64_t FPUregisters_[kNumFPURegisters];
   // Floating-point control and status register.
@@ -950,7 +949,7 @@ class Simulator : public SimulatorBase {
   size_t stack_size_;
   char* stack_;
   bool pc_modified_;
-  int64_t icount_;
+  int32_t icount_;
   int break_count_;
   base::EmbeddedVector<char, 256> trace_buf_;
 
