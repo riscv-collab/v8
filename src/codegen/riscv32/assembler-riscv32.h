@@ -67,7 +67,7 @@ constexpr uint64_t kSmiShiftMask = (1UL << kSmiShift) - 1;
 class Operand {
  public:
   // Immediate.
-  V8_INLINE explicit Operand(int64_t immediate,
+  V8_INLINE explicit Operand(int32_t immediate,
                              RelocInfo::Mode rmode = RelocInfo::NO_INFO)
       : rm_(no_reg), rmode_(rmode) {
     value_.immediate = immediate;

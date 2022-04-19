@@ -195,7 +195,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void li_optimized(Register rd, Operand j, LiFlags mode = OPTIMIZE_SIZE);
   // Load int32 in the rd register.
   void li(Register rd, Operand j, LiFlags mode = OPTIMIZE_SIZE);
-  inline void li(Register rd, int64_t j, LiFlags mode = OPTIMIZE_SIZE) {
+  inline void li(Register rd, int32_t j, LiFlags mode = OPTIMIZE_SIZE) {
     li(rd, Operand(j), mode);
   }
 
@@ -418,7 +418,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void instr(Register rs, Register rt) { instr(rs, Operand(rt)); } \
   void instr(Register rs, int32_t j) { instr(rs, Operand(j)); }
 
-#define DEFINE_INSTRUCTION3(instr) void instr(Register rd, int64_t imm);
+#define DEFINE_INSTRUCTION3(instr) void instr(Register rd, int32_t imm);
 
   DEFINE_INSTRUCTION(Add)
   DEFINE_INSTRUCTION(Div32)
@@ -574,7 +574,6 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void Ctz32(Register rd, Register rs);
   void Ctz64(Register rd, Register rs);
   void Popcnt32(Register rd, Register rs, Register scratch);
-  void Popcnt64(Register rd, Register rs, Register scratch);
 
   // Bit field starts at bit pos and extending for size bits is extracted from
   // rs and stored zero/sign-extended and right-justified in rt
@@ -993,8 +992,10 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
                                Register rs, const Operand& rt);
   void BranchAndLinkLong(Label* L);
 
-  template <typename F_TYPE>
-  void RoundHelper(FPURegister dst, FPURegister src, FPURegister fpu_scratch,
+  void RoundDouble(FPURegister dst, FPURegister src, FPURegister fpu_scratch,
+                   RoundingMode mode);
+
+  void RoundFloat(FPURegister dst, FPURegister src, FPURegister fpu_scratch,
                    RoundingMode mode);
 
   template <typename F>
