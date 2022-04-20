@@ -960,14 +960,14 @@ void TurboAssembler::ByteSwap(Register rd, Register rs, int operand_size,
   Register x1 = temps.Acquire();
   Register x2 = scratch;
   li(x1, 0x00FF00FF);
-  slliw(x0, rs, 16);
-  srliw(rd, rs, 16);
+  slli(x0, rs, 16);
+  srli(rd, rs, 16);
   or_(x0, rd, x0);   // x0 <- x0 << 16 | x0 >> 16
   and_(x2, x0, x1);  // x2 <- x0 & 0x00FF00FF
-  slliw(x2, x2, 8);  // x2 <- (x0 & x1) << 8
-  slliw(x1, x1, 8);  // x1 <- 0xFF00FF00
+  slli(x2, x2, 8);   // x2 <- (x0 & x1) << 8
+  slli(x1, x1, 8);   // x1 <- 0xFF00FF00
   and_(rd, x0, x1);  // x0 & 0xFF00FF00
-  srliw(rd, rd, 8);
+  srli(rd, rd, 8);
   or_(rd, rd, x2);  // (((x0 & x1) << 8)  | ((x0 & (x1 << 8)) >> 8))
 }
 
@@ -2427,60 +2427,6 @@ void TurboAssembler::Clz32(Register rd, Register xx) {
   bind(&L4);
 }
 
-void TurboAssembler::Clz64(Register rd, Register xx) {
-  // 64 bit: count number of leading zeros.
-  //  int n = 64;
-  //  unsigned y;
-
-  //  y = x >>32; if (y != 0) { n = n - 32; x = y; }
-  //  y = x >>16; if (y != 0) { n = n - 16; x = y; }
-  //  y = x >> 8; if (y != 0) { n = n - 8; x = y; }
-  //  y = x >> 4; if (y != 0) { n = n - 4; x = y; }
-  //  y = x >> 2; if (y != 0) { n = n - 2; x = y; }
-  //  y = x >> 1; if (y != 0) {rd = n - 2; return;}
-  //  rd = n - x;
-
-  Label L0, L1, L2, L3, L4, L5;
-  UseScratchRegisterScope temps(this);
-  BlockTrampolinePoolScope block_trampoline_pool(this);
-  Register x = rd;
-  Register y = temps.Acquire();
-  Register n = temps.Acquire();
-  DCHECK(xx != y && xx != n);
-  Move(x, xx);
-  li(n, Operand(64));
-  srli(y, x, 32);
-  BranchShort(&L0, eq, y, Operand(zero_reg));
-  addiw(n, n, -32);
-  Move(x, y);
-  bind(&L0);
-  srli(y, x, 16);
-  BranchShort(&L1, eq, y, Operand(zero_reg));
-  addiw(n, n, -16);
-  Move(x, y);
-  bind(&L1);
-  srli(y, x, 8);
-  BranchShort(&L2, eq, y, Operand(zero_reg));
-  addiw(n, n, -8);
-  Move(x, y);
-  bind(&L2);
-  srli(y, x, 4);
-  BranchShort(&L3, eq, y, Operand(zero_reg));
-  addiw(n, n, -4);
-  Move(x, y);
-  bind(&L3);
-  srli(y, x, 2);
-  BranchShort(&L4, eq, y, Operand(zero_reg));
-  addiw(n, n, -2);
-  Move(x, y);
-  bind(&L4);
-  srli(y, x, 1);
-  subw(rd, n, x);
-  BranchShort(&L5, eq, y, Operand(zero_reg));
-  addiw(rd, n, -2);
-  bind(&L5);
-}
-
 void TurboAssembler::Ctz32(Register rd, Register rs) {
   // Convert trailing zeroes to trailing ones, and bits to their left
   // to zeroes.
@@ -2501,30 +2447,6 @@ void TurboAssembler::Ctz32(Register rd, Register rs) {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
     li(scratch, 32);
-    Sub(rd, scratch, rd);
-  }
-}
-
-void TurboAssembler::Ctz64(Register rd, Register rs) {
-  // Convert trailing zeroes to trailing ones, and bits to their left
-  // to zeroes.
-
-  BlockTrampolinePoolScope block_trampoline_pool(this);
-  {
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-    Add(scratch, rs, -1);
-    Xor(rd, scratch, rs);
-    And(rd, rd, scratch);
-    // Count number of leading zeroes.
-  }
-  Clz64(rd, rd);
-  {
-    // Subtract number of leading zeroes from 64 to get number of trailing
-    // ones. Remember that the trailing ones were formerly trailing zeroes.
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-    li(scratch, 64);
     Sub(rd, scratch, rd);
   }
 }

@@ -44,9 +44,7 @@ namespace compiler {
   V(RiscvSar32)                             \
   V(RiscvZeroExtendWord)                    \
   V(RiscvSignExtendWord)                    \
-  V(RiscvClz64)                             \
   V(RiscvCtz32)                             \
-  V(RiscvCtz64)                             \
   V(RiscvPopcnt32)                          \
   V(RiscvShl64)                             \
   V(RiscvShr64)                             \

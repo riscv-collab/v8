@@ -913,12 +913,6 @@ void InstructionSelector::VisitWord32Ctz(Node* node) {
   RiscvOperandGenerator g(this);
   Emit(kRiscvCtz32, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
 }
-#if 0
-void InstructionSelector::VisitWord64Ctz(Node* node) {
-  RiscvOperandGenerator g(this);
-  Emit(kRiscvCtz64, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
-}
-#endif
 
 void InstructionSelector::VisitWord32Popcnt(Node* node) {
   RiscvOperandGenerator g(this);
@@ -930,9 +924,6 @@ void InstructionSelector::VisitWord64Ror(Node* node) {
   VisitRRO(this, kRiscvRor64, node);
 }
 
-void InstructionSelector::VisitWord64Clz(Node* node) {
-  VisitRR(this, kRiscvClz64, node);
-}
 #endif
 
 void InstructionSelector::VisitInt32Add(Node* node) {

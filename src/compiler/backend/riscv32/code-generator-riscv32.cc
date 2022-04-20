@@ -1095,18 +1095,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kRiscvClz32:
       __ Clz32(i.OutputRegister(), i.InputOrZeroRegister(0));
       break;
-    case kRiscvClz64:
-      __ Clz64(i.OutputRegister(), i.InputOrZeroRegister(0));
-      break;
     case kRiscvCtz32: {
       Register src = i.InputRegister(0);
       Register dst = i.OutputRegister();
       __ Ctz32(dst, src);
-    } break;
-    case kRiscvCtz64: {
-      Register src = i.InputRegister(0);
-      Register dst = i.OutputRegister();
-      __ Ctz64(dst, src);
     } break;
     case kRiscvPopcnt32: {
       Register src = i.InputRegister(0);

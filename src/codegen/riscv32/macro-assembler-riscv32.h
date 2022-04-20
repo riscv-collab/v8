@@ -570,9 +570,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   }
 
   void Clz32(Register rd, Register rs);
-  void Clz64(Register rd, Register rs);
   void Ctz32(Register rd, Register rs);
-  void Ctz64(Register rd, Register rs);
   void Popcnt32(Register rd, Register rs, Register scratch);
 
   // Bit field starts at bit pos and extending for size bits is extracted from

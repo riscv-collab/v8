@@ -1099,11 +1099,11 @@ void LiftoffAssembler::FillStackSlotsWithZero(int start, int size) {
 }
 
 void LiftoffAssembler::emit_i64_clz(LiftoffRegister dst, LiftoffRegister src) {
-  TurboAssembler::Clz64(dst.gp(), src.gp());
+  bailout(kUnsupportedArchitecture, "emit_i64_clz");
 }
 
 void LiftoffAssembler::emit_i64_ctz(LiftoffRegister dst, LiftoffRegister src) {
-  TurboAssembler::Ctz64(dst.gp(), src.gp());
+  bailout(kUnsupportedArchitecture, "emit_i64_ctz");
 }
 
 bool LiftoffAssembler::emit_i64_popcnt(LiftoffRegister dst,
