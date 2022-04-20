@@ -666,7 +666,7 @@ void InstructionSelector::VisitProtectedStore(Node* node) {
 }
 
 void InstructionSelector::VisitWord32And(Node* node) {
-  VisitBinop(this, node, kRiscvAnd32, true, kRiscvAnd32);
+  VisitBinop(this, node, kRiscvAnd, true, kRiscvAnd);
 }
 
 #if 0
@@ -709,7 +709,7 @@ void InstructionSelector::VisitWord64And(Node* node) {
 #endif
 
 void InstructionSelector::VisitWord32Or(Node* node) {
-  VisitBinop(this, node, kRiscvOr32, true, kRiscvOr32);
+  VisitBinop(this, node, kRiscvOr, true, kRiscvOr);
 }
 
 #if 0
@@ -725,7 +725,7 @@ void InstructionSelector::VisitWord32Xor(Node* node) {
     Int32BinopMatcher mleft(m.left().node());
     if (!mleft.right().HasResolvedValue()) {
       RiscvOperandGenerator g(this);
-      Emit(kRiscvNor32, g.DefineAsRegister(node),
+      Emit(kRiscvNor, g.DefineAsRegister(node),
            g.UseRegister(mleft.left().node()),
            g.UseRegister(mleft.right().node()));
       return;
@@ -734,11 +734,11 @@ void InstructionSelector::VisitWord32Xor(Node* node) {
   if (m.right().Is(-1)) {
     // Use Nor for bit negation and eliminate constant loading for xori.
     RiscvOperandGenerator g(this);
-    Emit(kRiscvNor32, g.DefineAsRegister(node), g.UseRegister(m.left().node()),
+    Emit(kRiscvNor, g.DefineAsRegister(node), g.UseRegister(m.left().node()),
          g.TempImmediate(0));
     return;
   }
-  VisitBinop(this, node, kRiscvXor32, true, kRiscvXor32);
+  VisitBinop(this, node, kRiscvXor, true, kRiscvXor);
 }
 
 #if 0
