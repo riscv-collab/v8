@@ -3436,7 +3436,7 @@ void Assembler::AdjustBaseAndOffset(MemOperand* src, Register scratch,
     addi(scratch, src->rm(), -kMinOffsetForSimpleAdjustment);
     src->offset_ += kMinOffsetForSimpleAdjustment;
   } else if (access_type == OffsetAccessType::SINGLE_ACCESS) {
-    RV_li(scratch, (src->offset()));
+    RV_li(scratch, ((src->offset()) + 0x800) >> 12 << 12);
     add(scratch, scratch, src->rm());
     src->offset_ = src->offset() << 20 >> 20;
   } else {
