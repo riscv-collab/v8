@@ -86,7 +86,6 @@ class RiscvOperandGenerator final : public OperandGenerator {
       case kRiscvShr32:
         return is_uint5(value);
       case kRiscvShl64:
-      case kRiscvSar64:
       case kRiscvShr64:
         return is_uint6(value);
       case kRiscvAdd:
@@ -871,11 +870,6 @@ void InstructionSelector::VisitWord64Shr(Node* node) {
   VisitRRO(this, kRiscvShr64, node);
 }
 
-void InstructionSelector::VisitWord64Sar(Node* node) {
-  if (TryEmitExtendingLoad(this, node, node)) return;
-  VisitRRO(this, kRiscvSar64, node);
-}
-
 #endif
 
 void InstructionSelector::VisitWord32Rol(Node* node) { UNREACHABLE(); }
@@ -1411,39 +1405,6 @@ void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
 }
 */
 
-void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
-  RiscvOperandGenerator g(this);
-  Node* value = node->InputAt(0);
-  if (CanCover(node, value)) {
-    switch (value->opcode()) {
-      case IrOpcode::kWord64Sar: {
-        if (CanCoverTransitively(node, value, value->InputAt(0)) &&
-            TryEmitExtendingLoad(this, value, node)) {
-          return;
-        } else {
-          Int64BinopMatcher m(value);
-          if (m.right().IsInRange(32, 63)) {
-            // After smi untagging no need for truncate. Combine sequence.
-            Emit(kRiscvSar64, g.DefineSameAsFirst(node),
-                 g.UseRegister(m.left().node()),
-                 g.UseImmediate(m.right().node()));
-            return;
-          }
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  // Semantics of this machine IR is not clear. For example, x86 zero-extend the
-  // truncated value; arm treats it as nop thus the upper 32-bit as undefined;
-  // Riscv emits ext instruction which zero-extend the 32-bit value; for riscv,
-  // we do sign-extension of the truncated value
-  Emit(kRiscvSignExtendWord, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
-}
 #endif
 void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
   RiscvOperandGenerator g(this);

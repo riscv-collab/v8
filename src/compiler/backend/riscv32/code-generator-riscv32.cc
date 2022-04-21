@@ -1146,9 +1146,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kRiscvShr64:
       __ Srl64(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;
-    case kRiscvSar64:
-      __ Sra64(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
-      break;
     case kRiscvRor32:
       __ Ror(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;

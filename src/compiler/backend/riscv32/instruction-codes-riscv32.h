@@ -48,7 +48,6 @@ namespace compiler {
   V(RiscvPopcnt32)                          \
   V(RiscvShl64)                             \
   V(RiscvShr64)                             \
-  V(RiscvSar64)                             \
   V(RiscvRor32)                             \
   V(RiscvRor64)                             \
   V(RiscvMov)                               \

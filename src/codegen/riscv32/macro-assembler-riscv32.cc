@@ -427,18 +427,6 @@ void TurboAssembler::Sub(Register rd, Register rs, const Operand& rt) {
 
 void TurboAssembler::Mul32(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
-    mulw(rd, rs, rt.rm());
-  } else {
-    // li handles the relocation.
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-    Li(scratch, rt.immediate());
-    mulw(rd, rs, scratch);
-  }
-}
-
-void TurboAssembler::Mulh32(Register rd, Register rs, const Operand& rt) {
-  if (rt.is_reg()) {
     mul(rd, rs, rt.rm());
   } else {
     // li handles the relocation.
@@ -447,19 +435,31 @@ void TurboAssembler::Mulh32(Register rd, Register rs, const Operand& rt) {
     Li(scratch, rt.immediate());
     mul(rd, rs, scratch);
   }
-  srai(rd, rd, 32);
+}
+
+void TurboAssembler::Mulh32(Register rd, Register rs, const Operand& rt) {
+  if (rt.is_reg()) {
+    mulh(rd, rs, rt.rm());
+  } else {
+    // li handles the relocation.
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    Li(scratch, rt.immediate());
+    mulh(rd, rs, scratch);
+  }
 }
 
 void TurboAssembler::Mulhu32(Register rd, Register rs, const Operand& rt,
                              Register rsz, Register rtz) {
-  slli(rsz, rs, 32);
   if (rt.is_reg()) {
-    slli(rtz, rt.rm(), 32);
+    mulhu(rd, rs, rt.rm());
   } else {
-    Li(rtz, rt.immediate() << 32);
+    // li handles the relocation.
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    Li(scratch, rt.immediate());
+    mulhu(rd, rs, scratch);
   }
-  mulhu(rd, rsz, rtz);
-  srai(rd, rd, 32);
 }
 
 void TurboAssembler::Mul64(Register rd, Register rs, const Operand& rt) {
@@ -805,28 +805,28 @@ void TurboAssembler::Sgtu(Register rd, Register rs, const Operand& rt) {
 
 void TurboAssembler::Sll32(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
-    sllw(rd, rs, rt.rm());
+    sll(rd, rs, rt.rm());
   } else {
     uint8_t shamt = static_cast<uint8_t>(rt.immediate());
-    slliw(rd, rs, shamt);
+    slli(rd, rs, shamt);
   }
 }
 
 void TurboAssembler::Sra32(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
-    sraw(rd, rs, rt.rm());
+    sra(rd, rs, rt.rm());
   } else {
     uint8_t shamt = static_cast<uint8_t>(rt.immediate());
-    sraiw(rd, rs, shamt);
+    srai(rd, rs, shamt);
   }
 }
 
 void TurboAssembler::Srl32(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
-    srlw(rd, rs, rt.rm());
+    srl(rd, rs, rt.rm());
   } else {
     uint8_t shamt = static_cast<uint8_t>(rt.immediate());
-    srliw(rd, rs, shamt);
+    srli(rd, rs, shamt);
   }
 }
 

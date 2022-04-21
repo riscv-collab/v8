@@ -60,7 +60,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvModU64:
     case kRiscvMul64:
     case kRiscvRor64:
-    case kRiscvSar64:
     case kRiscvShl64:
     case kRiscvShr64:
     case kRiscvSubOvf:
@@ -1262,7 +1261,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
     case kRiscvSignExtendWord:
     case kRiscvShl64:
     case kRiscvShr64:
-    case kRiscvSar64:
     case kRiscvRor32:
     case kRiscvRor64:
       return 1;

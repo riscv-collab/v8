@@ -75,10 +75,15 @@ jobs:
         working-directory: ./v8
         run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv32.debug all
 
+  test:
+    # The type of runner that the job will run on
+    runs-on: self-hosted
+    needs: build
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
       - name: run hello.js
-        continue-on-error: true
         working-directory: ./v8
-        run: wget https://gist.githubusercontent.com/luyahan/2790ff00df1581b7c458716a7f3563ac/raw/60276bf8ad5262c68bdabddcf0f4317fd1a206ac/gistfile1.txt -O hello.js && ./out/riscv32.debug/d8 hello.js --trace-sim
+        run: wget https://gist.githubusercontent.com/luyahan/2790ff00df1581b7c458716a7f3563ac/raw/60276bf8ad5262c68bdabddcf0f4317fd1a206ac/gistfile1.txt -O hello.js && ./out/riscv32.debug/d8 hello.js
 
 
   format:
