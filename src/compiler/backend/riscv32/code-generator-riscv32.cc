@@ -3951,7 +3951,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* additional_pop_count) {
     } else if (FLAG_debug_code) {
       __ Assert(eq, AbortReason::kUnexpectedAdditionalPopValue,
                 g.ToRegister(additional_pop_count),
-                Operand(static_cast<int64_t>(0)));
+                Operand(static_cast<int32_t>(0)));
     }
   }
 

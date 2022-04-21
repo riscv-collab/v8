@@ -432,7 +432,7 @@ void BaselineAssembler::Switch(Register reg, int case_value_base,
   ScratchRegisterScope scope(this);
   Label table;
   __ Branch(&fallthrough, AsMasmCondition(Condition::kUnsignedGreaterThanEqual),
-            reg, Operand(int64_t(num_labels)));
+            reg, Operand(int32_t(num_labels)));
   int64_t imm64;
   imm64 = __ branch_long_offset(&table);
   CHECK(is_int32(imm64 + 0x800));

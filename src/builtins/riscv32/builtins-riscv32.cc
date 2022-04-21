@@ -1863,7 +1863,7 @@ void Builtins::Generate_NotifyDeoptimized(MacroAssembler* masm) {
 namespace {
 
 void Generate_OSREntry(MacroAssembler* masm, Register entry_address,
-                       Operand offset = Operand(int64_t(0))) {
+                       Operand offset = Operand(int32_t(0))) {
   __ Add(ra, entry_address, offset);
   // And "return" to the OSR entry point of the function.
   __ Ret();
@@ -3811,7 +3811,7 @@ void Generate_BaselineOrInterpreterEntry(MacroAssembler* masm,
     __ bind(&function_entry_bytecode);
     // If the bytecode offset is kFunctionEntryOffset, get the start address of
     // the first bytecode.
-    __ li(kInterpreterBytecodeOffsetRegister, Operand(int64_t(0)));
+    __ li(kInterpreterBytecodeOffsetRegister, Operand(int32_t(0)));
     if (next_bytecode) {
       __ li(get_baseline_pc,
             ExternalReference::baseline_pc_for_bytecode_offset());
