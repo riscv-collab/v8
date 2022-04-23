@@ -395,6 +395,8 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvUsw:
     case kRiscvUStoreFloat:
     case kRiscvSync:
+    case kRiscvWord32AtomicPairLoad:
+    case kRiscvWord32AtomicPairStore:
     case kRiscvWord64AtomicStoreWord64:
     case kRiscvWord64AtomicAddUint64:
     case kRiscvWord64AtomicSubUint64:

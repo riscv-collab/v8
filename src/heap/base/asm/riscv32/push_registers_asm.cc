@@ -1,5 +1,5 @@
 // Copyright 2020 the V8 project authors. All rights reserved.
-// Use of this source code is governed by a Bsw-style license that can be
+// Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // Push all callee-saved registers to get them on the stack for conservative

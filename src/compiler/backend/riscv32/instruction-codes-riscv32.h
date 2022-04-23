@@ -386,6 +386,8 @@ namespace compiler {
   V(RiscvVwaddu)                            \
   V(RiscvVrgather)                          \
   V(RiscvVslidedown)                        \
+  V(RiscvWord32AtomicPairLoad)              \
+  V(RiscvWord32AtomicPairStore)             \
   V(RiscvWord64AtomicLoadUint64)            \
   V(RiscvWord64AtomicStoreWord64)           \
   V(RiscvWord64AtomicAddUint64)             \
