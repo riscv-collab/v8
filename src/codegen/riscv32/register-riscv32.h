@@ -31,15 +31,8 @@ namespace internal {
              V(a4)  V(a5)  V(a6)  V(a7)  V(t0)  \
              V(t1)  V(t2)  V(t4)  V(s7)  V(s8) V(s9) V(s10)
 
-#ifdef V8_COMPRESS_POINTERS_IN_SHARED_CAGE
-#define MAYBE_ALLOCATABLE_GENERAL_REGISTERS(V)
-#else
-#define MAYBE_ALLOCATABLE_GENERAL_REGISTERS(V) V(s11)
-#endif
-
 #define ALLOCATABLE_GENERAL_REGISTERS(V)  \
-  ALWAYS_ALLOCATABLE_GENERAL_REGISTERS(V) \
-  MAYBE_ALLOCATABLE_GENERAL_REGISTERS(V)
+  ALWAYS_ALLOCATABLE_GENERAL_REGISTERS(V)
 
 #define DOUBLE_REGISTERS(V)                                       \
   V(ft0)  V(ft1)  V(ft2)  V(ft3)  V(ft4)  V(ft5)  V(ft6)  V(ft7)  \
@@ -300,11 +293,7 @@ constexpr VRegister kSimd128ScratchReg2 = v23;
 constexpr VRegister kSimd128ScratchReg3 = v8;
 constexpr VRegister kSimd128RegZero = v25;
 
-#ifdef V8_COMPRESS_POINTERS_IN_SHARED_CAGE
-constexpr Register kPtrComprCageBaseRegister = s11;  // callee save
-#else
 constexpr Register kPtrComprCageBaseRegister = kRootRegister;
-#endif
 
 }  // namespace internal
 }  // namespace v8

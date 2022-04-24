@@ -527,39 +527,19 @@ void InstructionSelector::VisitLoad(Node* node) {
       opcode = load_rep.IsUnsigned() ? kRiscvLhu : kRiscvLh;
       break;
     case MachineRepresentation::kWord32:
-      opcode = kRiscvLw;
-      break;
-#ifdef V8_COMPRESS_POINTERS
-    case MachineRepresentation::kTaggedSigned:
-      opcode = kRiscvLoadDecompressTaggedSigned;
-      break;
-    case MachineRepresentation::kTaggedPointer:
-      opcode = kRiscvLoadDecompressTaggedPointer;
-      break;
-    case MachineRepresentation::kTagged:
-      opcode = kRiscvLoadDecompressAnyTagged;
-      break;
-#else
     case MachineRepresentation::kTaggedSigned:   // Fall through.
     case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:         // Fall through.
-#endif
-    case MachineRepresentation::kWord64:
-      opcode = kRiscvLd;
+      opcode = kRiscvLw;
       break;
     case MachineRepresentation::kSimd128:
       opcode = kRiscvRvvLd;
       break;
     case MachineRepresentation::kCompressedPointer:
     case MachineRepresentation::kCompressed:
-#ifdef V8_COMPRESS_POINTERS
-      opcode = kRiscvLw;
-      break;
-#else
-                                                 // Fall through.
-#endif
     case MachineRepresentation::kSandboxedPointer:
     case MachineRepresentation::kMapWord:  // Fall through.
+    case MachineRepresentation::kWord64:
     case MachineRepresentation::kNone:
       UNREACHABLE();
   }
@@ -620,27 +600,18 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kTaggedSigned:   // Fall through.
       case MachineRepresentation::kTaggedPointer:  // Fall through.
       case MachineRepresentation::kTagged:
-#ifdef V8_COMPRESS_POINTERS
-        opcode = kRiscvStoreCompressTagged;
-        break;
-#endif
-      case MachineRepresentation::kWord64:
-        opcode = kRiscvSd;
+        opcode = kRiscvSw;
         break;
       case MachineRepresentation::kSimd128:
         opcode = kRiscvRvvSt;
         break;
       case MachineRepresentation::kCompressedPointer:  // Fall through.
       case MachineRepresentation::kCompressed:
-#ifdef V8_COMPRESS_POINTERS
-        opcode = kRiscvStoreCompressTagged;
-        break;
-#else
         UNREACHABLE();
-#endif
       case MachineRepresentation::kSandboxedPointer:
       case MachineRepresentation::kMapWord:  // Fall through.
       case MachineRepresentation::kNone:
+      case MachineRepresentation::kWord64:
         UNREACHABLE();
     }
 
@@ -2418,17 +2389,6 @@ void InstructionSelector::VisitWord64AtomicLoad(Node* node) {
     case MachineRepresentation::kWord64:
       opcode = kRiscvWord64AtomicLoadUint64;
       break;
-#ifdef V8_COMPRESS_POINTERS
-    case MachineRepresentation::kTaggedSigned:
-      opcode = kRiscv64LdDecompressTaggedSigned;
-      break;
-    case MachineRepresentation::kTaggedPointer:
-      opcode = kRiscv64LdDecompressTaggedPointer;
-      break;
-    case MachineRepresentation::kTagged:
-      opcode = kRiscv64LdDecompressAnyTagged;
-      break;
-#else
     case MachineRepresentation::kTaggedSigned:   // Fall through.
     case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:
@@ -2438,7 +2398,6 @@ void InstructionSelector::VisitWord64AtomicLoad(Node* node) {
         opcode = kAtomicLoadWord32;
       }
       break;
-#endif
     case MachineRepresentation::kCompressedPointer:  // Fall through.
     case MachineRepresentation::kCompressed:
       DCHECK(COMPRESS_POINTERS_BOOL);

@@ -464,7 +464,7 @@ void LiftoffAssembler::LoadTaggedPointerFromInstance(Register dst,
                                                      Register instance,
                                                      int offset) {
   DCHECK_LE(0, offset);
-  LoadTaggedPointerField(dst, MemOperand{instance, offset});
+  Lw(dst, MemOperand{instance, offset});
 }
 
 void LiftoffAssembler::SpillInstance(Register instance) {
@@ -477,8 +477,9 @@ void LiftoffAssembler::LoadTaggedPointer(Register dst, Register src_addr,
                                          Register offset_reg,
                                          int32_t offset_imm,
                                          LiftoffRegList pinned) {
+  STATIC_ASSERT(kTaggedSize == kSystemPointerSize);
   MemOperand src_op = liftoff::GetMemOp(this, src_addr, offset_reg, offset_imm);
-  LoadTaggedPointerField(dst, src_op);
+  Lw(dst, src_op);
 }
 
 void LiftoffAssembler::LoadFullPointer(Register dst, Register src_addr,
@@ -495,7 +496,7 @@ void LiftoffAssembler::StoreTaggedPointer(Register dst_addr,
                                           SkipWriteBarrier skip_write_barrier) {
   Register scratch = pinned.set(GetUnusedRegister(kGpReg, pinned)).gp();
   MemOperand dst_op = liftoff::GetMemOp(this, dst_addr, offset_reg, offset_imm);
-  StoreTaggedField(src.gp(), dst_op);
+  Sw(src.gp(), dst_op);
 
   if (skip_write_barrier || FLAG_disable_write_barriers) return;
 

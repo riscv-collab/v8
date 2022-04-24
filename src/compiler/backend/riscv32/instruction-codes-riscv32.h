@@ -394,11 +394,7 @@ namespace compiler {
   V(RiscvWord64AtomicOrUint64)              \
   V(RiscvWord64AtomicXorUint64)             \
   V(RiscvWord64AtomicExchangeUint64)        \
-  V(RiscvWord64AtomicCompareExchangeUint64) \
-  V(RiscvStoreCompressTagged)               \
-  V(RiscvLoadDecompressTaggedSigned)        \
-  V(RiscvLoadDecompressTaggedPointer)       \
-  V(RiscvLoadDecompressAnyTagged)
+  V(RiscvWord64AtomicCompareExchangeUint64)
 
 // Addressing modes represent the "shape" of inputs to an instruction.
 // Many instructions support multiple addressing modes. Addressing modes

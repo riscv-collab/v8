@@ -108,10 +108,6 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void InitializeRootRegister() {
     ExternalReference isolate_root = ExternalReference::isolate_root(isolate());
     li(kRootRegister, Operand(isolate_root));
-#ifdef V8_COMPRESS_POINTERS_IN_SHARED_CAGE
-    LoadRootRelative(kPtrComprCageBaseRegister,
-                     IsolateData::cage_base_offset());
-#endif
   }
 
   // Jump unconditionally to given label.
@@ -887,42 +883,6 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void ExceptionHandler() {}
   // Define an exception handler and bind a label.
   void BindExceptionHandler(Label* label) { bind(label); }
-
-  // ---------------------------------------------------------------------------
-  // Pointer compression Support
-
-  // Loads a field containing a HeapObject and decompresses it if pointer
-  // compression is enabled.
-  void LoadTaggedPointerField(const Register& destination,
-                              const MemOperand& field_operand);
-
-  // Loads a field containing any tagged value and decompresses it if necessary.
-  void LoadAnyTaggedField(const Register& destination,
-                          const MemOperand& field_operand);
-
-  // Loads a field containing a tagged signed value and decompresses it if
-  // necessary.
-  void LoadTaggedSignedField(const Register& destination,
-                             const MemOperand& field_operand);
-
-  // Loads a field containing smi value and untags it.
-  void SmiUntagField(Register dst, const MemOperand& src);
-
-  // Compresses and stores tagged value to given on-heap location.
-  void StoreTaggedField(const Register& value,
-                        const MemOperand& dst_field_operand);
-
-  void DecompressTaggedSigned(const Register& destination,
-                              const MemOperand& field_operand);
-  void DecompressTaggedPointer(const Register& destination,
-                               const MemOperand& field_operand);
-  void DecompressTaggedPointer(const Register& destination,
-                               const Register& source);
-  void DecompressAnyTagged(const Register& destination,
-                           const MemOperand& field_operand);
-  void CmpTagged(const Register& rd, const Register& rs1, const Register& rs2) {
-    Sub(rd, rs1, rs2);
-  }
   // W1sm into RVV
   void WasmRvvExtractLane(Register dst, VRegister src, int8_t idx, VSew sew,
                           Vlmul lmul) {

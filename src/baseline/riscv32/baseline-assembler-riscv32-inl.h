@@ -337,15 +337,15 @@ void BaselineAssembler::Pop(T... registers) {
 
 void BaselineAssembler::LoadTaggedPointerField(Register output, Register source,
                                                int offset) {
-  __ LoadTaggedPointerField(output, FieldMemOperand(source, offset));
+  __ Lw(output, FieldMemOperand(source, offset));
 }
 void BaselineAssembler::LoadTaggedSignedField(Register output, Register source,
                                               int offset) {
-  __ LoadTaggedSignedField(output, FieldMemOperand(source, offset));
+  __ Lw(output, FieldMemOperand(source, offset));
 }
 void BaselineAssembler::LoadTaggedAnyField(Register output, Register source,
                                            int offset) {
-  __ LoadAnyTaggedField(output, FieldMemOperand(source, offset));
+  __ Lw(output, FieldMemOperand(source, offset));
 }
 void BaselineAssembler::LoadByteField(Register output, Register source,
                                       int offset) {
@@ -357,20 +357,20 @@ void BaselineAssembler::StoreTaggedSignedField(Register target, int offset,
   ScratchRegisterScope temps(this);
   Register tmp = temps.AcquireScratch();
   __ li(tmp, Operand(value));
-  __ StoreTaggedField(tmp, FieldMemOperand(target, offset));
+  __ Sw(tmp, FieldMemOperand(target, offset));
 }
 void BaselineAssembler::StoreTaggedFieldWithWriteBarrier(Register target,
                                                          int offset,
                                                          Register value) {
   ASM_CODE_COMMENT(masm_);
-  __ StoreTaggedField(value, FieldMemOperand(target, offset));
+  __ Sw(value, FieldMemOperand(target, offset));
   __ RecordWriteField(target, offset, value, kRAHasNotBeenSaved,
                       SaveFPRegsMode::kIgnore);
 }
 void BaselineAssembler::StoreTaggedFieldNoWriteBarrier(Register target,
                                                        int offset,
                                                        Register value) {
-  __ StoreTaggedField(value, FieldMemOperand(target, offset));
+  __ Sw(value, FieldMemOperand(target, offset));
 }
 
 void BaselineAssembler::AddToInterruptBudgetAndJumpIfNotExceeded(
