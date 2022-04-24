@@ -2923,9 +2923,8 @@ void TurboAssembler::LoadFromConstantsTable(Register destination,
                                             int constant_index) {
   DCHECK(RootsTable::IsImmortalImmovable(RootIndex::kBuiltinsConstantsTable));
   LoadRoot(destination, RootIndex::kBuiltinsConstantsTable);
-  Lw(
-      destination, FieldMemOperand(destination, FixedArray::OffsetOfElementAt(
-                                                    constant_index)));
+  Lw(destination, FieldMemOperand(destination, FixedArray::OffsetOfElementAt(
+                                                   constant_index)));
 }
 
 void TurboAssembler::LoadRootRelative(Register destination, int32_t offset) {
@@ -3586,8 +3585,7 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
   // allow recompilation to take effect without changing any of the
   // call sites.
   Register code = kJavaScriptCallCodeStartRegister;
-  Lw(code,
-                         FieldMemOperand(function, JSFunction::kCodeOffset));
+  Lw(code, FieldMemOperand(function, JSFunction::kCodeOffset));
   switch (type) {
     case InvokeType::kCall:
       CallCodeObject(code);
@@ -3614,11 +3612,9 @@ void MacroAssembler::InvokeFunctionWithNewTarget(
   {
     UseScratchRegisterScope temps(this);
     Register temp_reg = temps.Acquire();
-    Lw(
-        temp_reg,
-        FieldMemOperand(function, JSFunction::kSharedFunctionInfoOffset));
-    Lw(
-        cp, FieldMemOperand(function, JSFunction::kContextOffset));
+    Lw(temp_reg,
+       FieldMemOperand(function, JSFunction::kSharedFunctionInfoOffset));
+    Lw(cp, FieldMemOperand(function, JSFunction::kContextOffset));
     // The argument count is stored as uint16_t
     Lhu(expected_parameter_count,
         FieldMemOperand(temp_reg,
@@ -4044,16 +4040,14 @@ void TurboAssembler::Abort(AbortReason reason) {
 
 void TurboAssembler::LoadMap(Register destination, Register object) {
   ASM_CODE_COMMENT(this);
-  Lw(destination,
-                         FieldMemOperand(object, HeapObject::kMapOffset));
+  Lw(destination, FieldMemOperand(object, HeapObject::kMapOffset));
 }
 
 void MacroAssembler::LoadNativeContextSlot(Register dst, int index) {
   ASM_CODE_COMMENT(this);
   LoadMap(dst, cp);
-  Lw(
-      dst, FieldMemOperand(
-               dst, Map::kConstructorOrBackPointerOrNativeContextOffset));
+  Lw(dst,
+     FieldMemOperand(dst, Map::kConstructorOrBackPointerOrNativeContextOffset));
   Lw(dst, MemOperand(dst, Context::SlotOffset(index)));
 }
 

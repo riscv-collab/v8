@@ -607,8 +607,7 @@ void CodeGenerator::AssembleCodeStartRegisterCheck() {
 //    3. if it is not zero then it jumps to the builtin.
 void CodeGenerator::BailoutIfDeoptimized() {
   int offset = Code::kCodeDataContainerOffset - Code::kHeaderSize;
-  __ Lw(
-      kScratchReg, MemOperand(kJavaScriptCallCodeStartRegister, offset));
+  __ Lw(kScratchReg, MemOperand(kJavaScriptCallCodeStartRegister, offset));
   __ Lw(kScratchReg,
         FieldMemOperand(kScratchReg,
                         CodeDataContainer::kKindSpecificFlagsOffset));
@@ -702,14 +701,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       Register func = i.InputOrZeroRegister(0);
       if (FLAG_debug_code) {
         // Check the function's context matches the context argument.
-        __ Lw(
-            kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset));
+        __ Lw(kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset));
         __ Assert(eq, AbortReason::kWrongFunctionContext, cp,
                   Operand(kScratchReg));
       }
       static_assert(kJavaScriptCallCodeStartRegister == a2, "ABI mismatch");
-      __ Lw(a2,
-                                FieldMemOperand(func, JSFunction::kCodeOffset));
+      __ Lw(a2, FieldMemOperand(func, JSFunction::kCodeOffset));
       __ CallCodeObject(a2);
       RecordCallPosition(instr);
       frame_access_state()->ClearSPDelta();
