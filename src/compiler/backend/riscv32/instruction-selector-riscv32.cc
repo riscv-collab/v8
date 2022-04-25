@@ -3120,23 +3120,79 @@ void InstructionSelector::VisitWord32PairShr(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitWord32PairSar(Node* node) { UNIMPLEMENTED(); }
 
-void InstructionSelector::VisitWord32AtomicPairLoad(Node* node) {}
+void InstructionSelector::VisitWord32AtomicPairLoad(Node* node) {
+  RiscvOperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  ArchOpcode opcode = kRiscvWord32AtomicPairLoad;
+  AddressingMode addressing_mode = kMode_MRI;
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
+  InstructionOperand inputs[] = {g.UseRegister(base), g.UseRegister(index)};
+  InstructionOperand temps[3];
+  size_t temp_count = 0;
+  temps[temp_count++] = g.TempRegister(t0);
+  InstructionOperand outputs[2];
+  size_t output_count = 0;
 
-void InstructionSelector::VisitWord32AtomicPairStore(Node* node) {}
+  Node* projection0 = NodeProperties::FindProjection(node, 0);
+  Node* projection1 = NodeProperties::FindProjection(node, 1);
+  if (projection0) {
+    outputs[output_count++] = g.DefineAsFixed(projection0, a0);
+  } else {
+    temps[temp_count++] = g.TempRegister(a0);
+  }
+  if (projection1) {
+    outputs[output_count++] = g.DefineAsFixed(projection1, a1);
+  } else {
+    temps[temp_count++] = g.TempRegister(a1);
+  }
+  Emit(code, output_count, outputs, arraysize(inputs), inputs, temp_count,
+       temps);
+}
 
-void InstructionSelector::VisitWord32AtomicPairAdd(Node* node) {}
+void InstructionSelector::VisitWord32AtomicPairStore(Node* node) {
+  RiscvOperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  Node* value_low = node->InputAt(2);
+  Node* value_high = node->InputAt(3);
 
-void InstructionSelector::VisitWord32AtomicPairSub(Node* node) {}
+  InstructionOperand inputs[] = {g.UseRegister(base), g.UseRegister(index),
+                                 g.UseFixed(value_low, a1),
+                                 g.UseFixed(value_high, a2)};
+  InstructionOperand temps[] = {g.TempRegister(a0), g.TempRegister(),
+                                g.TempRegister()};
+  Emit(kRiscvWord32AtomicPairStore | AddressingModeField::encode(kMode_MRI), 0,
+       nullptr, arraysize(inputs), inputs, arraysize(temps), temps);
+}
 
-void InstructionSelector::VisitWord32AtomicPairAnd(Node* node) {}
+void InstructionSelector::VisitWord32AtomicPairAdd(Node* node) {
+  UNIMPLEMENTED();
+}
 
-void InstructionSelector::VisitWord32AtomicPairOr(Node* node) {}
+void InstructionSelector::VisitWord32AtomicPairSub(Node* node) {
+  UNIMPLEMENTED();
+}
 
-void InstructionSelector::VisitWord32AtomicPairXor(Node* node) {}
+void InstructionSelector::VisitWord32AtomicPairAnd(Node* node) {
+  UNIMPLEMENTED();
+}
 
-void InstructionSelector::VisitWord32AtomicPairExchange(Node* node) {}
+void InstructionSelector::VisitWord32AtomicPairOr(Node* node) {
+  UNIMPLEMENTED();
+}
 
-void InstructionSelector::VisitWord32AtomicPairCompareExchange(Node* node) {}
+void InstructionSelector::VisitWord32AtomicPairXor(Node* node) {
+  UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitWord32AtomicPairExchange(Node* node) {
+  UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitWord32AtomicPairCompareExchange(Node* node) {
+  UNIMPLEMENTED();
+}
 
 void InstructionSelector::AddOutputToSelectContinuation(OperandGenerator* g,
                                                         int first_input_index,

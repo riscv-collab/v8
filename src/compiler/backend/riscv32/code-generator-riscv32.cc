@@ -1744,6 +1744,24 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kRiscvWord64AtomicStoreWord64:
       ASSEMBLE_ATOMIC_STORE_INTEGER(Sw);
       break;
+    case kRiscvWord32AtomicPairLoad: {
+      FrameScope scope(tasm(), StackFrame::MANUAL);
+      __ Add(a0, i.InputRegister(0), i.InputRegister(1));
+      __ PushCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);
+      __ PrepareCallCFunction(1, 0, kScratchReg);
+      __ CallCFunction(ExternalReference::atomic_pair_load_function(), 1, 0);
+      __ PopCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);
+      break;
+    }
+    case kRiscvWord32AtomicPairStore: {
+      FrameScope scope(tasm(), StackFrame::MANUAL);
+      __ Add(a0, i.InputRegister(0), i.InputRegister(1));
+      __ PushCallerSaved(SaveFPRegsMode::kIgnore);
+      __ PrepareCallCFunction(3, 0, kScratchReg);
+      __ CallCFunction(ExternalReference::atomic_pair_store_function(), 3, 0);
+      __ PopCallerSaved(SaveFPRegsMode::kIgnore);
+      break;
+    }
     case kAtomicExchangeInt8:
       DCHECK_EQ(AtomicWidthField::decode(opcode), AtomicWidth::kWord32);
       ASSEMBLE_ATOMIC_EXCHANGE_INTEGER_EXT(Ll, Sc, true, 8, 32);
@@ -3918,7 +3936,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* additional_pop_count) {
     } else if (FLAG_debug_code) {
       __ Assert(eq, AbortReason::kUnexpectedAdditionalPopValue,
                 g.ToRegister(additional_pop_count),
-                Operand(static_cast<int64_t>(0)));
+                Operand(static_cast<int32_t>(0)));
     }
   }
 

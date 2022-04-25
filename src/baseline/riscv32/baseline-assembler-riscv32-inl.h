@@ -110,7 +110,7 @@ void BaselineAssembler::JumpIfSmi(Register value, Label* target,
 }
 void BaselineAssembler::JumpIfNotSmi(Register value, Label* target,
                                      Label::Distance) {
-  __ JumpIfSmi(value, target);
+  __ JumpIfNotSmi(value, target);
 }
 
 void BaselineAssembler::CallBuiltin(Builtin builtin) {
@@ -391,7 +391,7 @@ void BaselineAssembler::AddToInterruptBudgetAndJumpIfNotExceeded(
         FieldMemOperand(feedback_cell, FeedbackCell::kInterruptBudgetOffset));
   if (skip_interrupt_label) {
     DCHECK_LT(weight, 0);
-    __ Branch(skip_interrupt_label, ge, interrupt_budget, Operand(weight));
+    __ Branch(skip_interrupt_label, ge, interrupt_budget, Operand(zero_reg));
   }
 }
 
@@ -411,8 +411,9 @@ void BaselineAssembler::AddToInterruptBudgetAndJumpIfNotExceeded(
   __ Add(interrupt_budget, interrupt_budget, weight);
   __ Sw(interrupt_budget,
         FieldMemOperand(feedback_cell, FeedbackCell::kInterruptBudgetOffset));
-  if (skip_interrupt_label)
-    __ Branch(skip_interrupt_label, ge, interrupt_budget, Operand(weight));
+  if (skip_interrupt_label) {
+    __ Branch(skip_interrupt_label, ge, interrupt_budget, Operand(zero_reg));
+  }
 }
 
 void BaselineAssembler::AddSmi(Register lhs, Smi rhs) {
@@ -432,7 +433,7 @@ void BaselineAssembler::Switch(Register reg, int case_value_base,
   ScratchRegisterScope scope(this);
   Label table;
   __ Branch(&fallthrough, AsMasmCondition(Condition::kUnsignedGreaterThanEqual),
-            reg, Operand(int64_t(num_labels)));
+            reg, Operand(int32_t(num_labels)));
   int64_t imm64;
   imm64 = __ branch_long_offset(&table);
   CHECK(is_int32(imm64 + 0x800));
