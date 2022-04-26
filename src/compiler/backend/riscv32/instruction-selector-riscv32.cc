@@ -2091,10 +2091,10 @@ void InstructionSelector::VisitWordCompareZero(Node* user, Node* value,
             switch (node->opcode()) {
               case IrOpcode::kInt32AddWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
-                return VisitBinop(this, node, kRiscvAdd, cont);
+                return VisitBinop(this, node, kRiscvAddOvf, cont);
               case IrOpcode::kInt32SubWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
-                return VisitBinop(this, node, kRiscvSub, cont);
+                return VisitBinop(this, node, kRiscvSubOvf, cont);
               case IrOpcode::kInt32MulWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
                 return VisitBinop(this, node, kRiscvMulOvf32, cont);

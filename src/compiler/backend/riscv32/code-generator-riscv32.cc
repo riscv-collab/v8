@@ -975,14 +975,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ Add(i.OutputRegister(), i.InputOrZeroRegister(0), i.InputOperand(1));
       break;
     case kRiscvAddOvf:
-      __ AddOverflow64(i.OutputRegister(), i.InputOrZeroRegister(0),
+      __ AddOverflow(i.OutputRegister(), i.InputOrZeroRegister(0),
                        i.InputOperand(1), kScratchReg);
       break;
     case kRiscvSub:
       __ Sub(i.OutputRegister(), i.InputOrZeroRegister(0), i.InputOperand(1));
       break;
     case kRiscvSubOvf:
-      __ SubOverflow64(i.OutputRegister(), i.InputOrZeroRegister(0),
+      __ SubOverflow(i.OutputRegister(), i.InputOrZeroRegister(0),
                        i.InputOperand(1), kScratchReg);
       break;
     case kRiscvMul32:
@@ -3393,12 +3393,6 @@ void AssembleBranchToLabels(CodeGenerator* gen, TurboAssembler* tasm,
   if (instr->arch_opcode() == kRiscvTst) {
     cc = FlagsConditionToConditionTst(condition);
     __ Branch(tlabel, cc, kScratchReg, Operand(zero_reg));
-  } else if (instr->arch_opcode() == kRiscvAdd ||
-             instr->arch_opcode() == kRiscvSub) {
-    cc = FlagsConditionToConditionOvf(condition);
-    __ Sra64(kScratchReg, i.OutputRegister(), 32);
-    __ Sra64(kScratchReg2, i.OutputRegister(), 31);
-    __ Branch(tlabel, cc, kScratchReg2, Operand(kScratchReg));
   } else if (instr->arch_opcode() == kRiscvAddOvf ||
              instr->arch_opcode() == kRiscvSubOvf) {
     switch (condition) {

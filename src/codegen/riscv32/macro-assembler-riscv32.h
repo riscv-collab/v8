@@ -727,11 +727,11 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   // AddOverflow64 sets overflow register to a negative value if
   // overflow occured, otherwise it is zero or positive
-  void AddOverflow64(Register dst, Register left, const Operand& right,
+  void AddOverflow(Register dst, Register left, const Operand& right,
                      Register overflow);
   // SubOverflow64 sets overflow register to a negative value if
   // overflow occured, otherwise it is zero or positive
-  void SubOverflow64(Register dst, Register left, const Operand& right,
+  void SubOverflow(Register dst, Register left, const Operand& right,
                      Register overflow);
   // MulOverflow32 sets overflow register to zero if no overflow occured
   void MulOverflow32(Register dst, Register left, const Operand& right,
