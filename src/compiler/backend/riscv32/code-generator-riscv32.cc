@@ -976,14 +976,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kRiscvAddOvf:
       __ AddOverflow(i.OutputRegister(), i.InputOrZeroRegister(0),
-                       i.InputOperand(1), kScratchReg);
+                     i.InputOperand(1), kScratchReg);
       break;
     case kRiscvSub:
       __ Sub(i.OutputRegister(), i.InputOrZeroRegister(0), i.InputOperand(1));
       break;
     case kRiscvSubOvf:
       __ SubOverflow(i.OutputRegister(), i.InputOrZeroRegister(0),
-                       i.InputOperand(1), kScratchReg);
+                     i.InputOperand(1), kScratchReg);
       break;
     case kRiscvMul32:
       __ Mul32(i.OutputRegister(), i.InputOrZeroRegister(0), i.InputOperand(1));

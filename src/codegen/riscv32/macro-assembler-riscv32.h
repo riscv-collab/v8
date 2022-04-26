@@ -695,7 +695,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   // Extract sign-extended word from high-half of FPR to GPR
   inline void ExtractHighWordFromF64(Register dst_high, FPURegister src) {
-    //todo(riscv32): delete storedouble
+    // todo(riscv32): delete storedouble
     StoreDouble(src, MemOperand(sp, 0));
     Lw(dst_high, MemOperand(sp, 0));
   }
@@ -723,11 +723,11 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   // AddOverflow64 sets overflow register to a negative value if
   // overflow occured, otherwise it is zero or positive
   void AddOverflow(Register dst, Register left, const Operand& right,
-                     Register overflow);
+                   Register overflow);
   // SubOverflow64 sets overflow register to a negative value if
   // overflow occured, otherwise it is zero or positive
   void SubOverflow(Register dst, Register left, const Operand& right,
-                     Register overflow);
+                   Register overflow);
   // MulOverflow32 sets overflow register to zero if no overflow occured
   void MulOverflow32(Register dst, Register left, const Operand& right,
                      Register overflow);

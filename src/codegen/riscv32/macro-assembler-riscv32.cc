@@ -3786,7 +3786,7 @@ void TurboAssembler::StoreLane(int sz, VRegister src, uint8_t laneidx,
 // Runtime calls.
 
 void TurboAssembler::AddOverflow(Register dst, Register left,
-                                   const Operand& right, Register overflow) {
+                                 const Operand& right, Register overflow) {
   UseScratchRegisterScope temps(this);
   BlockTrampolinePoolScope block_trampoline_pool(this);
   Register right_reg = no_reg;
@@ -3816,7 +3816,7 @@ void TurboAssembler::AddOverflow(Register dst, Register left,
 }
 
 void TurboAssembler::SubOverflow(Register dst, Register left,
-                                   const Operand& right, Register overflow) {
+                                 const Operand& right, Register overflow) {
   UseScratchRegisterScope temps(this);
   BlockTrampolinePoolScope block_trampoline_pool(this);
   Register right_reg = no_reg;
