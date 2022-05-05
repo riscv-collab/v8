@@ -133,8 +133,11 @@ union u32_f32 {
 inline float fsgnj32(float rs1, float rs2, bool n, bool x) {
   u32_f32 a = {.f = rs1}, b = {.f = rs2};
   u32_f32 res;
-  res.u =
-      (a.u & ~F32_SIGN) | ((((x) ? a.u : (n) ? F32_SIGN : 0) ^ b.u) & F32_SIGN);
+  res.u = (a.u & ~F32_SIGN) | ((((x)   ? a.u
+                                 : (n) ? F32_SIGN
+                                       : 0) ^
+                                b.u) &
+                               F32_SIGN);
   return res.f;
 }
 #define F64_SIGN ((uint64_t)1 << 63)
@@ -145,8 +148,11 @@ union u64_f64 {
 inline double fsgnj64(double rs1, double rs2, bool n, bool x) {
   u64_f64 a = {.d = rs1}, b = {.d = rs2};
   u64_f64 res;
-  res.u =
-      (a.u & ~F64_SIGN) | ((((x) ? a.u : (n) ? F64_SIGN : 0) ^ b.u) & F64_SIGN);
+  res.u = (a.u & ~F64_SIGN) | ((((x)   ? a.u
+                                 : (n) ? F64_SIGN
+                                       : 0) ^
+                                b.u) &
+                               F64_SIGN);
   return res.d;
 }
 
