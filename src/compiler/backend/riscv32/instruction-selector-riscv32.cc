@@ -859,9 +859,6 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 
 void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
 
-#if 0
-void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
-#endif
 void InstructionSelector::VisitWord64ReverseBytes(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitWord32ReverseBytes(Node* node) {
@@ -2371,78 +2368,7 @@ void InstructionSelector::VisitWord32AtomicStore(Node* node) {
 
   VisitAtomicStore(this, node, opcode, AtomicWidth::kWord32);
 }
-#if 0
-void InstructionSelector::VisitWord64AtomicLoad(Node* node) {
-  AtomicLoadParameters atomic_load_params = AtomicLoadParametersOf(node->op());
-  LoadRepresentation load_rep = atomic_load_params.representation();
-  ArchOpcode opcode;
-  switch (load_rep.representation()) {
-    case MachineRepresentation::kWord8:
-      opcode = kAtomicLoadUint8;
-      break;
-    case MachineRepresentation::kWord16:
-      opcode = kAtomicLoadUint16;
-      break;
-    case MachineRepresentation::kWord32:
-      opcode = kAtomicLoadWord32;
-      break;
-    case MachineRepresentation::kWord64:
-      opcode = kRiscvWord64AtomicLoadUint64;
-      break;
-    case MachineRepresentation::kTaggedSigned:   // Fall through.
-    case MachineRepresentation::kTaggedPointer:  // Fall through.
-    case MachineRepresentation::kTagged:
-      if (kTaggedSize == 8) {
-        opcode = kRiscvWord64AtomicLoadUint64;
-      } else {
-        opcode = kAtomicLoadWord32;
-      }
-      break;
-    case MachineRepresentation::kCompressedPointer:  // Fall through.
-    case MachineRepresentation::kCompressed:
-      DCHECK(COMPRESS_POINTERS_BOOL);
-      opcode = kAtomicLoadWord32;
-      break;
-    default:
-      UNREACHABLE();
-  }
-  VisitAtomicLoad(this, node, opcode, AtomicWidth::kWord64);
-}
 
-void InstructionSelector::VisitWord64AtomicStore(Node* node) {
-  AtomicStoreParameters store_params = AtomicStoreParametersOf(node->op());
-  MachineRepresentation rep = store_params.representation();
-  ArchOpcode opcode;
-  switch (rep) {
-    case MachineRepresentation::kWord8:
-      opcode = kAtomicStoreWord8;
-      break;
-    case MachineRepresentation::kWord16:
-      opcode = kAtomicStoreWord16;
-      break;
-    case MachineRepresentation::kWord32:
-      opcode = kAtomicStoreWord32;
-      break;
-    case MachineRepresentation::kWord64:
-      opcode = kRiscvWord64AtomicStoreWord64;
-      break;
-    case MachineRepresentation::kTaggedSigned:   // Fall through.
-    case MachineRepresentation::kTaggedPointer:  // Fall through.
-    case MachineRepresentation::kTagged:
-      opcode = kRiscvWord64AtomicStoreWord64;
-      break;
-    case MachineRepresentation::kCompressedPointer:  // Fall through.
-    case MachineRepresentation::kCompressed:
-      CHECK(COMPRESS_POINTERS_BOOL);
-      opcode = kAtomicStoreWord32;
-      break;
-    default:
-      UNREACHABLE();
-  }
-
-  VisitAtomicStore(this, node, opcode, AtomicWidth::kWord64);
-}
-#endif
 void InstructionSelector::VisitWord32AtomicExchange(Node* node) {
   ArchOpcode opcode;
   MachineType type = AtomicOpType(node->op());
@@ -2462,24 +2388,7 @@ void InstructionSelector::VisitWord32AtomicExchange(Node* node) {
 
   VisitAtomicExchange(this, node, opcode, AtomicWidth::kWord32);
 }
-#if 0
-void InstructionSelector::VisitWord64AtomicExchange(Node* node) {
-  ArchOpcode opcode;
-  MachineType type = AtomicOpType(node->op());
-  if (type == MachineType::Uint8()) {
-    opcode = kAtomicExchangeUint8;
-  } else if (type == MachineType::Uint16()) {
-    opcode = kAtomicExchangeUint16;
-  } else if (type == MachineType::Uint32()) {
-    opcode = kAtomicExchangeWord32;
-  } else if (type == MachineType::Uint64()) {
-    opcode = kRiscvWord64AtomicExchangeUint64;
-  } else {
-    UNREACHABLE();
-  }
-  VisitAtomicExchange(this, node, opcode, AtomicWidth::kWord64);
-}
-#endif
+
 void InstructionSelector::VisitWord32AtomicCompareExchange(Node* node) {
   ArchOpcode opcode;
   MachineType type = AtomicOpType(node->op());
@@ -2499,24 +2408,7 @@ void InstructionSelector::VisitWord32AtomicCompareExchange(Node* node) {
 
   VisitAtomicCompareExchange(this, node, opcode, AtomicWidth::kWord32);
 }
-#if 0
-void InstructionSelector::VisitWord64AtomicCompareExchange(Node* node) {
-  ArchOpcode opcode;
-  MachineType type = AtomicOpType(node->op());
-  if (type == MachineType::Uint8()) {
-    opcode = kAtomicCompareExchangeUint8;
-  } else if (type == MachineType::Uint16()) {
-    opcode = kAtomicCompareExchangeUint16;
-  } else if (type == MachineType::Uint32()) {
-    opcode = kAtomicCompareExchangeWord32;
-  } else if (type == MachineType::Uint64()) {
-    opcode = kRiscvWord64AtomicCompareExchangeUint64;
-  } else {
-    UNREACHABLE();
-  }
-  VisitAtomicCompareExchange(this, node, opcode, AtomicWidth::kWord64);
-}
-#endif
+
 void InstructionSelector::VisitWord32AtomicBinaryOperation(
     Node* node, ArchOpcode int8_op, ArchOpcode uint8_op, ArchOpcode int16_op,
     ArchOpcode uint16_op, ArchOpcode word32_op) {
@@ -2550,40 +2442,6 @@ VISIT_ATOMIC_BINOP(Sub)
 VISIT_ATOMIC_BINOP(And)
 VISIT_ATOMIC_BINOP(Or)
 VISIT_ATOMIC_BINOP(Xor)
-#undef VISIT_ATOMIC_BINOP
-
-void InstructionSelector::VisitWord64AtomicBinaryOperation(
-    Node* node, ArchOpcode uint8_op, ArchOpcode uint16_op, ArchOpcode uint32_op,
-    ArchOpcode uint64_op) {
-  ArchOpcode opcode;
-  MachineType type = AtomicOpType(node->op());
-  if (type == MachineType::Uint8()) {
-    opcode = uint8_op;
-  } else if (type == MachineType::Uint16()) {
-    opcode = uint16_op;
-  } else if (type == MachineType::Uint32()) {
-    opcode = uint32_op;
-  } else if (type == MachineType::Uint64()) {
-    opcode = uint64_op;
-  } else {
-    UNREACHABLE();
-  }
-  VisitAtomicBinop(this, node, opcode, AtomicWidth::kWord64);
-}
-
-#define VISIT_ATOMIC_BINOP(op)                                                 \
-  void InstructionSelector::VisitWord64Atomic##op(Node* node) {                \
-    VisitWord64AtomicBinaryOperation(node, kAtomic##op##Uint8,                 \
-                                     kAtomic##op##Uint16, kAtomic##op##Word32, \
-                                     kRiscvWord64Atomic##op##Uint64);          \
-  }
-#if 0
-VISIT_ATOMIC_BINOP(Add)
-VISIT_ATOMIC_BINOP(Sub)
-VISIT_ATOMIC_BINOP(And)
-VISIT_ATOMIC_BINOP(Or)
-VISIT_ATOMIC_BINOP(Xor)
-#endif
 #undef VISIT_ATOMIC_BINOP
 
 void InstructionSelector::VisitInt32AbsWithOverflow(Node* node) {
