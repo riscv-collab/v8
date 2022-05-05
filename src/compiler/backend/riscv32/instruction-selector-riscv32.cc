@@ -942,11 +942,6 @@ void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRR(this, kRiscvCvtDW, node);
 }
 
-#if 0
-void InstructionSelector::VisitChangeInt64ToFloat64(Node* node) {
-  VisitRR(this, kRiscvCvtDL, node);
-}
-#endif
 void InstructionSelector::VisitChangeUint32ToFloat64(Node* node) {
   VisitRR(this, kRiscvCvtDUw, node);
 }
@@ -1034,164 +1029,14 @@ void InstructionSelector::VisitChangeFloat64ToInt32(Node* node) {
   VisitRR(this, kRiscvTruncWD, node);
 }
 
-#if 0
-void InstructionSelector::VisitChangeFloat64ToInt64(Node* node) {
-  VisitRR(this, kRiscvTruncLD, node);
-}
-#endif
 void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
   VisitRR(this, kRiscvTruncUwD, node);
 }
-#if 0
-void InstructionSelector::VisitChangeFloat64ToUint64(Node* node) {
-  VisitRR(this, kRiscvTruncUlD, node);
-}
-#endif
+
 void InstructionSelector::VisitTruncateFloat64ToUint32(Node* node) {
   VisitRR(this, kRiscvTruncUwD, node);
 }
-#if 0
-void InstructionSelector::VisitTruncateFloat64ToInt64(Node* node) {
-  RiscvOperandGenerator g(this);
-  InstructionCode opcode = kRiscvTruncLD;
-  TruncateKind kind = OpParameter<TruncateKind>(node->op());
-  if (kind == TruncateKind::kSetOverflowToMin) {
-    opcode |= MiscField::encode(true);
-  }
-  Emit(opcode, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
-}
-void InstructionSelector::VisitTryTruncateFloat32ToInt64(Node* node) {
-  RiscvOperandGenerator g(this);
-  InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
-  InstructionOperand outputs[2];
-  size_t output_count = 0;
-  outputs[output_count++] = g.DefineAsRegister(node);
 
-  Node* success_output = NodeProperties::FindProjection(node, 1);
-  if (success_output) {
-    outputs[output_count++] = g.DefineAsRegister(success_output);
-  }
-
-  this->Emit(kRiscvTruncLS, output_count, outputs, 1, inputs);
-}
-
-void InstructionSelector::VisitTryTruncateFloat64ToInt64(Node* node) {
-  RiscvOperandGenerator g(this);
-  InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
-  InstructionOperand outputs[2];
-  size_t output_count = 0;
-  outputs[output_count++] = g.DefineAsRegister(node);
-
-  Node* success_output = NodeProperties::FindProjection(node, 1);
-  if (success_output) {
-    outputs[output_count++] = g.DefineAsRegister(success_output);
-  }
-
-  Emit(kRiscvTruncLD, output_count, outputs, 1, inputs);
-}
-
-void InstructionSelector::VisitTryTruncateFloat32ToUint64(Node* node) {
-  RiscvOperandGenerator g(this);
-  InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
-  InstructionOperand outputs[2];
-  size_t output_count = 0;
-  outputs[output_count++] = g.DefineAsRegister(node);
-
-  Node* success_output = NodeProperties::FindProjection(node, 1);
-  if (success_output) {
-    outputs[output_count++] = g.DefineAsRegister(success_output);
-  }
-
-  Emit(kRiscvTruncUlS, output_count, outputs, 1, inputs);
-}
-
-void InstructionSelector::VisitTryTruncateFloat64ToUint64(Node* node) {
-  RiscvOperandGenerator g(this);
-
-  InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
-  InstructionOperand outputs[2];
-  size_t output_count = 0;
-  outputs[output_count++] = g.DefineAsRegister(node);
-
-  Node* success_output = NodeProperties::FindProjection(node, 1);
-  if (success_output) {
-    outputs[output_count++] = g.DefineAsRegister(success_output);
-  }
-
-  Emit(kRiscvTruncUlD, output_count, outputs, 1, inputs);
-}
-void InstructionSelector::VisitBitcastWord32ToWord64(Node* node) {
-  DCHECK(SmiValuesAre31Bits());
-  DCHECK(COMPRESS_POINTERS_BOOL);
-  RiscvOperandGenerator g(this);
-  Emit(kRiscvZeroExtendWord, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
-}
-
-void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
-  Node* value = node->InputAt(0);
-  if ((value->opcode() == IrOpcode::kLoad ||
-       value->opcode() == IrOpcode::kLoadImmutable) &&
-      CanCover(node, value)) {
-    // Generate sign-extending load.
-    LoadRepresentation load_rep = LoadRepresentationOf(value->op());
-    InstructionCode opcode = kArchNop;
-    switch (load_rep.representation()) {
-      case MachineRepresentation::kBit:  // Fall through.
-      case MachineRepresentation::kWord8:
-        opcode = load_rep.IsUnsigned() ? kRiscvLbu : kRiscvLb;
-        break;
-      case MachineRepresentation::kWord16:
-        opcode = load_rep.IsUnsigned() ? kRiscvLhu : kRiscvLh;
-        break;
-      case MachineRepresentation::kWord32:
-        opcode = kRiscvLw;
-        break;
-      default:
-        UNREACHABLE();
-    }
-    EmitLoad(this, value, opcode, node);
-  } else {
-    RiscvOperandGenerator g(this);
-    Emit(kRiscvShl32, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
-         g.TempImmediate(0));
-  }
-}
-
-/* RV32Gtodo ensure 32bit doesn't need
-bool InstructionSelector::ZeroExtendsWord32ToWord64NoPhis(Node* node) {
-  DCHECK_NE(node->opcode(), IrOpcode::kPhi);
-  if (node->opcode() == IrOpcode::kLoad ||
-      node->opcode() == IrOpcode::kLoadImmutable) {
-    LoadRepresentation load_rep = LoadRepresentationOf(node->op());
-    if (load_rep.IsUnsigned()) {
-      switch (load_rep.representation()) {
-        case MachineRepresentation::kWord8:
-        case MachineRepresentation::kWord16:
-          return true;
-        default:
-          return false;
-      }
-    }
-  }
-
-  // All other 32-bit operations sign-extend to the upper 32 bits
-  return false;
-}
-
-void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
-  RiscvOperandGenerator g(this);
-  Node* value = node->InputAt(0);
-  if (ZeroExtendsWord32ToWord64(value)) {
-    Emit(kArchNop, g.DefineSameAsFirst(node), g.Use(value));
-    return;
-  }
-  Emit(kRiscvZeroExtendWord, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
-}
-*/
-
-#endif
 void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
   RiscvOperandGenerator g(this);
   Node* value = node->InputAt(0);
@@ -1213,40 +1058,15 @@ void InstructionSelector::VisitTruncateFloat64ToWord32(Node* node) {
 void InstructionSelector::VisitRoundFloat64ToInt32(Node* node) {
   VisitRR(this, kRiscvTruncWD, node);
 }
-#if 0
-void InstructionSelector::VisitRoundInt64ToFloat32(Node* node) {
-  VisitRR(this, kRiscvCvtSL, node);
-}
 
-void InstructionSelector::VisitRoundInt64ToFloat64(Node* node) {
-  VisitRR(this, kRiscvCvtDL, node);
-}
-
-void InstructionSelector::VisitRoundUint64ToFloat32(Node* node) {
-  VisitRR(this, kRiscvCvtSUl, node);
-}
-
-void InstructionSelector::VisitRoundUint64ToFloat64(Node* node) {
-  VisitRR(this, kRiscvCvtDUl, node);
-}
-#endif
 void InstructionSelector::VisitBitcastFloat32ToInt32(Node* node) {
   VisitRR(this, kRiscvBitcastFloat32ToInt32, node);
 }
-#if 0
-void InstructionSelector::VisitBitcastFloat64ToInt64(Node* node) {
-  VisitRR(this, kRiscvBitcastDL, node);
-}
-#endif
 
 void InstructionSelector::VisitBitcastInt32ToFloat32(Node* node) {
   VisitRR(this, kRiscvBitcastInt32ToFloat32, node);
 }
-#if 0
-void InstructionSelector::VisitBitcastInt64ToFloat64(Node* node) {
-  VisitRR(this, kRiscvBitcastLD, node);
-}
-#endif
+
 void InstructionSelector::VisitFloat32Add(Node* node) {
   VisitRRR(this, kRiscvAddS, node);
 }
@@ -2644,25 +2464,6 @@ void InstructionSelector::VisitSignExtendWord16ToInt32(Node* node) {
   Emit(kRiscvSignExtendShort, g.DefineAsRegister(node),
        g.UseRegister(node->InputAt(0)));
 }
-#if 0
-void InstructionSelector::VisitSignExtendWord8ToInt64(Node* node) {
-  RiscvOperandGenerator g(this);
-  Emit(kRiscvSignExtendByte, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
-}
-
-void InstructionSelector::VisitSignExtendWord16ToInt64(Node* node) {
-  RiscvOperandGenerator g(this);
-  Emit(kRiscvSignExtendShort, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
-}
-
-void InstructionSelector::VisitSignExtendWord32ToInt64(Node* node) {
-  RiscvOperandGenerator g(this);
-  Emit(kRiscvShl32, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
-       g.TempImmediate(0));
-}
-#endif
 
 void InstructionSelector::VisitF32x4Pmin(Node* node) {
   VisitUniqueRRR(this, kRiscvF32x4Pmin, node);
