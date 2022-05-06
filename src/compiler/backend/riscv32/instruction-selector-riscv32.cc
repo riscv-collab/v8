@@ -2532,17 +2532,22 @@ VISIT_EXT_MUL(I32x4, I16x8, 16)
 VISIT_EXT_MUL(I16x8, I8x16, 8)
 #undef VISIT_EXT_MUL
 
-// RV32Gtodo tobe impl
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitInt32PairAdd(Node* node) { UNIMPLEMENTED(); }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitInt32PairSub(Node* node) { UNIMPLEMENTED(); }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitInt32PairMul(Node* node) { UNIMPLEMENTED(); }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32PairShl(Node* node) { UNIMPLEMENTED(); }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32PairShr(Node* node) { UNIMPLEMENTED(); }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32PairSar(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitWord32AtomicPairLoad(Node* node) {
@@ -2591,30 +2596,37 @@ void InstructionSelector::VisitWord32AtomicPairStore(Node* node) {
        nullptr, arraysize(inputs), inputs, arraysize(temps), temps);
 }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairAdd(Node* node) {
   UNIMPLEMENTED();
 }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairSub(Node* node) {
   UNIMPLEMENTED();
 }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairAnd(Node* node) {
   UNIMPLEMENTED();
 }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairOr(Node* node) {
   UNIMPLEMENTED();
 }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairXor(Node* node) {
   UNIMPLEMENTED();
 }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairExchange(Node* node) {
   UNIMPLEMENTED();
 }
 
+// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairCompareExchange(Node* node) {
   UNIMPLEMENTED();
 }
