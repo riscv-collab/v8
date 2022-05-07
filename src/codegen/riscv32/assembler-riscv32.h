@@ -277,7 +277,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void EmitPoolGuard();
 
   static void set_target_value_at(
-      Address pc, uint64_t target,
+      Address pc, uint32_t target,
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED);
 
   static void JumpLabelToJumpRegister(Address pc);
@@ -1053,11 +1053,11 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void nop();
   void RV_li(Register rd, int32_t imm);
   // Returns the number of instructions required to load the immediate
-  static int li_estimate(int64_t imm, bool is_get_temp_reg = false);
+  static int li_estimate(int32_t imm, bool is_get_temp_reg = false);
   // Loads an immediate, always using 8 instructions, regardless of the value,
   // so that it can be modified later.
-  void li_constant(Register rd, int64_t imm);
-  void li_ptr(Register rd, int64_t imm);
+  void li_constant(Register rd, int32_t imm);
+  void li_ptr(Register rd, int32_t imm);
 
   void mv(Register rd, Register rs) { addi(rd, rs, 0); }
   void not_(Register rd, Register rs) { xori(rd, rs, -1); }

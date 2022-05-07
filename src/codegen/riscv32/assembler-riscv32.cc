@@ -3202,10 +3202,10 @@ void Assembler::sfence_vma(Register rs1, Register rs2) {
 void Assembler::nop() { addi(ToRegister(0), ToRegister(0), 0); }
 
 void Assembler::RV_li(Register rd, int32_t imm) {
-  int64_t high_20 = ((imm + 0x800) >> 12);
-  int64_t low_12 = imm << 20 >> 20;
+  int32_t high_20 = ((imm + 0x800) >> 12);
+  int32_t low_12 = imm & 0xfff;
   if (high_20) {
-    lui(rd, (int32_t)high_20);
+    lui(rd, high_20);
     if (low_12) {
       addi(rd, rd, low_12);
     }
@@ -3214,160 +3214,36 @@ void Assembler::RV_li(Register rd, int32_t imm) {
   }
 }
 
-int Assembler::li_estimate(int64_t imm, bool is_get_temp_reg) {
+int Assembler::li_estimate(int32_t imm, bool is_get_temp_reg) {
   int count = 0;
   // imitate Assembler::RV_li
-  if (is_int32(imm + 0x800)) {
-    // 32-bit case. Maximum of 2 instructions generated
-    int64_t high_20 = ((imm + 0x800) >> 12);
-    int64_t low_12 = imm << 52 >> 52;
-    if (high_20) {
-      count++;
-      if (low_12) {
-        count++;
-      }
-    } else {
-      count++;
-    }
-    return count;
-  } else {
-    // 64-bit case: divide imm into two 32-bit parts, upper and lower
-    int64_t up_32 = imm >> 32;
-    int64_t low_32 = imm & 0xffffffffull;
-    // Check if a temporary register is available
-    if (is_get_temp_reg) {
-      // keep track of hardware behavior for lower part in sim_low
-      int64_t sim_low = 0;
-      // Build lower part
-      if (low_32 != 0) {
-        int64_t high_20 = ((low_32 + 0x800) >> 12);
-        int64_t low_12 = low_32 & 0xfff;
-        if (high_20) {
-          // Adjust to 20 bits for the case of overflow
-          high_20 &= 0xfffff;
-          sim_low = ((high_20 << 12) << 32) >> 32;
-          count++;
-          if (low_12) {
-            sim_low += (low_12 << 52 >> 52) | low_12;
-            count++;
-          }
-        } else {
-          sim_low = low_12;
-          count++;
-        }
-      }
-      if (sim_low & 0x100000000) {
-        // Bit 31 is 1. Either an overflow or a negative 64 bit
-        if (up_32 == 0) {
-          // Positive number, but overflow because of the add 0x800
-          count++;
-          count++;
-          return count;
-        }
-        // low_32 is a negative 64 bit after the build
-        up_32 = (up_32 - 0xffffffff) & 0xffffffff;
-      }
-      if (up_32 == 0) {
-        return count;
-      }
-      int64_t high_20 = (up_32 + 0x800) >> 12;
-      int64_t low_12 = up_32 & 0xfff;
-      if (high_20) {
-        // Adjust to 20 bits for the case of overflow
-        high_20 &= 0xfffff;
-        count++;
-        if (low_12) {
-          count++;
-        }
-      } else {
-        count++;
-      }
-      // Put it at the bgining of register
-      count++;
-      if (low_32 != 0) {
-        count++;
-      }
-      return count;
-    }
-    // No temp register. Build imm in rd.
-    // Build upper 32 bits first in rd. Divide lower 32 bits parts and add
-    // parts to the upper part by doing shift and add.
-    // First build upper part in rd.
-    int64_t high_20 = (up_32 + 0x800) >> 12;
-    int64_t low_12 = up_32 & 0xfff;
-    if (high_20) {
-      // Adjust to 20 bits for the case of overflow
-      high_20 &= 0xfffff;
-      count++;
-      if (low_12) {
-        count++;
-      }
-    } else {
-      count++;
-    }
-    // upper part already in rd. Each part to be added to rd, has maximum of 11
-    // bits, and always starts with a 1. rd is shifted by the size of the part
-    // plus the number of zeros between the parts. Each part is added after the
-    // left shift.
-    uint32_t mask = 0x80000000;
-    int32_t i;
-    for (i = 0; i < 32; i++) {
-      if ((low_32 & mask) == 0) {
-        mask >>= 1;
-        if (i == 31) {
-          // rest is zero
-          count++;
-        }
-        continue;
-      }
-      // The first 1 seen
-      if ((i + 11) < 32) {
-        // Pick 11 bits
-        count++;
-        count++;
-        i += 10;
-        mask >>= 11;
-      } else {
-        count++;
-        count++;
-        break;
-      }
-    }
+  int32_t high_20 = ((imm + 0x800) >> 12);
+  int32_t low_12 = imm & 0xfff;
+  if (high_20) {
+    count++;
+  }
+  if (low_12) {
+    count++;
   }
   return count;
 }
 
-void Assembler::li_ptr(Register rd, int64_t imm) {
+void Assembler::li_ptr(Register rd, int32_t imm) {
   // Initialize rd with an address
-  // Pointers are 48 bits
-  // 6 fixed instructions are generated
-  DCHECK_EQ((imm & 0xfff0000000000000ll), 0);
-  int64_t a6 = imm & 0x3f;                      // bits 0:5. 6 bits
-  int64_t b11 = (imm >> 6) & 0x7ff;             // bits 6:11. 11 bits
-  int64_t high_31 = (imm >> 17) & 0x7fffffff;   // 31 bits
-  int64_t high_20 = ((high_31 + 0x800) >> 12);  // 19 bits
-  int64_t low_12 = high_31 & 0xfff;             // 12 bits
-  lui(rd, (int32_t)high_20);
-  addi(rd, rd, low_12);  // 31 bits in rd.
-  slli(rd, rd, 11);      // Space for next 11 bis
-  ori(rd, rd, b11);      // 11 bits are put in. 42 bit in rd
-  slli(rd, rd, 6);       // Space for next 6 bits
-  ori(rd, rd, a6);       // 6 bits are put in. 48 bis in rd
+  // Pointers are 32 bits
+  // 2 fixed instructions are generated
+  int32_t high_20 = ((imm + 0x800) >> 12);  // bits31:12
+  int32_t low_12 = imm & 0xfff;             // bits11:0
+  lui(rd, high_20);
+  addi(rd, rd, low_12);
 }
 
-void Assembler::li_constant(Register rd, int64_t imm) {
-  DEBUG_PRINTF("li_constant(%d, %llx <%lld>)\n", ToNumber(rd), imm, imm);
-  lui(rd, (imm + (1LL << 47) + (1LL << 35) + (1LL << 23) + (1LL << 11)) >>
-              48);  // Bits 63:48
-  addiw(rd, rd,
-        (imm + (1LL << 35) + (1LL << 23) + (1LL << 11)) << 16 >>
-            52);  // Bits 47:36
-  slli(rd, rd, 12);
-  addi(rd, rd, (imm + (1LL << 23) + (1LL << 11)) << 28 >> 52);  // Bits 35:24
-  slli(rd, rd, 12);
-  addi(rd, rd, (imm + (1LL << 11)) << 40 >> 52);  // Bits 23:12
-  slli(rd, rd, 12);
-  addi(rd, rd, imm << 52 >> 52);  // Bits 11:0
+void Assembler::li_constant(Register rd, int32_t imm) {
+  DEBUG_PRINTF("li_constant(%d, %x <%d>)\n", ToNumber(rd), imm, imm);
+  int32_t high_20 = ((imm + 0x800) >> 12);  // bits31:12
+  int32_t low_12 = imm & 0xfff;             // bits11:0
+  lui(rd, high_20);
+  addi(rd, rd, low_12);
 }
 
 // Break / Trap instructions.
@@ -3450,7 +3326,7 @@ void Assembler::AdjustBaseAndOffset(MemOperand* src, Register scratch,
 int Assembler::RelocateInternalReference(RelocInfo::Mode rmode, Address pc,
                                          intptr_t pc_delta) {
   if (RelocInfo::IsInternalReference(rmode)) {
-    int64_t* p = reinterpret_cast<int64_t*>(pc);
+    int32_t* p = reinterpret_cast<int32_t*>(pc);
     if (*p == kEndOfJumpChain) {
       return 0;  // Number of instructions patched.
     }
@@ -3460,10 +3336,10 @@ int Assembler::RelocateInternalReference(RelocInfo::Mode rmode, Address pc,
   Instr instr = instr_at(pc);
   DCHECK(RelocInfo::IsInternalReferenceEncoded(rmode));
   if (IsLui(instr)) {
-    uint64_t target_address = target_address_at(pc) + pc_delta;
-    DEBUG_PRINTF("target_address 0x%llx\n", target_address);
+    uint32_t target_address = target_address_at(pc) + pc_delta;
+    DEBUG_PRINTF("target_address 0x%x\n", target_address);
     set_target_value_at(pc, target_address);
-    return 8;  // Number of instructions patched.
+    return 2;  // Number of instructions patched.
   } else {
     UNIMPLEMENTED();
   }
@@ -3668,7 +3544,7 @@ void Assembler::set_target_address_at(Address pc, Address constant_pool,
       }
     } else {
       DCHECK(IsJalr(*reinterpret_cast<Instr*>(pc + 4)));
-      int64_t imm = (int64_t)target - (int64_t)pc;
+      int32_t imm = (int32_t)target - (int32_t)pc;
       Instr instr = instr_at(pc);
       Instr instr1 = instr_at(pc + 1 * kInstrSize);
       DCHECK(is_int32(imm + 0x800));
@@ -3704,81 +3580,48 @@ Address Assembler::target_address_at(Address pc) {
   DEBUG_PRINTF("target_address_at: pc: %x\t", pc);
   Instruction* instr0 = Instruction::At((unsigned char*)pc);
   Instruction* instr1 = Instruction::At((unsigned char*)(pc + 1 * kInstrSize));
-  Instruction* instr2 = Instruction::At((unsigned char*)(pc + 2 * kInstrSize));
-  Instruction* instr3 = Instruction::At((unsigned char*)(pc + 3 * kInstrSize));
-  Instruction* instr4 = Instruction::At((unsigned char*)(pc + 4 * kInstrSize));
-  Instruction* instr5 = Instruction::At((unsigned char*)(pc + 5 * kInstrSize));
 
   // Interpret instructions for address generated by li: See listing in
   // Assembler::set_target_address_at() just below.
   if (IsLui(*reinterpret_cast<Instr*>(instr0)) &&
-      IsAddi(*reinterpret_cast<Instr*>(instr1)) &&
-      IsSlli(*reinterpret_cast<Instr*>(instr2)) &&
-      IsOri(*reinterpret_cast<Instr*>(instr3)) &&
-      IsSlli(*reinterpret_cast<Instr*>(instr4)) &&
-      IsOri(*reinterpret_cast<Instr*>(instr5))) {
-    // Assemble the 64 bit value.
-    int64_t addr = (int64_t)(instr0->Imm20UValue() << kImm20Shift) +
-                   (int64_t)instr1->Imm12Value();
-    addr <<= 11;
-    addr |= (int64_t)instr3->Imm12Value();
-    addr <<= 6;
-    addr |= (int64_t)instr5->Imm12Value();
-
-    DEBUG_PRINTF("addr: %llx\n", addr);
+      IsAddi(*reinterpret_cast<Instr*>(instr1))) {
+    // Assemble the 32bit value.
+    int32_t addr = (int32_t)(instr0->Imm20UValue() << kImm20Shift) +
+                   (int32_t)instr1->Imm12Value();
+    DEBUG_PRINTF("addr: %x\n", addr);
     return static_cast<Address>(addr);
   }
   // We should never get here, force a bad address if we do.
   UNREACHABLE();
 }
-// On RISC-V, a 48-bit target address is stored in an 6-instruction sequence:
-//  lui(reg, (int32_t)high_20); // 19 high bits
+// On RISC-V, a 32-bit target address is stored in an 2-instruction sequence:
+//  lui(reg, high_20); // 20 high bits
 //  addi(reg, reg, low_12); // 12 following bits. total is 31 high bits in reg.
-//  slli(reg, reg, 11); // Space for next 11 bits
-//  ori(reg, reg, b11); // 11 bits are put in. 42 bit in reg
-//  slli(reg, reg, 6); // Space for next 6 bits
-//  ori(reg, reg, a6); // 6 bits are put in. all 48 bis in reg
 //
 // Patching the address must replace all instructions, and flush the i-cache.
-// Note that this assumes the use of SV48, the 48-bit virtual memory system.
-void Assembler::set_target_value_at(Address pc, uint64_t target,
+void Assembler::set_target_value_at(Address pc, uint32_t target,
                                     ICacheFlushMode icache_flush_mode) {
-  DEBUG_PRINTF("set_target_value_at: pc: %x\ttarget: %llx\n", pc, target);
+  DEBUG_PRINTF("set_target_value_at: pc: %x\ttarget: %x\n", pc, target);
   uint32_t* p = reinterpret_cast<uint32_t*>(pc);
-  DCHECK_EQ((target & 0xffff000000000000ll), 0);
 #ifdef DEBUG
   // Check we have the result from a li macro-instruction.
   Instruction* instr0 = Instruction::At((unsigned char*)pc);
   Instruction* instr1 = Instruction::At((unsigned char*)(pc + 1 * kInstrSize));
-  Instruction* instr3 = Instruction::At((unsigned char*)(pc + 3 * kInstrSize));
-  Instruction* instr5 = Instruction::At((unsigned char*)(pc + 5 * kInstrSize));
   DCHECK(IsLui(*reinterpret_cast<Instr*>(instr0)) &&
-         IsAddi(*reinterpret_cast<Instr*>(instr1)) &&
-         IsOri(*reinterpret_cast<Instr*>(instr3)) &&
-         IsOri(*reinterpret_cast<Instr*>(instr5)));
+         IsAddi(*reinterpret_cast<Instr*>(instr1)));
 #endif
-  int64_t a6 = target & 0x3f;                     // bits 0:6. 6 bits
-  int64_t b11 = (target >> 6) & 0x7ff;            // bits 6:11. 11 bits
-  int64_t high_31 = (target >> 17) & 0x7fffffff;  // 31 bits
-  int64_t high_20 = ((high_31 + 0x800) >> 12);    // 19 bits
-  int64_t low_12 = high_31 & 0xfff;               // 12 bits
+  int32_t high_20 = ((target + 0x800) >> 12);  // 20 bits
+  int32_t low_12 = target & 0xfff;             // 12 bits
   *p = *p & 0xfff;
   *p = *p | ((int32_t)high_20 << 12);
   *(p + 1) = *(p + 1) & 0xfffff;
   *(p + 1) = *(p + 1) | ((int32_t)low_12 << 20);
-  *(p + 2) = *(p + 2) & 0xfffff;
-  *(p + 2) = *(p + 2) | (11 << 20);
-  *(p + 3) = *(p + 3) & 0xfffff;
-  *(p + 3) = *(p + 3) | ((int32_t)b11 << 20);
-  *(p + 4) = *(p + 4) & 0xfffff;
-  *(p + 4) = *(p + 4) | (6 << 20);
-  *(p + 5) = *(p + 5) & 0xfffff;
-  *(p + 5) = *(p + 5) | ((int32_t)a6 << 20);
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-    FlushInstructionCache(pc, 8 * kInstrSize);
+    FlushInstructionCache(pc, 2 * kInstrSize);
   }
   DCHECK_EQ(target_address_at(pc), target);
 }
+
 UseScratchRegisterScope::UseScratchRegisterScope(Assembler* assembler)
     : available_(assembler->GetScratchRegisterList()),
       old_available_(*available_) {}

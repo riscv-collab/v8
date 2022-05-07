@@ -208,18 +208,6 @@ TEST(LI_CONST) {
   __ add(a0, a1, a2);
   __ bnez(a0, &error);
 
-  // Load large number (33-64 bits)
-  __ li_constant(a1, 11649936536080);
-  __ li_constant(a2, -11649936536080);
-  __ add(a0, a1, a2);
-  __ bnez(a0, &error);
-
-  // Load large number (33-64 bits)
-  __ li_constant(a1, 1070935975390360080);
-  __ li_constant(a2, -1070935975390360080);
-  __ add(a0, a1, a2);
-  __ bnez(a0, &error);
-
   __ mv(a0, zero_reg);
   __ jr(ra);
 
