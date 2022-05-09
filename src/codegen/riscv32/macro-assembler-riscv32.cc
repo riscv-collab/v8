@@ -1163,7 +1163,6 @@ void TurboAssembler::Usd(Register rd, const MemOperand& rs) {
   UnalignedStoreHelper<8>(rd, rs);
 }
 
-
 void TurboAssembler::ULoadFloat(FPURegister fd, const MemOperand& rs,
                                 Register scratch) {
   DCHECK_NE(scratch, rs.rm());

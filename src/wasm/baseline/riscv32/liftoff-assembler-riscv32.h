@@ -1748,7 +1748,7 @@ void LiftoffAssembler::LoadTransform(LiftoffRegister dst, Register src_addr,
       Lw(scratch, src_op);
       vmv_sx(dst_v, scratch);
     } else {
-      //TODO(RISCV): need review 
+      // TODO(RISCV): need review
       DCHECK_EQ(MachineType::Int64(), memtype);
       VU.set(kScratchReg, E64, m1);
       Lw(scratch, src_op);
@@ -1769,7 +1769,7 @@ void LiftoffAssembler::LoadTransform(LiftoffRegister dst, Register src_addr,
       Lw(scratch, src_op);
       vmv_vx(dst_v, scratch);
     } else if (memtype == MachineType::Int64()) {
-      //TODO(RISCV): need review
+      // TODO(RISCV): need review
       VU.set(kScratchReg, E64, m1);
       Lw(scratch, src_op);
       vmv_vx(dst_v, scratch);

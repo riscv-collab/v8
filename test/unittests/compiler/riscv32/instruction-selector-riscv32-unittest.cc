@@ -478,7 +478,8 @@ TEST_F(InstructionSelectorTest, Word32ShlWithWord32And) {
 //     StreamBuilder m(this, MachineType::Int64(), MachineType::Int64());
 //     Node* const p0 = m.Parameter(0);
 //     Node* const r =
-//         m.Word64Shl(m.Word64And(p0, m.Int64Constant((1L << (63 - shift)) - 1)),
+//         m.Word64Shl(m.Word64And(p0, m.Int64Constant((1L << (63 - shift)) -
+//         1)),
 //                     m.Int64Constant(shift + 1));
 //     m.Return(r);
 //     Stream s = m.Build();

@@ -1302,11 +1302,12 @@ void RegExpMacroAssemblerRISCV::CheckStackLimit() {
 }
 
 void RegExpMacroAssemblerRISCV::LoadCurrentCharacterUnchecked(int cp_offset,
-                                                             int characters) {
+                                                              int characters) {
   Register offset = current_input_offset();
   if (cp_offset != 0) {
     // t7 is not being used to store the capture start index at this point.
-    __ Add(kScratchReg2, current_input_offset(), Operand(cp_offset * char_size()));
+    __ Add(kScratchReg2, current_input_offset(),
+           Operand(cp_offset * char_size()));
     offset = kScratchReg2;
   }
   // We assume that we cannot do unaligned loads on MIPS, so this function
