@@ -1504,8 +1504,8 @@ class RiscvDebugger {
   disasm::NameConverter converter;                                       \
   disasm::Disassembler dasm(converter);                                  \
   dasm.InstructionDecode(buffer, reinterpret_cast<byte*>(&instr_));      \
-  printf("Sim: Unsupported instruction. Func:%s Line:%d ", __FUNCTION__, \
-         __LINE__);                                                      \
+  printf("Sim: Unsupported inst. Func:%s Line:%d PC:0x%x", __FUNCTION__, \
+         __LINE__, get_pc());                                            \
   PrintF(" %-44s\n", buffer.begin());                                    \
   base::OS::Abort();
 

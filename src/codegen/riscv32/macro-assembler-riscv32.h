@@ -1201,7 +1201,7 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
     } else {
       DCHECK(SmiValuesAre31Bits());
       DCHECK_GE(scale, kSmiTagSize);
-      slliw(dst, src, scale - kSmiTagSize);
+      slli(dst, src, scale - kSmiTagSize);
     }
   }
 
