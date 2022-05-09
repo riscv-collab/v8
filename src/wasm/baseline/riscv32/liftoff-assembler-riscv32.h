@@ -527,26 +527,42 @@ void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
   if (protected_load_pc) *protected_load_pc = pc_offset();
   switch (type.value()) {
     case LoadType::kI32Load8U:
-    case LoadType::kI64Load8U:
       Lbu(dst.gp(), src_op);
       break;
+    case LoadType::kI64Load8U:
+      Lbu(dst.gp(), src_op);
+      TurboAssembler::mv(dst.high_gp(), zero_reg);
+      break;
     case LoadType::kI32Load8S:
-    case LoadType::kI64Load8S:
       Lb(dst.gp(), src_op);
       break;
+    case LoadType::kI64Load8S:
+      Lb(dst.low_gp(), src_op);
+      TurboAssembler::srai(dst.high_gp(), dst.low_gp(), 31);
+      break;
     case LoadType::kI32Load16U:
-    case LoadType::kI64Load16U:
       TurboAssembler::Lhu(dst.gp(), src_op);
       break;
+    case LoadType::kI64Load16U:
+      TurboAssembler::Lhu(dst.low_gp(), src_op);
+      TurboAssembler::mv(dst.high_gp(), zero_reg);
+      break;
     case LoadType::kI32Load16S:
-    case LoadType::kI64Load16S:
       TurboAssembler::Lh(dst.gp(), src_op);
       break;
+    case LoadType::kI64Load16S:
+      TurboAssembler::Lh(dst.low_gp(), src_op);
+      TurboAssembler::srai(dst.high_gp(), dst.low_gp(), 31);
+      break;
     case LoadType::kI64Load32U:
-      TurboAssembler::Lw(dst.gp(), src_op);
+      TurboAssembler::Lw(dst.low_gp(), src_op);
+      TurboAssembler::mv(dst.high_gp(), zero_reg);
+      break;
+    case LoadType::kI64Load32S:
+      TurboAssembler::Lw(dst.low_gp(), src_op);
+      TurboAssembler::srai(dst.high_gp(), dst.low_gp(), 31);
       break;
     case LoadType::kI32Load:
-    case LoadType::kI64Load32S:
       TurboAssembler::Lw(dst.gp(), src_op);
       break;
     case LoadType::kI64Load:
@@ -784,7 +800,8 @@ void LiftoffAssembler::AtomicLoad(LiftoffRegister dst, Register src_addr,
     // TODO
     case LoadType::kI64Load:
       fence(PSR | PSW, PSR | PSW);
-      lw(dst.gp(), src_reg, 0);
+      lw(dst.low_gp(), src_reg, 0);
+      lw(dst.high_gp(), src_reg, 4);
       fence(PSR, PSR | PSW);
       return;
     default:
@@ -816,7 +833,8 @@ void LiftoffAssembler::AtomicStore(Register dst_addr, Register offset_reg,
       return;
     case StoreType::kI64Store:
       fence(PSR | PSW, PSW);
-      sw(src.gp(), dst_reg, 0);
+      sw(src.low_gp(), dst_reg, 0);
+      sw(src.high_gp(), dst_reg, 4);
       return;
     default:
       UNREACHABLE();
@@ -1411,10 +1429,7 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
                                             LiftoffRegister src, Label* trap) {
   switch (opcode) {
     case kExprI32ConvertI64:
-      // According to WebAssembly spec, if I64 value does not fit the range of
-      // I32, the value is undefined. Therefore, We use sign extension to
-      // implement I64 to I32 truncation
-      TurboAssembler::SignExtendWord(dst.gp(), src.gp());
+      TurboAssembler::Move(dst.gp(), src.low_gp());
       return true;
     case kExprI32SConvertF32:
     case kExprI32UConvertF32:
@@ -1470,10 +1485,13 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
       TurboAssembler::ExtractLowWordFromF64(dst.gp(), src.fp());
       return true;
     case kExprI64SConvertI32:
-      TurboAssembler::SignExtendWord(dst.gp(), src.gp());
+      TurboAssembler::Move(dst.low_gp(), src.gp());
+      TurboAssembler::Move(dst.high_gp(), src.gp());
+      srai(dst.high_gp(), dst.high_gp(), 31);
       return true;
     case kExprI64UConvertI32:
-      TurboAssembler::ZeroExtendWord(dst.gp(), src.gp());
+      TurboAssembler::Move(dst.low_gp(), src.gp());
+      TurboAssembler::Move(dst.high_gp(), zero_reg);
       return true;
     case kExprI64ReinterpretF64:
       fmv_x_d(dst.gp(), src.fp());
@@ -1558,20 +1576,17 @@ void LiftoffAssembler::emit_i32_signextend_i16(Register dst, Register src) {
 
 void LiftoffAssembler::emit_i64_signextend_i8(LiftoffRegister dst,
                                               LiftoffRegister src) {
-  slli(dst.gp(), src.gp(), 64 - 8);
-  srai(dst.gp(), dst.gp(), 64 - 8);
+  bailout(kComplexOperation, "i64_signextend_i8");
 }
 
 void LiftoffAssembler::emit_i64_signextend_i16(LiftoffRegister dst,
                                                LiftoffRegister src) {
-  slli(dst.gp(), src.gp(), 64 - 16);
-  srai(dst.gp(), dst.gp(), 64 - 16);
+  bailout(kComplexOperation, "i64_signextend_i16");
 }
 
 void LiftoffAssembler::emit_i64_signextend_i32(LiftoffRegister dst,
                                                LiftoffRegister src) {
-  slli(dst.gp(), src.gp(), 64 - 32);
-  srai(dst.gp(), dst.gp(), 64 - 32);
+  bailout(kComplexOperation, "i64_signextend_i32");
 }
 
 void LiftoffAssembler::emit_jump(Label* label) {
@@ -1733,6 +1748,7 @@ void LiftoffAssembler::LoadTransform(LiftoffRegister dst, Register src_addr,
       Lw(scratch, src_op);
       vmv_sx(dst_v, scratch);
     } else {
+      //TODO(RISCV): need review 
       DCHECK_EQ(MachineType::Int64(), memtype);
       VU.set(kScratchReg, E64, m1);
       Lw(scratch, src_op);
@@ -1753,6 +1769,7 @@ void LiftoffAssembler::LoadTransform(LiftoffRegister dst, Register src_addr,
       Lw(scratch, src_op);
       vmv_vx(dst_v, scratch);
     } else if (memtype == MachineType::Int64()) {
+      //TODO(RISCV): need review
       VU.set(kScratchReg, E64, m1);
       Lw(scratch, src_op);
       vmv_vx(dst_v, scratch);

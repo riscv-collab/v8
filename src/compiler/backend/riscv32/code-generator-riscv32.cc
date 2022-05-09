@@ -1000,10 +1000,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ Mulhu32(i.OutputRegister(), i.InputOrZeroRegister(0),
                  i.InputOperand(1), kScratchReg, kScratchReg2);
       break;
-    case kRiscvMulHigh64:
-      __ Mulh64(i.OutputRegister(), i.InputOrZeroRegister(0),
-                i.InputOperand(1));
-      break;
     case kRiscvDiv32: {
       __ Div32(i.OutputRegister(), i.InputOrZeroRegister(0), i.InputOperand(1));
       // Set ouput to zero if divisor == 0
@@ -1022,29 +1018,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kRiscvModU32:
       __ Modu32(i.OutputRegister(), i.InputOrZeroRegister(0),
-                i.InputOperand(1));
-      break;
-    case kRiscvMul64:
-      __ Mul64(i.OutputRegister(), i.InputOrZeroRegister(0), i.InputOperand(1));
-      break;
-    case kRiscvDiv64: {
-      __ Div64(i.OutputRegister(), i.InputOrZeroRegister(0), i.InputOperand(1));
-      // Set ouput to zero if divisor == 0
-      __ LoadZeroIfConditionZero(i.OutputRegister(), i.InputRegister(1));
-      break;
-    }
-    case kRiscvDivU64: {
-      __ Divu64(i.OutputRegister(), i.InputOrZeroRegister(0),
-                i.InputOperand(1));
-      // Set ouput to zero if divisor == 0
-      __ LoadZeroIfConditionZero(i.OutputRegister(), i.InputRegister(1));
-      break;
-    }
-    case kRiscvMod64:
-      __ Mod64(i.OutputRegister(), i.InputOrZeroRegister(0), i.InputOperand(1));
-      break;
-    case kRiscvModU64:
-      __ Modu64(i.OutputRegister(), i.InputOrZeroRegister(0),
                 i.InputOperand(1));
       break;
     case kRiscvAnd:
@@ -1126,25 +1099,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                  static_cast<uint16_t>(imm));
       }
       break;
-    case kRiscvZeroExtendWord: {
-      __ ZeroExtendWord(i.OutputRegister(), i.InputRegister(0));
-      break;
-    }
-    case kRiscvSignExtendWord: {
-      __ SignExtendWord(i.OutputRegister(), i.InputRegister(0));
-      break;
-    }
-    case kRiscvShl64:
-      __ Sll64(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
-      break;
-    case kRiscvShr64:
-      __ Srl64(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
-      break;
     case kRiscvRor32:
       __ Ror(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
-      break;
-    case kRiscvRor64:
-      __ Dror(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
       break;
     case kRiscvTst:
       __ And(kScratchReg, i.InputRegister(0), i.InputOperand(1));
@@ -1581,9 +1537,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kRiscvUsw:
       __ Usw(i.InputOrZeroRegister(2), i.MemoryOperand());
-      break;
-    case kRiscvUsd:
-      __ Usd(i.InputOrZeroRegister(2), i.MemoryOperand());
       break;
     case kRiscvLoadFloat: {
       __ LoadFloat(i.OutputSingleRegister(), i.MemoryOperand());

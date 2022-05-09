@@ -346,6 +346,7 @@ bool Assembler::IsOri(Instr instr) {
 bool Assembler::IsSlli(Instr instr) {
   return (instr & (kBaseOpcodeMask | kFunct3Mask)) == RO_SLLI;
 }
+
 bool Assembler::IsLw(Instr instr) {
   return (instr & (kBaseOpcodeMask | kFunct3Mask)) == RO_LW;
 }

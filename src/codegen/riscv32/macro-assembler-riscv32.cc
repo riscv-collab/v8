@@ -895,9 +895,8 @@ void TurboAssembler::Ror(Register rd, Register rs, const Operand& rt) {
     sll(scratch, rs, scratch);
     srl(rd, rs, rt.rm());
     or_(rd, scratch, rd);
-    sext_w(rd, rd);
   } else {
-    int64_t ror_value = rt.immediate() % 32;
+    int32_t ror_value = rt.immediate() % 32;
     if (ror_value == 0) {
       Mv(rd, rs);
       return;
@@ -906,30 +905,6 @@ void TurboAssembler::Ror(Register rd, Register rs, const Operand& rt) {
     }
     srli(scratch, rs, ror_value);
     slli(rd, rs, 32 - ror_value);
-    or_(rd, scratch, rd);
-    sext_w(rd, rd);
-  }
-}
-
-void TurboAssembler::Dror(Register rd, Register rs, const Operand& rt) {
-  UseScratchRegisterScope temps(this);
-  Register scratch = temps.Acquire();
-  BlockTrampolinePoolScope block_trampoline_pool(this);
-  if (rt.is_reg()) {
-    neg(scratch, rt.rm());
-    sll(scratch, rs, scratch);
-    srl(rd, rs, rt.rm());
-    or_(rd, scratch, rd);
-  } else {
-    int64_t dror_value = rt.immediate() % 64;
-    if (dror_value == 0) {
-      Mv(rd, rs);
-      return;
-    } else if (dror_value < 0) {
-      dror_value += 64;
-    }
-    srli(scratch, rs, dror_value);
-    slli(rd, rs, 64 - dror_value);
     or_(rd, scratch, rd);
   }
 }
@@ -1164,10 +1139,6 @@ void TurboAssembler::Ulw(Register rd, const MemOperand& rs) {
   UnalignedLoadHelper<4, true>(rd, rs);
 }
 
-void TurboAssembler::Ulwu(Register rd, const MemOperand& rs) {
-  UnalignedLoadHelper<4, false>(rd, rs);
-}
-
 void TurboAssembler::Usw(Register rd, const MemOperand& rs) {
   UnalignedStoreHelper<4>(rd, rs);
 }
@@ -1188,30 +1159,10 @@ void TurboAssembler::Uld(Register rd, const MemOperand& rs) {
   UnalignedLoadHelper<8, true>(rd, rs);
 }
 
-// Load consequent 32-bit word pair in 64-bit reg. and put first word in low
-// bits,
-// second word in high bits.
-void MacroAssembler::LoadWordPair(Register rd, const MemOperand& rs) {
-  UseScratchRegisterScope temps(this);
-  Register scratch = temps.Acquire();
-  Lw(rd, rs);
-  Lw(scratch, MemOperand(rs.rm(), rs.offset() + kSystemPointerSize / 2));
-  slli(scratch, scratch, 32);
-  Add(rd, rd, scratch);
-}
-
 void TurboAssembler::Usd(Register rd, const MemOperand& rs) {
   UnalignedStoreHelper<8>(rd, rs);
 }
 
-// Do 64-bit store as two consequent 32-bit stores to unaligned address.
-void MacroAssembler::StoreWordPair(Register rd, const MemOperand& rs) {
-  UseScratchRegisterScope temps(this);
-  Register scratch = temps.Acquire();
-  Sw(rd, rs);
-  srai(scratch, rd, 32);
-  Sw(scratch, MemOperand(rs.rm(), rs.offset() + kSystemPointerSize / 2));
-}
 
 void TurboAssembler::ULoadFloat(FPURegister fd, const MemOperand& rs,
                                 Register scratch) {
@@ -1475,7 +1426,7 @@ void TurboAssembler::li(Register rd, Operand j, LiFlags mode) {
     int reverse_count = li_estimate(~j.immediate(), temps.hasAvailable());
     if (FLAG_riscv_constant_pool && count >= 4 && reverse_count >= 4) {
       // Lw a Address from a constant pool.
-      RecordEntry((uint64_t)j.immediate(), j.rmode());
+      RecordEntry((uint32_t)j.immediate(), j.rmode());
       auipc(rd, 0);
       // Record a value into constant pool.
       lw(rd, rd, 0);
@@ -3739,12 +3690,6 @@ void TurboAssembler::LoadLane(int ts, VRegister dst, uint8_t laneidx,
     li(kScratchReg, 0x1 << laneidx);
     vmv_sx(v0, kScratchReg);
     vmerge_vx(dst, kScratchReg2, dst);
-  } else if (ts == 64) {
-    Lw(kScratchReg2, src);
-    VU.set(kScratchReg, E64, m1);
-    li(kScratchReg, 0x1 << laneidx);
-    vmv_sx(v0, kScratchReg);
-    vmerge_vx(dst, kScratchReg2, dst);
   } else {
     UNREACHABLE();
   }
@@ -3858,11 +3803,8 @@ void TurboAssembler::MulOverflow32(Register dst, Register left,
   DCHECK(left != scratch2 && right_reg != scratch2 && dst != scratch2 &&
          overflow != scratch2);
   DCHECK(overflow != left && overflow != right_reg);
-  sext_w(overflow, left);
-  sext_w(scratch2, right_reg);
 
   mul(overflow, overflow, scratch2);
-  sext_w(dst, overflow);
   xor_(overflow, overflow, dst);
 }
 

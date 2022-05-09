@@ -463,7 +463,6 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   DEFINE_INSTRUCTION2(Snez)
 
   DEFINE_INSTRUCTION(Ror)
-  DEFINE_INSTRUCTION(Dror)
 
   DEFINE_INSTRUCTION3(Li)
   DEFINE_INSTRUCTION2(Mv)
@@ -474,13 +473,8 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   void SmiUntag(Register dst, const MemOperand& src);
   void SmiUntag(Register dst, Register src) {
-    DCHECK(SmiValuesAre32Bits() || SmiValuesAre31Bits());
-    if (COMPRESS_POINTERS_BOOL) {
-      // TODO: use c_srai?
-      srai(dst, src, kSmiShift);
-    } else {
-      srai(dst, src, kSmiShift);
-    }
+    DCHECK(SmiValuesAre31Bits());
+    srai(dst, src, kSmiShift);
   }
 
   void SmiUntag(Register reg) { SmiUntag(reg, reg); }
@@ -558,12 +552,6 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void SignExtendShort(Register rd, Register rs) {
     slli(rd, rs, 64 - 16);
     srai(rd, rd, 64 - 16);
-  }
-
-  void SignExtendWord(Register rd, Register rs) { sext_w(rd, rs); }
-  void ZeroExtendWord(Register rd, Register rs) {
-    slli(rd, rs, 32);
-    srli(rd, rd, 32);
   }
 
   void Clz32(Register rd, Register rs);
@@ -1042,9 +1030,6 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
   // ---------------------------------------------------------------------------
   // Pseudo-instructions.
 
-  void LoadWordPair(Register rd, const MemOperand& rs);
-  void StoreWordPair(Register rd, const MemOperand& rs);
-
   void Madd_s(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft);
   void Madd_d(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft);
   void Msub_s(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft);
@@ -1181,28 +1166,18 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
 
   void SmiTag(Register dst, Register src) {
     STATIC_ASSERT(kSmiTag == 0);
-    if (SmiValuesAre32Bits()) {
-      // Smi goes to upper 32
-      slli(dst, src, 32);
-    } else {
-      DCHECK(SmiValuesAre31Bits());
-      // Smi is shifted left by 1
-      Add(dst, src, src);
-    }
+    DCHECK(SmiValuesAre31Bits());
+    // Smi is shifted left by 1
+    slli(dst, src, kSmiShift);
   }
 
   void SmiTag(Register reg) { SmiTag(reg, reg); }
 
   // Left-shifted from int32 equivalent of Smi.
   void SmiScale(Register dst, Register src, int scale) {
-    if (SmiValuesAre32Bits()) {
-      // The int portion is upper 32-bits of 64-bit word.
-      srai(dst, src, (kSmiShift - scale) & 0x3F);
-    } else {
-      DCHECK(SmiValuesAre31Bits());
-      DCHECK_GE(scale, kSmiTagSize);
-      slli(dst, src, scale - kSmiTagSize);
-    }
+    DCHECK(SmiValuesAre31Bits());
+    DCHECK_GE(scale, kSmiTagSize);
+    slli(dst, src, scale - kSmiTagSize);
   }
 
   // Test if the register contains a smi.

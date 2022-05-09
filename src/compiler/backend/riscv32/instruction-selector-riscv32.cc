@@ -85,9 +85,6 @@ class RiscvOperandGenerator final : public OperandGenerator {
       case kRiscvSar32:
       case kRiscvShr32:
         return is_uint5(value);
-      case kRiscvShl64:
-      case kRiscvShr64:
-        return is_uint6(value);
       case kRiscvAdd:
       case kRiscvAnd32:
       case kRiscvAnd:
@@ -104,7 +101,6 @@ class RiscvOperandGenerator final : public OperandGenerator {
       case kRiscvSh:
       case kRiscvLw:
       case kRiscvSw:
-      case kRiscvSd:
       case kRiscvLoadFloat:
       case kRiscvStoreFloat:
       case kRiscvLoadDouble:
@@ -870,21 +866,6 @@ void InstructionSelector::VisitUint32MulHigh(Node* node) {
 void InstructionSelector::VisitInt32Div(Node* node) {
   RiscvOperandGenerator g(this);
   Int32BinopMatcher m(node);
-  Node* left = node->InputAt(0);
-  Node* right = node->InputAt(1);
-  if (CanCover(node, left) && CanCover(node, right)) {
-    if (left->opcode() == IrOpcode::kWord64Sar &&
-        right->opcode() == IrOpcode::kWord64Sar) {
-      Int64BinopMatcher rightInput(right), leftInput(left);
-      if (rightInput.right().Is(32) && leftInput.right().Is(32)) {
-        // Combine both shifted operands with Ddiv.
-        Emit(kRiscvDiv64, g.DefineSameAsFirst(node),
-             g.UseRegister(leftInput.left().node()),
-             g.UseRegister(rightInput.left().node()));
-        return;
-      }
-    }
-  }
   Emit(kRiscvDiv32, g.DefineSameAsFirst(node), g.UseRegister(m.left().node()),
        g.UseRegister(m.right().node()));
 }
@@ -899,21 +880,6 @@ void InstructionSelector::VisitUint32Div(Node* node) {
 void InstructionSelector::VisitInt32Mod(Node* node) {
   RiscvOperandGenerator g(this);
   Int32BinopMatcher m(node);
-  Node* left = node->InputAt(0);
-  Node* right = node->InputAt(1);
-  if (CanCover(node, left) && CanCover(node, right)) {
-    if (left->opcode() == IrOpcode::kWord64Sar &&
-        right->opcode() == IrOpcode::kWord64Sar) {
-      Int64BinopMatcher rightInput(right), leftInput(left);
-      if (rightInput.right().Is(32) && leftInput.right().Is(32)) {
-        // Combine both shifted operands with Dmod.
-        Emit(kRiscvMod64, g.DefineSameAsFirst(node),
-             g.UseRegister(leftInput.left().node()),
-             g.UseRegister(rightInput.left().node()));
-        return;
-      }
-    }
-  }
   Emit(kRiscvMod32, g.DefineAsRegister(node), g.UseRegister(m.left().node()),
        g.UseRegister(m.right().node()));
 }
@@ -1348,12 +1314,6 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
     case MachineRepresentation::kWord32:
       opcode = kRiscvUsw;
       break;
-    case MachineRepresentation::kTaggedSigned:   // Fall through.
-    case MachineRepresentation::kTaggedPointer:  // Fall through.
-    case MachineRepresentation::kTagged:         // Fall through.
-    case MachineRepresentation::kWord64:
-      opcode = kRiscvUsd;
-      break;
     case MachineRepresentation::kSimd128:
       opcode = kRiscvRvvSt;
       break;
@@ -1363,6 +1323,10 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
     case MachineRepresentation::kSandboxedPointer:
     case MachineRepresentation::kMapWord:  // Fall through.
     case MachineRepresentation::kNone:
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
+    case MachineRepresentation::kTagged:         // Fall through.
+    case MachineRepresentation::kWord64:
       UNREACHABLE();
   }
 

@@ -21,15 +21,10 @@ namespace compiler {
   V(RiscvMulHigh32)                         \
   V(RiscvMulHigh64)                         \
   V(RiscvMulHighU32)                        \
-  V(RiscvMul64)                             \
   V(RiscvDiv32)                             \
-  V(RiscvDiv64)                             \
   V(RiscvDivU32)                            \
-  V(RiscvDivU64)                            \
   V(RiscvMod32)                             \
-  V(RiscvMod64)                             \
   V(RiscvModU32)                            \
-  V(RiscvModU64)                            \
   V(RiscvAnd)                               \
   V(RiscvAnd32)                             \
   V(RiscvOr)                                \
@@ -42,14 +37,9 @@ namespace compiler {
   V(RiscvShl32)                             \
   V(RiscvShr32)                             \
   V(RiscvSar32)                             \
-  V(RiscvZeroExtendWord)                    \
-  V(RiscvSignExtendWord)                    \
   V(RiscvCtz32)                             \
   V(RiscvPopcnt32)                          \
-  V(RiscvShl64)                             \
-  V(RiscvShr64)                             \
   V(RiscvRor32)                             \
-  V(RiscvRor64)                             \
   V(RiscvMov)                               \
   V(RiscvTst)                               \
   V(RiscvCmp)                               \
@@ -120,12 +110,8 @@ namespace compiler {
   V(RiscvUld)                               \
   V(RiscvLw)                                \
   V(RiscvUlw)                               \
-  V(RiscvLwu)                               \
-  V(RiscvUlwu)                              \
   V(RiscvSw)                                \
   V(RiscvUsw)                               \
-  V(RiscvSd)                                \
-  V(RiscvUsd)                               \
   V(RiscvLoadFloat)                         \
   V(RiscvULoadFloat)                        \
   V(RiscvStoreFloat)                        \

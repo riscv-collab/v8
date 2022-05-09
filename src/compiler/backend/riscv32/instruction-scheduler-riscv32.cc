@@ -48,20 +48,10 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvMulHigh64:
     case kRiscvMulHighU32:
     case kRiscvAddOvf:
-    case kRiscvDiv64:
-    case kRiscvDivU64:
-    case kRiscvZeroExtendWord:
-    case kRiscvSignExtendWord:
     case kRiscvDiv32:
     case kRiscvDivD:
     case kRiscvDivS:
     case kRiscvDivU32:
-    case kRiscvMod64:
-    case kRiscvModU64:
-    case kRiscvMul64:
-    case kRiscvRor64:
-    case kRiscvShl64:
-    case kRiscvShr64:
     case kRiscvSubOvf:
     case kRiscvF64x2Abs:
     case kRiscvF64x2Neg:
@@ -356,7 +346,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvLhu:
     case kRiscvLw:
     case kRiscvLoadFloat:
-    case kRiscvLwu:
     case kRiscvRvvLd:
     case kRiscvPeek:
     case kRiscvUld:
@@ -364,7 +353,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvUlh:
     case kRiscvUlhu:
     case kRiscvUlw:
-    case kRiscvUlwu:
     case kRiscvULoadFloat:
     case kRiscvS128LoadSplat:
     case kRiscvS128Load64ExtendU:
@@ -378,14 +366,12 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvRvvSt:
     case kRiscvPush:
     case kRiscvSb:
-    case kRiscvSd:
     case kRiscvStoreDouble:
     case kRiscvSh:
     case kRiscvStackClaim:
     case kRiscvStoreToStackSlot:
     case kRiscvSw:
     case kRiscvStoreFloat:
-    case kRiscvUsd:
     case kRiscvUStoreDouble:
     case kRiscvUsh:
     case kRiscvUsw:
@@ -1185,20 +1171,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
       return Mod32Latency();
     case kRiscvModU32:
       return Modu32Latency();
-    case kRiscvMul64:
-      return Mul64Latency();
-    case kRiscvDiv64: {
-      int latency = Div64Latency();
-      return latency + MovzLatency();
-    }
-    case kRiscvDivU64: {
-      int latency = Divu64Latency();
-      return latency + MovzLatency();
-    }
-    case kRiscvMod64:
-      return Mod64Latency();
-    case kRiscvModU64:
-      return Modu64Latency();
     case kRiscvAnd:
       return AndLatency(instr->InputAt(1)->IsRegister());
     case kRiscvAnd32: {
@@ -1253,13 +1225,7 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
       return 1;
     case kRiscvShr32:
     case kRiscvSar32:
-    case kRiscvZeroExtendWord:
-      return 2;
-    case kRiscvSignExtendWord:
-    case kRiscvShl64:
-    case kRiscvShr64:
     case kRiscvRor32:
-    case kRiscvRor64:
       return 1;
     case kRiscvTst:
       return AndLatency(instr->InputAt(1)->IsRegister());
@@ -1408,12 +1374,10 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
     case kRiscvLb:
     case kRiscvLhu:
     case kRiscvLh:
-    case kRiscvLwu:
     case kRiscvLw:
     case kRiscvSb:
     case kRiscvSh:
     case kRiscvSw:
-    case kRiscvSd:
       return AlignedMemoryLatency();
     case kRiscvLoadFloat:
       return ULoadFloatLatency();
@@ -1426,12 +1390,8 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
     case kRiscvUlhu:
     case kRiscvUlh:
       return UlhuLatency();
-    case kRiscvUlwu:
-      return UlwuLatency();
     case kRiscvUlw:
       return UlwLatency();
-    case kRiscvUld:
-      return UldLatency();
     case kRiscvULoadFloat:
       return ULoadFloatLatency();
     case kRiscvULoadDouble:
@@ -1440,8 +1400,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
       return UshLatency();
     case kRiscvUsw:
       return UswLatency();
-    case kRiscvUsd:
-      return UsdLatency();
     case kRiscvUStoreFloat:
       return UStoreFloatLatency();
     case kRiscvUStoreDouble:

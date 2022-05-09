@@ -87,18 +87,12 @@ const MachInst2 kLogicalInstructions[] = {
 const MachInst2 kShiftInstructions[] = {
     {&RawMachineAssembler::Word32Shl, "Word32Shl", kRiscvShl32,
      MachineType::Int32()},
-    {&RawMachineAssembler::Word64Shl, "Word64Shl", kRiscvShl64,
-     MachineType::Int64()},
     {&RawMachineAssembler::Word32Shr, "Word32Shr", kRiscvShr32,
      MachineType::Int32()},
-    {&RawMachineAssembler::Word64Shr, "Word64Shr", kRiscvShr64,
-     MachineType::Int64()},
     {&RawMachineAssembler::Word32Sar, "Word32Sar", kRiscvSar32,
      MachineType::Int32()},
     {&RawMachineAssembler::Word32Ror, "Word32Ror", kRiscvRor32,
-     MachineType::Int32()},
-    {&RawMachineAssembler::Word64Ror, "Word64Ror", kRiscvRor64,
-     MachineType::Int64()}};
+     MachineType::Int32()}};
 
 // ----------------------------------------------------------------------------
 // MUL/DIV instructions.
@@ -111,12 +105,6 @@ const MachInst2 kMulDivInstructions[] = {
      MachineType::Int32()},
     {&RawMachineAssembler::Uint32Div, "Uint32Div", kRiscvDivU32,
      MachineType::Uint32()},
-    {&RawMachineAssembler::Int64Mul, "Int64Mul", kRiscvMul64,
-     MachineType::Int64()},
-    {&RawMachineAssembler::Int64Div, "Int64Div", kRiscvDiv64,
-     MachineType::Int64()},
-    {&RawMachineAssembler::Uint64Div, "Uint64Div", kRiscvDivU64,
-     MachineType::Uint64()},
     {&RawMachineAssembler::Float64Mul, "Float64Mul", kRiscvMulD,
      MachineType::Float64()},
     {&RawMachineAssembler::Float64Div, "Float64Div", kRiscvDivD,
@@ -307,47 +295,19 @@ TEST_P(InstructionSelectorCmpTest, Parameter) {
 
   if (FLAG_debug_code &&
       type.representation() == MachineRepresentation::kWord32) {
-#ifndef V8_COMPRESS_POINTERS
-    ASSERT_EQ(6U, s.size());
-
-    EXPECT_EQ(cmp.mi.arch_opcode, s[0]->arch_opcode());
-    EXPECT_EQ(2U, s[0]->InputCount());
-    EXPECT_EQ(1U, s[0]->OutputCount());
-
-    EXPECT_EQ(kRiscvShl64, s[1]->arch_opcode());
-    EXPECT_EQ(2U, s[1]->InputCount());
-    EXPECT_EQ(1U, s[1]->OutputCount());
-
-    EXPECT_EQ(kRiscvShl64, s[2]->arch_opcode());
-    EXPECT_EQ(2U, s[2]->InputCount());
-    EXPECT_EQ(1U, s[2]->OutputCount());
-
-    EXPECT_EQ(cmp.mi.arch_opcode, s[3]->arch_opcode());
-    EXPECT_EQ(2U, s[3]->InputCount());
-    EXPECT_EQ(1U, s[3]->OutputCount());
-
-    EXPECT_EQ(kRiscvAssertEqual, s[4]->arch_opcode());
-    EXPECT_EQ(3U, s[4]->InputCount());
-    EXPECT_EQ(0U, s[4]->OutputCount());
-
-    EXPECT_EQ(cmp.mi.arch_opcode, s[5]->arch_opcode());
-    EXPECT_EQ(2U, s[5]->InputCount());
-    EXPECT_EQ(1U, s[5]->OutputCount());
-#else
     ASSERT_EQ(3U, s.size());
 
-    EXPECT_EQ(kRiscvShl64, s[0]->arch_opcode());
+    EXPECT_EQ(kRiscvShl32, s[0]->arch_opcode());
     EXPECT_EQ(2U, s[0]->InputCount());
     EXPECT_EQ(1U, s[0]->OutputCount());
 
-    EXPECT_EQ(kRiscvShl64, s[1]->arch_opcode());
+    EXPECT_EQ(kRiscvShl32, s[1]->arch_opcode());
     EXPECT_EQ(2U, s[1]->InputCount());
     EXPECT_EQ(1U, s[1]->OutputCount());
 
     EXPECT_EQ(cmp.mi.arch_opcode, s[2]->arch_opcode());
     EXPECT_EQ(2U, s[2]->InputCount());
     EXPECT_EQ(1U, s[2]->OutputCount());
-#endif
   } else {
     ASSERT_EQ(cmp.expected_size, s.size());
     EXPECT_EQ(cmp.mi.arch_opcode, s[0]->arch_opcode());
@@ -513,23 +473,23 @@ TEST_F(InstructionSelectorTest, Word32ShlWithWord32And) {
   }
 }
 
-TEST_F(InstructionSelectorTest, Word64ShlWithWord64And) {
-  TRACED_FORRANGE(int32_t, shift, 0, 62) {
-    StreamBuilder m(this, MachineType::Int64(), MachineType::Int64());
-    Node* const p0 = m.Parameter(0);
-    Node* const r =
-        m.Word64Shl(m.Word64And(p0, m.Int64Constant((1L << (63 - shift)) - 1)),
-                    m.Int64Constant(shift + 1));
-    m.Return(r);
-    Stream s = m.Build();
-    ASSERT_EQ(1U, s.size());
-    EXPECT_EQ(kRiscvShl64, s[0]->arch_opcode());
-    ASSERT_EQ(2U, s[0]->InputCount());
-    EXPECT_EQ(s.ToVreg(p0), s.ToVreg(s[0]->InputAt(0)));
-    ASSERT_EQ(1U, s[0]->OutputCount());
-    EXPECT_EQ(s.ToVreg(r), s.ToVreg(s[0]->Output()));
-  }
-}
+// TEST_F(InstructionSelectorTest, Word64ShlWithWord64And) {
+//   TRACED_FORRANGE(int32_t, shift, 0, 62) {
+//     StreamBuilder m(this, MachineType::Int64(), MachineType::Int64());
+//     Node* const p0 = m.Parameter(0);
+//     Node* const r =
+//         m.Word64Shl(m.Word64And(p0, m.Int64Constant((1L << (63 - shift)) - 1)),
+//                     m.Int64Constant(shift + 1));
+//     m.Return(r);
+//     Stream s = m.Build();
+//     ASSERT_EQ(1U, s.size());
+//     EXPECT_EQ(kRiscvShl64, s[0]->arch_opcode());
+//     ASSERT_EQ(2U, s[0]->InputCount());
+//     EXPECT_EQ(s.ToVreg(p0), s.ToVreg(s[0]->InputAt(0)));
+//     ASSERT_EQ(1U, s[0]->OutputCount());
+//     EXPECT_EQ(s.ToVreg(r), s.ToVreg(s[0]->Output()));
+//   }
+// }
 
 TEST_F(InstructionSelectorTest, Word32SarWithWord32Shl) {
   {
@@ -710,7 +670,7 @@ TEST_F(InstructionSelectorTest, ChangesFromToSmi) {
         m.Word64Shl(m.ChangeInt32ToInt64(m.Parameter(0)), m.Int32Constant(32)));
     Stream s = m.Build();
     ASSERT_EQ(1U, s.size());
-    EXPECT_EQ(kRiscvShl64, s[0]->arch_opcode());
+    EXPECT_EQ(kRiscvShl32, s[0]->arch_opcode());
     ASSERT_EQ(2U, s[0]->InputCount());
     EXPECT_EQ(1U, s[0]->OutputCount());
   }
@@ -808,7 +768,7 @@ TEST_F(InstructionSelectorTest, CombineShiftsWithDivMod) {
                         m.Word64Sar(m.Parameter(0), m.Int32Constant(32))));
     Stream s = m.Build();
     ASSERT_EQ(1U, s.size());
-    EXPECT_EQ(kRiscvDiv64, s[0]->arch_opcode());
+    EXPECT_EQ(kRiscvDiv32, s[0]->arch_opcode());
     EXPECT_EQ(kMode_None, s[0]->addressing_mode());
     ASSERT_EQ(2U, s[0]->InputCount());
     EXPECT_EQ(1U, s[0]->OutputCount());
@@ -819,7 +779,7 @@ TEST_F(InstructionSelectorTest, CombineShiftsWithDivMod) {
                         m.Word64Sar(m.Parameter(0), m.Int32Constant(32))));
     Stream s = m.Build();
     ASSERT_EQ(1U, s.size());
-    EXPECT_EQ(kRiscvMod64, s[0]->arch_opcode());
+    EXPECT_EQ(kRiscvMod32, s[0]->arch_opcode());
     EXPECT_EQ(kMode_None, s[0]->addressing_mode());
     ASSERT_EQ(2U, s[0]->InputCount());
     EXPECT_EQ(1U, s[0]->OutputCount());
@@ -969,24 +929,6 @@ TEST_F(InstructionSelectorTest, ChangeUint32ToUint64AfterLoad) {
     EXPECT_EQ(2U, s[1]->InputCount());
     EXPECT_EQ(1U, s[1]->OutputCount());
   }
-  // Lwu
-  {
-    StreamBuilder m(this, MachineType::Uint64(), MachineType::Pointer(),
-                    MachineType::Int32());
-    m.Return(m.ChangeUint32ToUint64(
-        m.Load(MachineType::Uint32(), m.Parameter(0), m.Parameter(1))));
-    Stream s = m.Build();
-    ASSERT_EQ(3U, s.size());
-    EXPECT_EQ(kRiscvAdd, s[0]->arch_opcode());
-    EXPECT_EQ(kMode_None, s[0]->addressing_mode());
-    EXPECT_EQ(2U, s[0]->InputCount());
-    EXPECT_EQ(1U, s[0]->OutputCount());
-    EXPECT_EQ(kRiscvLw, s[1]->arch_opcode());
-    EXPECT_EQ(kMode_MRI, s[1]->addressing_mode());
-    EXPECT_EQ(kRiscvZeroExtendWord, s[2]->arch_opcode());
-    EXPECT_EQ(2U, s[1]->InputCount());
-    EXPECT_EQ(1U, s[1]->OutputCount());
-  }
 }
 
 // ----------------------------------------------------------------------------
@@ -1008,8 +950,7 @@ static const MemoryAccess kMemoryAccesses[] = {
     {MachineType::Uint16(), kRiscvLhu, kRiscvSh},
     {MachineType::Int32(), kRiscvLw, kRiscvSw},
     {MachineType::Float32(), kRiscvLoadFloat, kRiscvStoreFloat},
-    {MachineType::Float64(), kRiscvLoadDouble, kRiscvStoreDouble},
-    {MachineType::Int64(), kRiscvLw, kRiscvSd}};
+    {MachineType::Float64(), kRiscvLoadDouble, kRiscvStoreDouble}};
 
 struct MemoryAccessImm {
   MachineType type;
@@ -1097,14 +1038,6 @@ const MemoryAccessImm kMemoryAccessesImm[] = {
      {-4095, -3340, -3231, -3224, -3088, -1758, -1203, -123, -117, -91,
       -89,   -87,   -86,   -82,   -44,   -23,   -3,    0,    7,    10,
       39,    52,    69,    71,    91,    92,    107,   109,  115,  124,
-      286,   655,   1362,  1569,  2587,  3067,  3096,  3462, 3510, 4095}},
-    {MachineType::Int64(),
-     kRiscvLw,
-     kRiscvSd,
-     &InstructionSelectorTest::Stream::IsInteger,
-     {-4095, -3340, -3231, -3224, -3088, -1758, -1203, -123, -117, -91,
-      -89,   -87,   -86,   -82,   -44,   -23,   -3,    0,    7,    10,
-      39,    52,    69,    71,    91,    92,    107,   109,  115,  124,
       286,   655,   1362,  1569,  2587,  3067,  3096,  3462, 3510, 4095}}};
 
 const MemoryAccessImm1 kMemoryAccessImmMoreThan16bit[] = {
@@ -1142,11 +1075,6 @@ const MemoryAccessImm1 kMemoryAccessImmMoreThan16bit[] = {
      kRiscvLoadDouble,
      kRiscvStoreDouble,
      &InstructionSelectorTest::Stream::IsDouble,
-     {-65000, -55000, 32777, 55000, 65000}},
-    {MachineType::Int64(),
-     kRiscvLw,
-     kRiscvSd,
-     &InstructionSelectorTest::Stream::IsInteger,
      {-65000, -55000, 32777, 55000, 65000}}};
 
 #ifdef RISCV_HAS_NO_UNALIGNED
