@@ -2381,8 +2381,38 @@ VISIT_EXT_MUL(I32x4, I16x8, 16)
 VISIT_EXT_MUL(I16x8, I8x16, 8)
 #undef VISIT_EXT_MUL
 
+static void VisitInt32PairBinop(InstructionSelector* selector,
+                                InstructionCode pair_opcode,
+                                InstructionCode single_opcode, Node* node) {
+  RiscvOperandGenerator g(selector);
+
+  Node* projection1 = NodeProperties::FindProjection(node, 1);
+
+  if (projection1) {
+    // We use UseUniqueRegister here to avoid register sharing with the output
+    // register.
+    InstructionOperand inputs[] = {g.UseUniqueRegister(node->InputAt(0)),
+                                   g.UseUniqueRegister(node->InputAt(1)),
+                                   g.UseUniqueRegister(node->InputAt(2)),
+                                   g.UseUniqueRegister(node->InputAt(3))};
+
+    InstructionOperand outputs[] = {
+        g.DefineAsRegister(node),
+        g.DefineAsRegister(NodeProperties::FindProjection(node, 1))};
+    selector->Emit(pair_opcode, 2, outputs, 4, inputs);
+  } else {
+    // The high word of the result is not used, so we emit the standard 32 bit
+    // instruction.
+    selector->Emit(single_opcode, g.DefineSameAsFirst(node),
+                   g.UseRegister(node->InputAt(0)),
+                   g.UseRegister(node->InputAt(2)));
+  }
+}
+
 // RV32Gtodo to be implemented
-void InstructionSelector::VisitInt32PairAdd(Node* node) { UNIMPLEMENTED(); }
+void InstructionSelector::VisitInt32PairAdd(Node* node) {
+  VisitInt32PairBinop(this, kRiscvAddPair, kRiscvAdd, node);
+}
 
 // RV32Gtodo to be implemented
 void InstructionSelector::VisitInt32PairSub(Node* node) { UNIMPLEMENTED(); }

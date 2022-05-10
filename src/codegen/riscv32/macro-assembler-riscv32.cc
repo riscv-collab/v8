@@ -1573,6 +1573,20 @@ void TurboAssembler::MultiPopFPU(DoubleRegList regs) {
   addi(sp, sp, stack_offset);
 }
 
+void TurboAssembler::AddPair(Register dst_low, Register dst_high,
+                             Register left_low, Register left_high,
+                             Register right_low, Register right_high,
+                             Register scratch1, Register scratch2) {
+  UseScratchRegisterScope temps(this);
+  Register scratch3 = temps.Acquire();
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+  Add(scratch1, left_low, right_low);
+  Sltu(scratch3, scratch1, left_low);
+  Add(scratch2, left_high, right_high);
+  Add(dst_high, scratch2, scratch3);
+  Move(dst_low, scratch1);
+}
+
 void TurboAssembler::ExtractBits(Register rt, Register rs, uint16_t pos,
                                  uint16_t size, bool sign_extend) {
   DCHECK_LT(pos, 32);

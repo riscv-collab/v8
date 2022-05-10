@@ -1198,6 +1198,11 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       // compare result set to kScratchReg
       __ CompareF64(kScratchReg, cc, left, right);
     } break;
+    case kRiscvAddPair:
+      __ AddPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+                 i.InputRegister(1), i.InputRegister(2), i.InputRegister(3),
+                 kScratchReg, kScratchReg2);
+      break;
     case kRiscvAddD:
       // TODO(plind): add special case: combine mult & add.
       __ fadd_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),

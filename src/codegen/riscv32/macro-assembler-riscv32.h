@@ -558,6 +558,15 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void Ctz32(Register rd, Register rs);
   void Popcnt32(Register rd, Register rs, Register scratch);
 
+  void AddPair(Register dst_low, Register dst_high, Register left_low,
+               Register left_high, Register right_low, Register right_high,
+               Register scratch1, Register scratch2);
+#if 0
+  void AddPair(Register dst_low, Register dst_high, Register left_low,
+               Register left_high, int32_t imm, Register scratch1,
+               Register scratch2);
+#endif
+
   // Bit field starts at bit pos and extending for size bits is extracted from
   // rs and stored zero/sign-extended and right-justified in rt
   void ExtractBits(Register rt, Register rs, uint16_t pos, uint16_t size,
