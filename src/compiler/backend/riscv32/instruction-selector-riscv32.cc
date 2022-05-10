@@ -41,24 +41,12 @@ class RiscvOperandGenerator final : public OperandGenerator {
   }
 
   bool IsIntegerConstant(Node* node) {
-    if (node->opcode() == IrOpcode::kNumberConstant) {
-      const double value = OpParameter<double>(node->op());
-      return bit_cast<int64_t>(value) == 0;
-    }
-    return (node->opcode() == IrOpcode::kInt32Constant) ||
-           (node->opcode() == IrOpcode::kInt64Constant);
+    return (node->opcode() == IrOpcode::kInt32Constant);
   }
 
   int64_t GetIntegerConstantValue(Node* node) {
-    if (node->opcode() == IrOpcode::kInt32Constant) {
-      return OpParameter<int32_t>(node->op());
-    } else if (node->opcode() == IrOpcode::kInt64Constant) {
-      return OpParameter<int64_t>(node->op());
-    }
-    DCHECK_EQ(node->opcode(), IrOpcode::kNumberConstant);
-    const double value = OpParameter<double>(node->op());
-    DCHECK_EQ(bit_cast<int64_t>(value), 0);
-    return bit_cast<int64_t>(value);
+    DCHECK_EQ(IrOpcode::kInt32Constant, node->opcode());
+    return OpParameter<int32_t>(node->op());
   }
 
   bool IsFloatConstant(Node* node) {
@@ -185,90 +173,6 @@ static void VisitRRO(InstructionSelector* selector, ArchOpcode opcode,
   selector->Emit(opcode, g.DefineAsRegister(node),
                  g.UseRegister(node->InputAt(0)),
                  g.UseOperand(node->InputAt(1), opcode));
-}
-
-struct ExtendingLoadMatcher {
-  ExtendingLoadMatcher(Node* node, InstructionSelector* selector)
-      : matches_(false), selector_(selector), base_(nullptr), immediate_(0) {
-    Initialize(node);
-  }
-
-  bool Matches() const { return matches_; }
-
-  Node* base() const {
-    DCHECK(Matches());
-    return base_;
-  }
-  int64_t immediate() const {
-    DCHECK(Matches());
-    return immediate_;
-  }
-  ArchOpcode opcode() const {
-    DCHECK(Matches());
-    return opcode_;
-  }
-
- private:
-  bool matches_;
-  InstructionSelector* selector_;
-  Node* base_;
-  int64_t immediate_;
-  ArchOpcode opcode_;
-
-  void Initialize(Node* node) {
-    Int64BinopMatcher m(node);
-    // When loading a 64-bit value and shifting by 32, we should
-    // just load and sign-extend the interesting 4 bytes instead.
-    // This happens, for example, when we're loading and untagging SMIs.
-    DCHECK(m.IsWord64Sar());
-    if (m.left().IsLoad() && m.right().Is(32) &&
-        selector_->CanCover(m.node(), m.left().node())) {
-      DCHECK_EQ(selector_->GetEffectLevel(node),
-                selector_->GetEffectLevel(m.left().node()));
-      MachineRepresentation rep =
-          LoadRepresentationOf(m.left().node()->op()).representation();
-      DCHECK_EQ(3, ElementSizeLog2Of(rep));
-      if (rep != MachineRepresentation::kTaggedSigned &&
-          rep != MachineRepresentation::kTaggedPointer &&
-          rep != MachineRepresentation::kTagged &&
-          rep != MachineRepresentation::kWord64) {
-        return;
-      }
-
-      RiscvOperandGenerator g(selector_);
-      Node* load = m.left().node();
-      Node* offset = load->InputAt(1);
-      base_ = load->InputAt(0);
-      opcode_ = kRiscvLw;
-      if (g.CanBeImmediate(offset, opcode_)) {
-#if defined(V8_TARGET_LITTLE_ENDIAN)
-        immediate_ = g.GetIntegerConstantValue(offset) + 4;
-#elif defined(V8_TARGET_BIG_ENDIAN)
-        immediate_ = g.GetIntegerConstantValue(offset);
-#endif
-        matches_ = g.CanBeImmediate(immediate_, kRiscvLw);
-      }
-    }
-  }
-};
-
-bool TryEmitExtendingLoad(InstructionSelector* selector, Node* node,
-                          Node* output_node) {
-  ExtendingLoadMatcher m(node, selector);
-  RiscvOperandGenerator g(selector);
-  if (m.Matches()) {
-    InstructionOperand inputs[2];
-    inputs[0] = g.UseRegister(m.base());
-    InstructionCode opcode =
-        m.opcode() | AddressingModeField::encode(kMode_MRI);
-    DCHECK(is_int32(m.immediate()));
-    inputs[1] = g.TempImmediate(static_cast<int32_t>(m.immediate()));
-    InstructionOperand outputs[] = {g.DefineAsRegister(output_node)};
-    selector->Emit(opcode, arraysize(outputs), outputs, arraysize(inputs),
-                   inputs);
-    return true;
-  }
-  return false;
 }
 
 bool TryMatchImmediate(InstructionSelector* selector,
@@ -442,6 +346,7 @@ void InstructionSelector::VisitStoreLane(Node* node) {
   opcode |= AddressingModeField::encode(kMode_MRI);
   Emit(opcode, 0, nullptr, 4, inputs);
 }
+
 void InstructionSelector::VisitLoadLane(Node* node) {
   LoadLaneParameters params = LoadLaneParametersOf(node->op());
   LoadStoreLaneParams f(params.rep.representation(), params.laneidx);
@@ -521,10 +426,10 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord16:
       opcode = load_rep.IsUnsigned() ? kRiscvLhu : kRiscvLh;
       break;
-    case MachineRepresentation::kWord32:
     case MachineRepresentation::kTaggedSigned:   // Fall through.
     case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:         // Fall through.
+    case MachineRepresentation::kWord32:
       opcode = kRiscvLw;
       break;
     case MachineRepresentation::kSimd128:
@@ -536,6 +441,7 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kMapWord:  // Fall through.
     case MachineRepresentation::kWord64:
     case MachineRepresentation::kNone:
+
       UNREACHABLE();
   }
 
@@ -589,12 +495,10 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kWord16:
         opcode = kRiscvSh;
         break;
-      case MachineRepresentation::kWord32:
-        opcode = kRiscvSw;
-        break;
       case MachineRepresentation::kTaggedSigned:   // Fall through.
       case MachineRepresentation::kTaggedPointer:  // Fall through.
       case MachineRepresentation::kTagged:
+      case MachineRepresentation::kWord32:
         opcode = kRiscvSw;
         break;
       case MachineRepresentation::kSimd128:
@@ -785,21 +689,7 @@ void InstructionSelector::VisitInt32Mul(Node* node) {
       return;
     }
   }
-  Node* left = node->InputAt(0);
-  Node* right = node->InputAt(1);
-  if (CanCover(node, left) && CanCover(node, right)) {
-    if (left->opcode() == IrOpcode::kWord64Sar &&
-        right->opcode() == IrOpcode::kWord64Sar) {
-      Int64BinopMatcher leftInput(left), rightInput(right);
-      if (leftInput.right().Is(32) && rightInput.right().Is(32)) {
-        // Combine untagging shifts with Dmul high.
-        Emit(kRiscvMulHigh64, g.DefineSameAsFirst(node),
-             g.UseRegister(leftInput.left().node()),
-             g.UseRegister(rightInput.left().node()));
-        return;
-      }
-    }
-  }
+
   VisitRRR(this, kRiscvMul32, node);
 }
 
@@ -1256,14 +1146,11 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) {
     case MachineRepresentation::kWord16:
       opcode = load_rep.IsUnsigned() ? kRiscvUlhu : kRiscvUlh;
       break;
-    case MachineRepresentation::kWord32:
-      opcode = kRiscvUlw;
-      break;
     case MachineRepresentation::kTaggedSigned:   // Fall through.
     case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:         // Fall through.
-    case MachineRepresentation::kWord64:
-      opcode = kRiscvUld;
+    case MachineRepresentation::kWord32:
+      opcode = kRiscvUlw;
       break;
     case MachineRepresentation::kSimd128:
       opcode = kRiscvRvvLd;
@@ -1271,8 +1158,9 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) {
     case MachineRepresentation::kBit:                // Fall through.
     case MachineRepresentation::kCompressedPointer:  // Fall through.
     case MachineRepresentation::kCompressed:         // Fall through.
-    case MachineRepresentation::kSandboxedPointer:
-    case MachineRepresentation::kMapWord:  // Fall through.
+    case MachineRepresentation::kSandboxedPointer:   // Fall through.
+    case MachineRepresentation::kMapWord:            // Fall through.
+    case MachineRepresentation::kWord64:
     case MachineRepresentation::kNone:
       UNREACHABLE();
   }
@@ -1311,6 +1199,9 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
     case MachineRepresentation::kWord16:
       opcode = kRiscvUsh;
       break;
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
+    case MachineRepresentation::kTagged:         // Fall through.
     case MachineRepresentation::kWord32:
       opcode = kRiscvUsw;
       break;
@@ -1323,9 +1214,6 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
     case MachineRepresentation::kSandboxedPointer:
     case MachineRepresentation::kMapWord:  // Fall through.
     case MachineRepresentation::kNone:
-    case MachineRepresentation::kTaggedSigned:   // Fall through.
-    case MachineRepresentation::kTaggedPointer:  // Fall through.
-    case MachineRepresentation::kTagged:         // Fall through.
     case MachineRepresentation::kWord64:
       UNREACHABLE();
   }
@@ -1697,11 +1585,9 @@ void InstructionSelector::VisitWordCompareZero(Node* user, Node* value,
                 cont->OverwriteAndNegateIfEqual(kOverflow);
                 return VisitBinop(this, node, kRiscvMulOvf32, cont);
               case IrOpcode::kInt64AddWithOverflow:
-                cont->OverwriteAndNegateIfEqual(kOverflow);
-                return VisitBinop(this, node, kRiscvAddOvf, cont);
               case IrOpcode::kInt64SubWithOverflow:
-                cont->OverwriteAndNegateIfEqual(kOverflow);
-                return VisitBinop(this, node, kRiscvSubOvf, cont);
+                TRACE_UNIMPL();
+                break;
               default:
                 break;
             }
