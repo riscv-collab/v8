@@ -488,37 +488,37 @@ void TurboAssembler::Mulh64(Register rd, Register rs, const Operand& rt) {
 
 void TurboAssembler::Div32(Register res, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
-    divw(res, rs, rt.rm());
+    div(res, rs, rt.rm());
   } else {
     // li handles the relocation.
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
     Li(scratch, rt.immediate());
-    divw(res, rs, scratch);
+    div(res, rs, scratch);
   }
 }
 
 void TurboAssembler::Mod32(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
-    remw(rd, rs, rt.rm());
+    rem(rd, rs, rt.rm());
   } else {
     // li handles the relocation.
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
     Li(scratch, rt.immediate());
-    remw(rd, rs, scratch);
+    rem(rd, rs, scratch);
   }
 }
 
 void TurboAssembler::Modu32(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
-    remuw(rd, rs, rt.rm());
+    remu(rd, rs, rt.rm());
   } else {
     // li handles the relocation.
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
     Li(scratch, rt.immediate());
-    remuw(rd, rs, scratch);
+    remu(rd, rs, scratch);
   }
 }
 
@@ -536,13 +536,13 @@ void TurboAssembler::Div64(Register rd, Register rs, const Operand& rt) {
 
 void TurboAssembler::Divu32(Register res, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
-    divuw(res, rs, rt.rm());
+    divu(res, rs, rt.rm());
   } else {
     // li handles the relocation.
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
     Li(scratch, rt.immediate());
-    divuw(res, rs, scratch);
+    divu(res, rs, scratch);
   }
 }
 
