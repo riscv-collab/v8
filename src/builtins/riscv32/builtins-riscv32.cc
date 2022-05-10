@@ -3458,10 +3458,10 @@ void Generate_DeoptimizationEntry(MacroAssembler* masm,
   // Get the address of the location in the code object (a3) (return
   // address for lazy deoptimization) and compute the fp-to-sp delta in
   // register a4.
-  __ Move(a3, ra);
-  __ Add(a4, sp, Operand(kSavedRegistersAreaSize));
+  __ Move(a2, ra);
+  __ Add(a3, sp, Operand(kSavedRegistersAreaSize));
 
-  __ Sub(a4, fp, a4);
+  __ Sub(a3, fp, a3);
 
   // Allocate a new deoptimizer object.
   __ PrepareCallCFunction(5, a4);
