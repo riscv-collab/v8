@@ -75,12 +75,6 @@ jobs:
         working-directory: ./v8
         run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv32.debug all
 
-  test:
-    # The type of runner that the job will run on
-    runs-on: self-hosted
-    needs: build
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
       - name: run test
         working-directory: ./v8
         run: ./out/riscv32.debug/d8 ./temp-test/*.js --allow-natives-syntax
