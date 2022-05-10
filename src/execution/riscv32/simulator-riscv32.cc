@@ -2522,50 +2522,45 @@ void Simulator::DieOrDebug() {
   }
 }
 // RV32G todo need to port for compatialbility of sf&df
-void Simulator::TraceRegWr(int32_t value, TraceType t) {
-#if 0
+template <typename T>
+void Simulator::TraceRegWr(T value, TraceType t) {
   if (::v8::internal::FLAG_trace_sim) {
     union {
-      int64_t fmt_int64;
-      int32_t fmt_int32[2];
-      float fmt_float[2];
+      int32_t fmt_int32;
+      float fmt_float;
       double fmt_double;
     } v;
-    v.fmt_int64 = value;
-
+    if (t != DOUBLE) {
+      v.fmt_int32 = value;
+    } else {
+      DCHECK(sizeof(T) == 8);
+      v.fmt_double = value;
+    }
     switch (t) {
       case WORD:
         SNPrintF(trace_buf_,
                  "%016" PRIx32 "    (%" PRId64 ")    int32:%" PRId32
                  " uint32:%" PRIu32,
-                 v.fmt_int64, icount_, v.fmt_int32[0], v.fmt_int32[0]);
-        break;
-      case DWORD:
-        SNPrintF(trace_buf_,
-                 "%016" PRIx32 "    (%" PRId64 ")    int64:%" PRId64
-                 " uint64:%" PRIu64,
-                 value, icount_, value, value);
+                 v.fmt_int32, icount_, v.fmt_int32, v.fmt_int32);
         break;
       case FLOAT:
         SNPrintF(trace_buf_, "%016" PRIx32 "    (%" PRId64 ")    flt:%e",
-                 v.fmt_int64, icount_, v.fmt_float[0]);
+                 v.fmt_int32, icount_, v.fmt_float);
         break;
       case DOUBLE:
-        SNPrintF(trace_buf_, "%016" PRIx32 "    (%" PRId64 ")    dbl:%e",
-                 v.fmt_int64, icount_, v.fmt_double);
+        SNPrintF(trace_buf_, "%016" PRIx64 "    (%" PRId64 ")    dbl:%e",
+                 static_cast<int64_t>(v.fmt_double), icount_, v.fmt_double);
         break;
       default:
         UNREACHABLE();
     }
   }
-#endif
 }
 
 // TODO(plind): consider making icount_ printing a flag option.
 // RV32G todo need to port for compatialbility of sf&df
 template <typename T>
 void Simulator::TraceMemRd(int32_t addr, T value, int32_t reg_value) {
-#if 0
   if (::v8::internal::FLAG_trace_sim) {
     if (std::is_integral<T>::value) {
       switch (sizeof(T)) {
@@ -2590,13 +2585,6 @@ void Simulator::TraceMemRd(int32_t addr, T value, int32_t reg_value) {
                    reg_value, icount_, static_cast<int32_t>(value),
                    static_cast<uint32_t>(value), addr);
           break;
-        case 8:
-          SNPrintF(trace_buf_,
-                   "%016" PRIx32 "    (%" PRId64 ")    int64:%" PRId64
-                   " uint64:%" PRIu64 " <-- [addr: %" PRIx32 "]",
-                   reg_value, icount_, static_cast<int64_t>(value),
-                   static_cast<uint64_t>(value), addr);
-          break;
         default:
           UNREACHABLE();
       }
@@ -2614,13 +2602,11 @@ void Simulator::TraceMemRd(int32_t addr, T value, int32_t reg_value) {
       UNREACHABLE();
     }
   }
-#endif
 }
 
 // RV32G todo need to port for compatialbility of sf&df
 template <typename T>
 void Simulator::TraceMemWr(int32_t addr, T value) {
-#if 0
   if (::v8::internal::FLAG_trace_sim) {
     switch (sizeof(T)) {
       case 1:
@@ -2653,11 +2639,7 @@ void Simulator::TraceMemWr(int32_t addr, T value) {
         break;
       case 8:
         if (std::is_integral<T>::value) {
-          SNPrintF(trace_buf_,
-                   "                    (%" PRIu64 ")    int64:%" PRId64
-                   " uint64:%" PRIu64 " --> [addr: %" PRIx32 "]",
-                   icount_, static_cast<int64_t>(value),
-                   static_cast<uint64_t>(value), addr);
+          UNREACHABLE();
         } else {
           SNPrintF(trace_buf_,
                    "                    (%" PRIu64
@@ -2669,7 +2651,6 @@ void Simulator::TraceMemWr(int32_t addr, T value) {
         UNREACHABLE();
     }
   }
-#endif
 }
 
 // RISCV Memory Read/Write functions
@@ -3015,7 +2996,7 @@ bool Simulator::IsWatchpoint(uint32_t code) {
 void Simulator::PrintWatchpoint(uint32_t code) {
   RiscvDebugger dbg(this);
   ++break_count_;
-  PrintF("\n---- watchpoint %" PRId32 "  marker: %3d  (instr count: %8" PRId32
+  PrintF("\n---- watchpoint %" PRId32 "  marker: %3d  (instr count: %8" PRId64
          " ) ----------"
          "----------------------------------",
          code, break_count_, icount_);

@@ -523,7 +523,6 @@ class Simulator : public SimulatorBase {
     BYTE,
     HALF,
     WORD,
-    DWORD,
     FLOAT,
     DOUBLE,
     // FLOAT_DOUBLE,
@@ -546,7 +545,8 @@ class Simulator : public SimulatorBase {
   // Helper for debugging memory access.
   inline void DieOrDebug();
 
-  void TraceRegWr(int32_t value, TraceType t = DWORD);
+  template <typename T>
+  void TraceRegWr(T value, TraceType t = WORD);
   void TraceMemWr(int32_t addr, int32_t value, TraceType t);
   template <typename T>
   void TraceMemRd(int32_t addr, T value, int32_t reg_value);
@@ -608,7 +608,7 @@ class Simulator : public SimulatorBase {
 
   inline void set_rd(int32_t value, bool trace = true) {
     set_register(rd_reg(), value);
-    if (trace) TraceRegWr(get_register(rd_reg()), DWORD);
+    if (trace) TraceRegWr(get_register(rd_reg()), WORD);
   }
   inline void set_frd(float value, bool trace = true) {
     set_fpu_register_float(rd_reg(), value);
@@ -620,15 +620,15 @@ class Simulator : public SimulatorBase {
   }
   inline void set_rvc_rd(int32_t value, bool trace = true) {
     set_register(rvc_rd_reg(), value);
-    if (trace) TraceRegWr(get_register(rvc_rd_reg()), DWORD);
+    if (trace) TraceRegWr(get_register(rvc_rd_reg()), WORD);
   }
   inline void set_rvc_rs1s(int32_t value, bool trace = true) {
     set_register(rvc_rs1s_reg(), value);
-    if (trace) TraceRegWr(get_register(rvc_rs1s_reg()), DWORD);
+    if (trace) TraceRegWr(get_register(rvc_rs1s_reg()), WORD);
   }
   inline void set_rvc_rs2(int32_t value, bool trace = true) {
     set_register(rvc_rs2_reg(), value);
-    if (trace) TraceRegWr(get_register(rvc_rs2_reg()), DWORD);
+    if (trace) TraceRegWr(get_register(rvc_rs2_reg()), WORD);
   }
   inline void set_rvc_drd(double value, bool trace = true) {
     set_fpu_register_double(rvc_rd_reg(), value);
@@ -636,7 +636,7 @@ class Simulator : public SimulatorBase {
   }
   inline void set_rvc_rs2s(int32_t value, bool trace = true) {
     set_register(rvc_rs2s_reg(), value);
-    if (trace) TraceRegWr(get_register(rvc_rs2s_reg()), DWORD);
+    if (trace) TraceRegWr(get_register(rvc_rs2s_reg()), WORD);
   }
   inline void set_rvc_drs2s(double value, bool trace = true) {
     set_fpu_register_double(rvc_rs2s_reg(), value);
@@ -955,7 +955,7 @@ class Simulator : public SimulatorBase {
   size_t stack_size_;
   char* stack_;
   bool pc_modified_;
-  int32_t icount_;
+  int64_t icount_;
   int break_count_;
   base::EmbeddedVector<char, 256> trace_buf_;
 
