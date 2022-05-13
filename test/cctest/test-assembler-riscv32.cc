@@ -43,8 +43,8 @@
 
 namespace v8 {
 namespace internal {
-//RV32Gtodo
-// Define these function prototypes to match JSEntryFunction in execution.cc
+// RV32Gtodo
+//  Define these function prototypes to match JSEntryFunction in execution.cc
 using F1 = void*(int x, int p1, int p2, int p3, int p4);
 using F2 = void*(int x, int y, int p2, int p3, int p4);
 using F3 = void*(void* p, int p1, int p2, int p3, int p4);
@@ -381,22 +381,21 @@ UTEST_CSR(csr_fflags, kInexact | kInvalidOperation, kInvalidOperation)
 UTEST_CSR(csr_fcsr, kDivideByZero | kOverflow | (RDN << kFcsrFrmShift),
           kUnderflow | (RNE << kFcsrFrmShift))
 
-
 // -- RV32M Standard Extension --
 UTEST_R2_FORM_WITH_OP(mul, int32_t, 0x045001, MIN_VAL_IMM12, *)
-UTEST_R2_FORM_WITH_RES(mulh, int32_t, 0x12344321,
-                       -0x56171234, static_cast<int32_t>((0x12344321LL * -0x56171234LL) >> 32))
-UTEST_R2_FORM_WITH_RES(mulhu, int32_t, 0x12345678,
-                       0xF8967021,
-                       static_cast<int32_t>((0x12345678ULL * 0xF8967021ULL) >> 32))
-UTEST_R2_FORM_WITH_RES(mulhsu, int32_t, -0x12345678,
-                       0xF2345678,
-                       static_cast<int32_t>((-0x12345678LL * 0xF2345678ULL) >> 32))
+UTEST_R2_FORM_WITH_RES(mulh, int32_t, 0x12344321, -0x56171234,
+                       static_cast<int32_t>((0x12344321LL * -0x56171234LL) >>
+                                            32))
+UTEST_R2_FORM_WITH_RES(mulhu, int32_t, 0x12345678, 0xF8967021,
+                       static_cast<int32_t>((0x12345678ULL * 0xF8967021ULL) >>
+                                            32))
+UTEST_R2_FORM_WITH_RES(mulhsu, int32_t, -0x12345678, 0xF2345678,
+                       static_cast<int32_t>((-0x12345678LL * 0xF2345678ULL) >>
+                                            32))
 UTEST_R2_FORM_WITH_OP(div, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, /)
 UTEST_R2_FORM_WITH_OP(divu, uint32_t, LARGE_UINT_UNDER_32_BIT, 100, /)
 UTEST_R2_FORM_WITH_OP(rem, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, %)
 UTEST_R2_FORM_WITH_OP(remu, uint32_t, LARGE_UINT_UNDER_32_BIT, 100, %)
-
 
 // -- RV32A Standard Extension --
 UTEST_LR_SC(lr_w, sc_w, false, false, int32_t, 0xFBB1A75C)
@@ -449,7 +448,6 @@ UTEST_R2_FORM_WITH_RES_F(fsgnj_s, float, -100.0f, 200.0f, 100.0f)
 UTEST_R2_FORM_WITH_RES_F(fsgnjn_s, float, 100.0f, 200.0f, -100.0f)
 UTEST_R2_FORM_WITH_RES_F(fsgnjx_s, float, -100.0f, 200.0f, -100.0f)
 
-
 // -- RV32D Standard Extension --
 // TODO(rv32 simulator don't support double args)
 // UTEST_CONV_F_FROM_F(fcvt_s_d, double, float, 100.0, 100.0f)
@@ -459,10 +457,8 @@ UTEST_R2_FORM_WITH_RES_F(fsgnjx_s, float, -100.0f, 200.0f, -100.0f)
 // UTEST_R2_FORM_WITH_RES_F(fsgnjn_d, double, 100.0, 200.0, -100.0)
 // UTEST_R2_FORM_WITH_RES_F(fsgnjx_d, double, -100.0, 200.0, -100.0)
 
-
 // -- RVC Standard Extension --
-UTEST_R1_FORM_WITH_RES_C(c_mv, int32_t, int32_t, 0x0f5600ab,
-                         0x0f5600ab)
+UTEST_R1_FORM_WITH_RES_C(c_mv, int32_t, int32_t, 0x0f5600ab, 0x0f5600ab)
 
 // -- Assembler Pseudo Instructions --
 UTEST_R1_FORM_WITH_RES(mv, int32_t, int32_t, 0x0f5600ab, 0x0f5600ab)
@@ -485,7 +481,7 @@ UTEST_R1_FORM_WITH_RES_F(fneg_s, float, 23.5f, -23.5f)
 TEST(RISCV0) {
   CcTest::InitializeVM();
 
-  FOR_INT64_INPUTS(i) {
+  FOR_INT32_INPUTS(i) {
     auto fn = [i](MacroAssembler& assm) { __ RV_li(a0, i); };
     auto res = GenAndRunTest(fn);
     CHECK_EQ(i, res);
@@ -563,7 +559,7 @@ TEST(RISCV2) {
     __ RV_li(t5, 0x00001234);
     __ bne(t0, t5, &error);
     __ add(a1, a7,
-            a4);  // 32bit addu result is sign-extended into 64bit reg.
+           a4);  // 32bit addu result is sign-extended into 64bit reg.
     __ RV_li(t5, 0x80000003);
     __ bne(a1, t5, &error);
     __ sub(a1, t3, a4);  // 0x7FFFFFFC
@@ -2094,29 +2090,29 @@ UTEST_RVV_VI_VX_FORM_WITH_FN(vminu_vx, 32, ARRAY_INT32, std::min<uint32_t>)
       }                                                                    \
     }                                                                      \
   }                                                                        \
-  // TEST(RISCV_UTEST_DOUBLE_##instr_name) {                                  \
-  //   if (!CpuFeatures::IsSupported(RISCV_SIMD)) return;                     \
-  //   CcTest::InitializeVM();                                                \
-  //   double result[2] = {0.0};                                              \
-  //   auto fn = [&result](MacroAssembler& assm) {                            \
-  //     __ VU.set(t0, VSew::E64, Vlmul::m1);                                 \
-  //     __ vfmv_vf(v0, fa0);                                                 \
-  //     __ vfmv_vf(v1, fa1);                                                 \
-  //     __ instr_name(v0, v0, v1);                                           \
-  //     __ vfmv_fs(fa0, v0);                                                 \
-  //     __ li(a3, Operand(int64_t(result)));                                 \
-  //     __ vs(v0, a3, 0, E64);                                               \
-  //   };                                                                     \
-  //   for (double rs1_fval : compiler::ValueHelper::GetVector<double>()) {   \
-  //     for (double rs2_fval : compiler::ValueHelper::GetVector<double>()) { \
-  //       GenAndRunTest<double, double>(rs1_fval, rs2_fval, fn);             \
-  //       for (int i = 0; i < 2; i++) {                                      \
-  //         CHECK_DOUBLE_EQ(UseCanonicalNan<double>(expect_res), result[i]); \
-  //         result[i] = 0.0;                                                 \
-  //       }                                                                  \
-  //     }                                                                    \
-  //   }                                                                      \
-  // }
+  TEST(RISCV_UTEST_DOUBLE_##instr_name) {                                  \
+    if (!CpuFeatures::IsSupported(RISCV_SIMD)) return;                     \
+    CcTest::InitializeVM();                                                \
+    double result[2] = {0.0};                                              \
+    auto fn = [&result](MacroAssembler& assm) {                            \
+      __ VU.set(t0, VSew::E64, Vlmul::m1);                                 \
+      __ vfmv_vf(v0, fa0);                                                 \
+      __ vfmv_vf(v1, fa1);                                                 \
+      __ instr_name(v0, v0, v1);                                           \
+      __ vfmv_fs(fa0, v0);                                                 \
+      __ li(a3, Operand(int64_t(result)));                                 \
+      __ vs(v0, a3, 0, E64);                                               \
+    };                                                                     \
+    for (double rs1_fval : compiler::ValueHelper::GetVector<double>()) {   \
+      for (double rs2_fval : compiler::ValueHelper::GetVector<double>()) { \
+        GenAndRunTest<double, double>(rs1_fval, rs2_fval, fn);             \
+        for (int i = 0; i < 2; i++) {                                      \
+          CHECK_DOUBLE_EQ(UseCanonicalNan<double>(expect_res), result[i]); \
+          result[i] = 0.0;                                                 \
+        }                                                                  \
+      }                                                                    \
+    }                                                                      \
+  }
 
 // Tests for vector single-width floating-point arithmetic instructions between
 // vector and scalar
@@ -2266,16 +2262,16 @@ static inline bool is_invalid_fsub(T src1, T src2) {
           std::signbit(src1) == std::signbit(src2));
 }
 
-// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwadd_vv, +, false, is_invalid_fadd)
-// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwadd_vf, +, false, is_invalid_fadd)
-// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwsub_vv, -, false, is_invalid_fsub)
-// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwsub_vf, -, false, is_invalid_fsub)
-// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwadd_wv, +, true, is_invalid_fadd)
-// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwadd_wf, +, true, is_invalid_fadd)
-// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwsub_wv, -, true, is_invalid_fsub)
-// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwsub_wf, -, true, is_invalid_fsub)
-// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwmul_vv, *, false, is_invalid_fmul)
-// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwmul_vf, *, false, is_invalid_fmul)
+UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwadd_vv, +, false, is_invalid_fadd)
+UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwadd_vf, +, false, is_invalid_fadd)
+UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwsub_vv, -, false, is_invalid_fsub)
+UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwsub_vf, -, false, is_invalid_fsub)
+UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwadd_wv, +, true, is_invalid_fadd)
+UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwadd_wf, +, true, is_invalid_fadd)
+UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwsub_wv, -, true, is_invalid_fsub)
+UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwsub_wf, -, true, is_invalid_fsub)
+UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwmul_vv, *, false, is_invalid_fmul)
+UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwmul_vf, *, false, is_invalid_fmul)
 
 #undef UTEST_RVV_VF_VV_FORM_WITH_OP
 #undef UTEST_RVV_VF_VF_FORM_WITH_OP
@@ -2331,23 +2327,23 @@ static inline bool is_invalid_fsub(T src1, T src2) {
     }                                                                         \
   }
 
-// #define ARRAY_FLOAT compiler::ValueHelper::GetVector<float>()
-// UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwmacc_vv, ARRAY_FLOAT,
-//                                    std::fma(rs2_fval, rs3_fval, rs1_fval))
-// UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwmacc_vf, ARRAY_FLOAT,
-//                                    std::fma(rs2_fval, rs3_fval, rs1_fval))
-// UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwnmacc_vv, ARRAY_FLOAT,
-//                                    std::fma(rs2_fval, -rs3_fval, -rs1_fval))
-// UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwnmacc_vf, ARRAY_FLOAT,
-//                                    std::fma(rs2_fval, -rs3_fval, -rs1_fval))
-// UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwmsac_vv, ARRAY_FLOAT,
-//                                    std::fma(rs2_fval, rs3_fval, -rs1_fval))
-// UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwmsac_vf, ARRAY_FLOAT,
-//                                    std::fma(rs2_fval, rs3_fval, -rs1_fval))
-// UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwnmsac_vv, ARRAY_FLOAT,
-//                                    std::fma(rs2_fval, -rs3_fval, rs1_fval))
-// UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwnmsac_vf, ARRAY_FLOAT,
-//                                    std::fma(rs2_fval, -rs3_fval, rs1_fval))
+#define ARRAY_FLOAT compiler::ValueHelper::GetVector<float>()
+UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwmacc_vv, ARRAY_FLOAT,
+                                   std::fma(rs2_fval, rs3_fval, rs1_fval))
+UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwmacc_vf, ARRAY_FLOAT,
+                                   std::fma(rs2_fval, rs3_fval, rs1_fval))
+UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwnmacc_vv, ARRAY_FLOAT,
+                                   std::fma(rs2_fval, -rs3_fval, -rs1_fval))
+UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwnmacc_vf, ARRAY_FLOAT,
+                                   std::fma(rs2_fval, -rs3_fval, -rs1_fval))
+UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwmsac_vv, ARRAY_FLOAT,
+                                   std::fma(rs2_fval, rs3_fval, -rs1_fval))
+UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwmsac_vf, ARRAY_FLOAT,
+                                   std::fma(rs2_fval, rs3_fval, -rs1_fval))
+UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwnmsac_vv, ARRAY_FLOAT,
+                                   std::fma(rs2_fval, -rs3_fval, rs1_fval))
+UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwnmsac_vf, ARRAY_FLOAT,
+                                   std::fma(rs2_fval, -rs3_fval, rs1_fval))
 
 #undef ARRAY_FLOAT
 #undef UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES
@@ -2470,8 +2466,8 @@ UTEST_RVV_FMA_VF_FORM_WITH_RES(vfnmsac_vf, ARRAY_FLOAT,
     }                                                                  \
   }
 
-// UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES(vfwredusum_vv)
-// UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES(vfwredosum_vv)
+UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES(vfwredusum_vv)
+UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES(vfwredosum_vv)
 
 #undef UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES
 // calculate the value of r used in rounding
@@ -2710,7 +2706,7 @@ UTEST_VCPOP_M_WITH_WIDTH(16)
 UTEST_VCPOP_M_WITH_WIDTH(8)
 
 #undef UTEST_VCPOP_M_WITH_WIDTH
-#endif //CAN_USE_RVV_INSTRUCTIONS
+#endif  // CAN_USE_RVV_INSTRUCTIONS
 #undef __
 }  // namespace internal
 }  // namespace v8
