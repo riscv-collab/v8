@@ -43,7 +43,6 @@
 
 namespace v8 {
 namespace internal {
-#if 0
 //RV32Gtodo
 // Define these function prototypes to match JSEntryFunction in execution.cc
 using F1 = void*(int x, int p1, int p2, int p3, int p4);
@@ -53,9 +52,8 @@ using F4 = void*(int64_t x, int64_t y, int64_t p2, int64_t p3, int64_t p4);
 using F5 = void*(void* p0, void* p1, int p2, int p3, int p4);
 
 #define MIN_VAL_IMM12 -(1 << 11)
-#define LARGE_INT_EXCEED_32_BIT 0x01C9'1075'0321'FB01LL
-#define LARGE_INT_UNDER_32_BIT 0x1234'5678
-#define LARGE_UINT_EXCEED_32_BIT 0xFDCB'1234'A034'5691ULL
+#define LARGE_INT_UNDER_32_BIT 0x12345678
+#define LARGE_UINT_UNDER_32_BIT (uint32_t)0xFDCB12341
 
 #define __ assm.
 
@@ -321,15 +319,10 @@ using F5 = void*(void* p0, void* p1, int p2, int p3, int p4);
                            ((rs1_fval)tested_op(rs2_fval)))
 
 // -- test load-store --
-UTEST_LOAD_STORE(ld, sd, int64_t, 0xFBB10A9C12345678)
 // due to sign-extension of lw
 // instruction, value-to-stored must have
 // its 32th least significant bit be 0
 UTEST_LOAD_STORE(lw, sw, int32_t, 0x456AF894)
-// set the 32th least significant bit of
-// value-to-store to 1 to test
-// zero-extension by lwu
-UTEST_LOAD_STORE(lwu, sw, uint32_t, 0x856AF894)
 // due to sign-extension of lh
 // instruction, value-to-stored must have
 // its 16th least significant bit be 0
@@ -348,27 +341,27 @@ UTEST_LOAD_STORE(lb, sb, int32_t, 0x54)
 UTEST_LOAD_STORE(lbu, sb, uint32_t, 0x94)
 
 // -- arithmetic w/ immediate --
-UTEST_I_FORM_WITH_OP(addi, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, +)
-UTEST_I_FORM_WITH_OP(slti, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, <)
-UTEST_I_FORM_WITH_OP(sltiu, uint64_t, LARGE_UINT_EXCEED_32_BIT, 0x4FB, <)
-UTEST_I_FORM_WITH_OP(xori, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, ^)
-UTEST_I_FORM_WITH_OP(ori, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, |)
-UTEST_I_FORM_WITH_OP(andi, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, &)
-UTEST_I_FORM_WITH_OP(slli, int64_t, 0x1234'5678ULL, 33, <<)
-UTEST_I_FORM_WITH_OP(srli, int64_t, 0x8234'5678'0000'0000ULL, 33, >>)
-UTEST_I_FORM_WITH_OP(srai, int64_t, -0x1234'5678'0000'0000LL, 33, >>)
+UTEST_I_FORM_WITH_OP(addi, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, +)
+UTEST_I_FORM_WITH_OP(slti, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, <)
+UTEST_I_FORM_WITH_OP(sltiu, uint32_t, LARGE_UINT_UNDER_32_BIT, 0x4FB, <)
+UTEST_I_FORM_WITH_OP(xori, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, ^)
+UTEST_I_FORM_WITH_OP(ori, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, |)
+UTEST_I_FORM_WITH_OP(andi, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, &)
+UTEST_I_FORM_WITH_OP(slli, int32_t, 0x1234'5678ULL, 17, <<)
+UTEST_I_FORM_WITH_OP(srli, int32_t, 0x82340000ULL, 17, >>)
+UTEST_I_FORM_WITH_OP(srai, int32_t, -0x12340000LL, 17, >>)
 
 // -- arithmetic --
-UTEST_R2_FORM_WITH_OP(add, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, +)
-UTEST_R2_FORM_WITH_OP(sub, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, -)
-UTEST_R2_FORM_WITH_OP(slt, int64_t, MIN_VAL_IMM12, LARGE_INT_EXCEED_32_BIT, <)
-UTEST_R2_FORM_WITH_OP(sltu, uint64_t, 0x4FB, LARGE_UINT_EXCEED_32_BIT, <)
-UTEST_R2_FORM_WITH_OP(xor_, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, ^)
-UTEST_R2_FORM_WITH_OP(or_, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, |)
-UTEST_R2_FORM_WITH_OP(and_, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, &)
-UTEST_R2_FORM_WITH_OP(sll, int64_t, 0x12345678ULL, 33, <<)
-UTEST_R2_FORM_WITH_OP(srl, int64_t, 0x8234567800000000ULL, 33, >>)
-UTEST_R2_FORM_WITH_OP(sra, int64_t, -0x1234'5678'0000'0000LL, 33, >>)
+UTEST_R2_FORM_WITH_OP(add, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, +)
+UTEST_R2_FORM_WITH_OP(sub, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, -)
+UTEST_R2_FORM_WITH_OP(slt, int32_t, MIN_VAL_IMM12, LARGE_INT_UNDER_32_BIT, <)
+UTEST_R2_FORM_WITH_OP(sltu, uint32_t, 0x4FB, LARGE_UINT_UNDER_32_BIT, <)
+UTEST_R2_FORM_WITH_OP(xor_, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, ^)
+UTEST_R2_FORM_WITH_OP(or_, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, |)
+UTEST_R2_FORM_WITH_OP(and_, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, &)
+UTEST_R2_FORM_WITH_OP(sll, int32_t, 0x12345678UL, 17, <<)
+UTEST_R2_FORM_WITH_OP(srl, int32_t, 0x82340000UL, 17, >>)
+UTEST_R2_FORM_WITH_OP(sra, int32_t, -0x12340000LL, 17, >>)
 
 // -- Memory fences --
 // void fence(uint8_t pred, uint8_t succ);
@@ -388,39 +381,22 @@ UTEST_CSR(csr_fflags, kInexact | kInvalidOperation, kInvalidOperation)
 UTEST_CSR(csr_fcsr, kDivideByZero | kOverflow | (RDN << kFcsrFrmShift),
           kUnderflow | (RNE << kFcsrFrmShift))
 
-// -- RV64I --
-UTEST_I_FORM_WITH_OP(addiw, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, +)
-UTEST_I_FORM_WITH_OP(slliw, int32_t, 0x12345678U, 12, <<)
-UTEST_I_FORM_WITH_OP(srliw, int32_t, 0x82345678U, 12, >>)
-UTEST_I_FORM_WITH_OP(sraiw, int32_t, -123, 12, >>)
-
-UTEST_R2_FORM_WITH_OP(addw, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, +)
-UTEST_R2_FORM_WITH_OP(subw, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, -)
-UTEST_R2_FORM_WITH_OP(sllw, int32_t, 0x12345678U, 12, <<)
-UTEST_R2_FORM_WITH_OP(srlw, int32_t, 0x82345678U, 12, >>)
-UTEST_R2_FORM_WITH_OP(sraw, int32_t, -123, 12, >>)
 
 // -- RV32M Standard Extension --
-UTEST_R2_FORM_WITH_OP(mul, int64_t, 0x0F945001L, MIN_VAL_IMM12, *)
-UTEST_R2_FORM_WITH_RES(mulh, int64_t, 0x1234567800000000LL,
-                       -0x1234'5617'0000'0000LL, 0x12345678LL * -0x1234'5617LL)
-UTEST_R2_FORM_WITH_RES(mulhu, int64_t, 0x1234'5678'0000'0000ULL,
-                       0xF896'7021'0000'0000ULL,
-                       0x1234'5678ULL * 0xF896'7021ULL)
-UTEST_R2_FORM_WITH_RES(mulhsu, int64_t, -0x1234'56780000'0000LL,
-                       0xF234'5678'0000'0000ULL,
-                       static_cast<int64_t>(-0x1234'5678LL * 0xF234'5678ULL))
-UTEST_R2_FORM_WITH_OP(div, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, /)
-UTEST_R2_FORM_WITH_OP(divu, uint64_t, LARGE_UINT_EXCEED_32_BIT, 100, /)
-UTEST_R2_FORM_WITH_OP(rem, int64_t, LARGE_INT_EXCEED_32_BIT, MIN_VAL_IMM12, %)
-UTEST_R2_FORM_WITH_OP(remu, uint64_t, LARGE_UINT_EXCEED_32_BIT, 100, %)
+UTEST_R2_FORM_WITH_OP(mul, int32_t, 0x045001, MIN_VAL_IMM12, *)
+UTEST_R2_FORM_WITH_RES(mulh, int32_t, 0x12344321,
+                       -0x56171234, static_cast<int32_t>((0x12344321LL * -0x56171234LL) >> 32))
+UTEST_R2_FORM_WITH_RES(mulhu, int32_t, 0x12345678,
+                       0xF8967021,
+                       static_cast<int32_t>((0x12345678ULL * 0xF8967021ULL) >> 32))
+UTEST_R2_FORM_WITH_RES(mulhsu, int32_t, -0x12345678,
+                       0xF2345678,
+                       static_cast<int32_t>((-0x12345678LL * 0xF2345678ULL) >> 32))
+UTEST_R2_FORM_WITH_OP(div, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, /)
+UTEST_R2_FORM_WITH_OP(divu, uint32_t, LARGE_UINT_UNDER_32_BIT, 100, /)
+UTEST_R2_FORM_WITH_OP(rem, int32_t, LARGE_INT_UNDER_32_BIT, MIN_VAL_IMM12, %)
+UTEST_R2_FORM_WITH_OP(remu, uint32_t, LARGE_UINT_UNDER_32_BIT, 100, %)
 
-// -- RV64M Standard Extension (in addition to RV32M) --
-UTEST_R2_FORM_WITH_OP(mulw, int32_t, -20, 56, *)
-UTEST_R2_FORM_WITH_OP(divw, int32_t, 200, -10, /)
-UTEST_R2_FORM_WITH_OP(divuw, uint32_t, 1000, 100, /)
-UTEST_R2_FORM_WITH_OP(remw, int32_t, 1234, -91, %)
-UTEST_R2_FORM_WITH_OP(remuw, uint32_t, 1234, 43, %)
 
 // -- RV32A Standard Extension --
 UTEST_LR_SC(lr_w, sc_w, false, false, int32_t, 0xFBB1A75C)
@@ -442,39 +418,6 @@ UTEST_AMO_WITH_RES(amominu_w, false, false, uint32_t, 0xFBB1A75C, 0xA75C0A9C,
                    std::min((uint32_t)0xFBB1A75C, (uint32_t)0xA75C0A9C))
 UTEST_AMO_WITH_RES(amomaxu_w, false, false, uint32_t, 0xFBB1A75C, 0xA75C0A9C,
                    std::max((uint32_t)0xFBB1A75C, (uint32_t)0xA75C0A9C))
-
-// -- RV64A Standard Extension (in addition to RV32A) --
-UTEST_LR_SC(lr_d, sc_d, false, false, int64_t, 0xFBB10A9Cbfb76aa6)
-UTEST_AMO_WITH_RES(amoswap_d, false, false, int64_t, 0xFBB10A9Cbfb76aa6,
-                   0x284ff922346ad35c, (int64_t)0x284ff922346ad35c)
-UTEST_AMO_WITH_RES(amoadd_d, false, false, int64_t, 0xFBB10A9Cbfb76aa6,
-                   0x284ff922346ad35c,
-                   (int64_t)0xFBB10A9Cbfb76aa6 + (int64_t)0x284ff922346ad35c)
-UTEST_AMO_WITH_RES(amoxor_d, false, false, int64_t, 0xFBB10A9Cbfb76aa6,
-                   0x284ff922346ad35c,
-                   (int64_t)0xFBB10A9Cbfb76aa6 ^ (int64_t)0x284ff922346ad35c)
-UTEST_AMO_WITH_RES(amoand_d, false, false, int64_t, 0xFBB10A9Cbfb76aa6,
-                   0x284ff922346ad35c,
-                   (int64_t)0xFBB10A9Cbfb76aa6 & (int64_t)0x284ff922346ad35c)
-UTEST_AMO_WITH_RES(amoor_d, false, false, int64_t, 0xFBB10A9Cbfb76aa6,
-                   0x284ff922346ad35c,
-                   (int64_t)0xFBB10A9Cbfb76aa6 | (int64_t)0x284ff922346ad35c)
-UTEST_AMO_WITH_RES(amomin_d, false, false, int64_t, 0xFBB10A9Cbfb76aa6,
-                   0x284ff922346ad35c,
-                   std::min((int64_t)0xFBB10A9Cbfb76aa6,
-                            (int64_t)0x284ff922346ad35c))
-UTEST_AMO_WITH_RES(amomax_d, false, false, int64_t, 0xFBB10A9Cbfb76aa6,
-                   0x284ff922346ad35c,
-                   std::max((int64_t)0xFBB10A9Cbfb76aa6,
-                            (int64_t)0x284ff922346ad35c))
-UTEST_AMO_WITH_RES(amominu_d, false, false, uint64_t, 0xFBB10A9Cbfb76aa6,
-                   0x284ff922346ad35c,
-                   std::min((uint64_t)0xFBB10A9Cbfb76aa6,
-                            (uint64_t)0x284ff922346ad35c))
-UTEST_AMO_WITH_RES(amomaxu_d, false, false, uint64_t, 0xFBB10A9Cbfb76aa6,
-                   0x284ff922346ad35c,
-                   std::max((uint64_t)0xFBB10A9Cbfb76aa6,
-                            (uint64_t)0x284ff922346ad35c))
 
 // -- RV32F Standard Extension --
 UTEST_LOAD_STORE_F(flw, fsw, float, -2345.678f)
@@ -506,87 +449,37 @@ UTEST_R2_FORM_WITH_RES_F(fsgnj_s, float, -100.0f, 200.0f, 100.0f)
 UTEST_R2_FORM_WITH_RES_F(fsgnjn_s, float, 100.0f, 200.0f, -100.0f)
 UTEST_R2_FORM_WITH_RES_F(fsgnjx_s, float, -100.0f, 200.0f, -100.0f)
 
-// -- RV64F Standard Extension (in addition to RV32F) --
-UTEST_LOAD_STORE_F(fld, fsd, double, -3456.678)
-UTEST_R2_FORM_WITH_OP_F(fadd_d, double, -1012.01, 3456.13, +)
-UTEST_R2_FORM_WITH_OP_F(fsub_d, double, -1012.01, 3456.13, -)
-UTEST_R2_FORM_WITH_OP_F(fmul_d, double, -10.01, 56.13, *)
-UTEST_R2_FORM_WITH_OP_F(fdiv_d, double, -10.01, 34.13, /)
-UTEST_R1_FORM_WITH_RES_F(fsqrt_d, double, 34.13, std::sqrt(34.13))
-UTEST_R2_FORM_WITH_RES_F(fmin_d, double, -1012.0, 3456.13, -1012.0)
-UTEST_R2_FORM_WITH_RES_F(fmax_d, double, -1012.0, 3456.13, 3456.13)
-
-UTEST_R3_FORM_WITH_RES_F(fmadd_d, double, 67.56, -1012.01, 3456.13,
-                         std::fma(67.56, -1012.01, 3456.13))
-UTEST_R3_FORM_WITH_RES_F(fmsub_d, double, 67.56, -1012.01, 3456.13,
-                         std::fma(67.56, -1012.01, -3456.13))
-UTEST_R3_FORM_WITH_RES_F(fnmsub_d, double, 67.56, -1012.01, 3456.13,
-                         -std::fma(67.56, -1012.01, -3456.13))
-UTEST_R3_FORM_WITH_RES_F(fnmadd_d, double, 67.56, -1012.01, 3456.13,
-                         -std::fma(67.56, -1012.01, 3456.13))
-
-UTEST_COMPARE_WITH_OP_F(feq_d, double, -3456.56, -3456.56, ==)
-UTEST_COMPARE_WITH_OP_F(flt_d, double, -3456.56, -3456.56, <)
-UTEST_COMPARE_WITH_OP_F(fle_d, double, -3456.56, -3456.56, <=)
-
-UTEST_CONV_F_FROM_I(fcvt_d_w, int32_t, double, -100, -100.0)
-UTEST_CONV_F_FROM_I(fcvt_d_wu, uint32_t, double,
-                    std::numeric_limits<uint32_t>::max(),
-                    (double)(std::numeric_limits<uint32_t>::max()))
-UTEST_CONV_I_FROM_F(fcvt_w_d, double, int32_t, RTZ, -100.0, -100)
-UTEST_CONV_I_FROM_F(fcvt_wu_d, double, uint32_t, RTZ,
-                    (double)(std::numeric_limits<uint32_t>::max()),
-                    std::numeric_limits<uint32_t>::max())
-
-// -- RV64F Standard Extension (in addition to RV32F) --
-UTEST_CONV_I_FROM_F(fcvt_l_s, float, int64_t, RDN, -100.5f, -101)
-UTEST_CONV_I_FROM_F(fcvt_lu_s, float, uint64_t, RTZ, 1000001.0f, 1000001)
-UTEST_CONV_F_FROM_I(fcvt_s_l, int64_t, float, (-0x1234'5678'0000'0001LL),
-                    (float)(-0x1234'5678'0000'0001LL))
-UTEST_CONV_F_FROM_I(fcvt_s_lu, uint64_t, float,
-                    std::numeric_limits<uint64_t>::max(),
-                    (float)(std::numeric_limits<uint64_t>::max()))
 
 // -- RV32D Standard Extension --
-UTEST_CONV_F_FROM_F(fcvt_s_d, double, float, 100.0, 100.0f)
-UTEST_CONV_F_FROM_F(fcvt_d_s, float, double, 100.0f, 100.0)
+// TODO(rv32 simulator don't support double args)
+// UTEST_CONV_F_FROM_F(fcvt_s_d, double, float, 100.0, 100.0f)
+// UTEST_CONV_F_FROM_F(fcvt_d_s, float, double, 100.0f, 100.0)
 
-UTEST_R2_FORM_WITH_RES_F(fsgnj_d, double, -100.0, 200.0, 100.0)
-UTEST_R2_FORM_WITH_RES_F(fsgnjn_d, double, 100.0, 200.0, -100.0)
-UTEST_R2_FORM_WITH_RES_F(fsgnjx_d, double, -100.0, 200.0, -100.0)
+// UTEST_R2_FORM_WITH_RES_F(fsgnj_d, double, -100.0, 200.0, 100.0)
+// UTEST_R2_FORM_WITH_RES_F(fsgnjn_d, double, 100.0, 200.0, -100.0)
+// UTEST_R2_FORM_WITH_RES_F(fsgnjx_d, double, -100.0, 200.0, -100.0)
 
-// -- RV64D Standard Extension (in addition to RV32D) --
-UTEST_CONV_I_FROM_F(fcvt_l_d, double, int64_t, RNE, -100.5, -100)
-UTEST_CONV_I_FROM_F(fcvt_lu_d, double, uint64_t, RTZ, 2456.5, 2456)
-UTEST_CONV_F_FROM_I(fcvt_d_l, int64_t, double, (-0x1234'5678'0000'0001LL),
-                    (double)(-0x1234'5678'0000'0001LL))
-UTEST_CONV_F_FROM_I(fcvt_d_lu, uint64_t, double,
-                    std::numeric_limits<uint64_t>::max(),
-                    (double)(std::numeric_limits<uint64_t>::max()))
 
-// -- RV64C Standard Extension --
-UTEST_R1_FORM_WITH_RES_C(c_mv, int64_t, int64_t, 0x0f5600ab123400,
-                         0x0f5600ab123400)
+// -- RVC Standard Extension --
+UTEST_R1_FORM_WITH_RES_C(c_mv, int32_t, int32_t, 0x0f5600ab,
+                         0x0f5600ab)
 
 // -- Assembler Pseudo Instructions --
-UTEST_R1_FORM_WITH_RES(mv, int64_t, int64_t, 0x0f5600ab123400, 0x0f5600ab123400)
-UTEST_R1_FORM_WITH_RES(not_, int64_t, int64_t, 0, ~0)
-UTEST_R1_FORM_WITH_RES(neg, int64_t, int64_t, 0x0f5600ab123400LL,
-                       -(0x0f5600ab123400LL))
-UTEST_R1_FORM_WITH_RES(negw, int32_t, int32_t, 0xab123400, -(0xab123400))
-UTEST_R1_FORM_WITH_RES(sext_w, int32_t, int64_t, 0xFA01'1234,
-                       static_cast<int64_t>(0xFFFFFFFFFA011234LL))
-UTEST_R1_FORM_WITH_RES(seqz, int64_t, int64_t, 20, 20 == 0)
-UTEST_R1_FORM_WITH_RES(snez, int64_t, int64_t, 20, 20 != 0)
-UTEST_R1_FORM_WITH_RES(sltz, int64_t, int64_t, -20, -20 < 0)
-UTEST_R1_FORM_WITH_RES(sgtz, int64_t, int64_t, -20, -20 > 0)
+UTEST_R1_FORM_WITH_RES(mv, int32_t, int32_t, 0x0f5600ab, 0x0f5600ab)
+UTEST_R1_FORM_WITH_RES(not_, int32_t, int32_t, 0, ~0)
+UTEST_R1_FORM_WITH_RES(neg, int32_t, int32_t, 0xab123400, -(0xab123400))
+UTEST_R1_FORM_WITH_RES(seqz, int32_t, int32_t, 20, 20 == 0)
+UTEST_R1_FORM_WITH_RES(snez, int32_t, int32_t, 20, 20 != 0)
+UTEST_R1_FORM_WITH_RES(sltz, int32_t, int32_t, -20, -20 < 0)
+UTEST_R1_FORM_WITH_RES(sgtz, int32_t, int32_t, -20, -20 > 0)
 
 UTEST_R1_FORM_WITH_RES_F(fmv_s, float, -23.5f, -23.5f)
 UTEST_R1_FORM_WITH_RES_F(fabs_s, float, -23.5f, 23.5f)
 UTEST_R1_FORM_WITH_RES_F(fneg_s, float, 23.5f, -23.5f)
-UTEST_R1_FORM_WITH_RES_F(fmv_d, double, -23.5, -23.5)
-UTEST_R1_FORM_WITH_RES_F(fabs_d, double, -23.5, 23.5)
-UTEST_R1_FORM_WITH_RES_F(fneg_d, double, 23.5, -23.5)
+// TODO(rv32 simulator don't support double args)
+// UTEST_R1_FORM_WITH_RES_F(fmv_d, double, -23.5, -23.5)
+// UTEST_R1_FORM_WITH_RES_F(fabs_d, double, -23.5, 23.5)
+// UTEST_R1_FORM_WITH_RES_F(fneg_d, double, 23.5, -23.5)
 
 // Test LI
 TEST(RISCV0) {
@@ -617,9 +510,9 @@ TEST(RISCV1) {
     __ bnez(a2, &L);
   };
 
-  int64_t input = 50;
-  int64_t expected_res = 1275L;
-  auto res = GenAndRunTest<int64_t>(input, fn);
+  int32_t input = 50;
+  int32_t expected_res = 1275L;
+  auto res = GenAndRunTest<int32_t>(input, fn);
   CHECK_EQ(expected_res, res);
 }
 
@@ -643,8 +536,8 @@ TEST(RISCV2) {
     __ ori(a4, a4, 0);
     __ ori(a4, a4, 0xF0F);
     __ ori(a4, a4, 0x0F0);
-    __ addiw(a5, a4, 1);
-    __ addiw(a6, a5, -0x10);
+    __ addi(a5, a4, 1);
+    __ addi(a6, a5, -0x10);
 
     // Load values in temporary registers.
     __ RV_li(a4, 0x00000004);
@@ -656,33 +549,33 @@ TEST(RISCV2) {
     __ RV_li(t2, 0xEDCBA988);
     __ RV_li(t3, 0x80000000);
 
-    __ srliw(t0, a6, 8);   // 0x00123456
-    __ slliw(t0, t0, 11);  // 0x91A2B000
-    __ sraiw(t0, t0, 3);   // 0xFFFFFFFF F2345600
-    __ sraw(t0, t0, a4);   // 0xFFFFFFFF FF234560
-    __ sllw(t0, t0, a4);   // 0xFFFFFFFF F2345600
-    __ srlw(t0, t0, a4);   // 0x0F234560
+    __ srli(t0, a6, 8);   // 0x00123456
+    __ slli(t0, t0, 11);  // 0x91A2B000
+    __ srai(t0, t0, 3);   // 0xF2345600
+    __ sra(t0, t0, a4);   // 0xFF234560
+    __ sll(t0, t0, a4);   // 0xF2345600
+    __ srl(t0, t0, a4);   // 0x0F234560
     __ RV_li(t5, 0x0F234560);
     __ bne(t0, t5, &error);
 
-    __ addw(t0, a4, a5);  // 0x00001238
-    __ subw(t0, t0, a4);  // 0x00001234
+    __ add(t0, a4, a5);  // 0x00001238
+    __ sub(t0, t0, a4);  // 0x00001234
     __ RV_li(t5, 0x00001234);
     __ bne(t0, t5, &error);
-    __ addw(a1, a7,
+    __ add(a1, a7,
             a4);  // 32bit addu result is sign-extended into 64bit reg.
-    __ RV_li(t5, 0xFFFFFFFF80000003);
+    __ RV_li(t5, 0x80000003);
     __ bne(a1, t5, &error);
-    __ subw(a1, t3, a4);  // 0x7FFFFFFC
+    __ sub(a1, t3, a4);  // 0x7FFFFFFC
     __ RV_li(t5, 0x7FFFFFFC);
     __ bne(a1, t5, &error);
 
-    __ and_(t0, a5, a6);  // 0x0000000000001230
-    __ or_(t0, t0, a5);   // 0x0000000000001234
-    __ xor_(t0, t0, a6);  // 0x000000001234444C
+    __ and_(t0, a5, a6);  // 0x00001230
+    __ or_(t0, t0, a5);   // 0x00001234
+    __ xor_(t0, t0, a6);  // 0x1234444C
     __ or_(t0, t0, a6);
-    __ not_(t0, t0);  // 0xFFFFFFFFEDCBA983
-    __ RV_li(t5, 0xFFFFFFFFEDCBA983);
+    __ not_(t0, t0);  // 0xEDCBA983
+    __ RV_li(t5, 0xEDCBA983);
     __ bne(t0, t5, &error);
 
     // Shift both 32bit number to left, to
@@ -705,13 +598,13 @@ TEST(RISCV2) {
     __ addi(t0, t0, -0x20);  // 0x00007400
     __ RV_li(t5, 0x00007400);
     __ bne(t0, t5, &error);
-    __ addiw(a1, a7, 0x1);  // 0x80000000 - result is sign-extended.
-    __ RV_li(t5, 0xFFFFFFFF80000000);
+    __ addi(a1, a7, 0x1);  // 0x80000000 - result is sign-extended.
+    __ RV_li(t5, 0x80000000);
     __ bne(a1, t5, &error);
 
     __ RV_li(t5, 0x00002000);
     __ slt(t0, a5, t5);  // 0x1
-    __ RV_li(t6, 0xFFFFFFFFFFFF8000);
+    __ RV_li(t6, 0xFFFF8000);
     __ slt(t0, t0, t6);  // 0x0
     __ bne(t0, zero_reg, &error);
     __ sltu(t0, a5, t5);  // 0x1
@@ -726,7 +619,7 @@ TEST(RISCV2) {
     __ RV_li(t5, 0x000001FC);
     __ bne(t0, t5, &error);
     __ lui(a1, -519628);  // Result is sign-extended into 64bit register.
-    __ RV_li(t5, 0xFFFFFFFF81234000);
+    __ RV_li(t5, 0x81234000);
     __ bne(a1, t5, &error);
 
     // Everything was correctly executed.
@@ -897,7 +790,7 @@ TEST(RISCV4) {
     __ flw(ft0, a0, offsetof(T, d));
     __ fmv_x_w(a4, ft0);
 
-    __ sd(a4, a0, offsetof(T, e));
+    __ sw(a4, a0, offsetof(T, e));
   };
   auto f = AssembleCode<F3>(fn);
 
@@ -1062,15 +955,15 @@ TEST(FCLASS) {
     }
   }
 
-  {
-    auto i_vec = fclass_test_values<double>();
-    for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
-      auto input = *i;
-      auto fn = [](MacroAssembler& assm) { __ fclass_d(a0, fa0); };
-      auto res = GenAndRunTest<uint32_t>(input.first, fn);
-      CHECK_EQ(input.second, res);
-    }
-  }
+  // {
+  //   auto i_vec = fclass_test_values<double>();
+  //   for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
+  //     auto input = *i;
+  //     auto fn = [](MacroAssembler& assm) { __ fclass_d(a0, fa0); };
+  //     auto res = GenAndRunTest<uint32_t>(input.first, fn);
+  //     CHECK_EQ(input.second, res);
+  //   }
+  // }
 }
 
 TEST(RISCV7) {
@@ -1171,14 +1064,14 @@ TEST(NAN_BOX) {
   // Test NaN boxing in FMV.X.D
   {
     auto fn = [](MacroAssembler& assm) { __ fmv_x_d(a0, fa0); };
-    auto res = GenAndRunTest<uint64_t>(1234.56f, fn);
+    auto res = GenAndRunTest<uint32_t>(1234.56f, fn);
     CHECK_EQ(0xFFFFFFFF00000000 | bit_cast<uint32_t>(1234.56f), res);
   }
   // Test NaN boxing in FMV.X.W
   {
     auto fn = [](MacroAssembler& assm) { __ fmv_x_w(a0, fa0); };
-    auto res = GenAndRunTest<uint64_t>(1234.56f, fn);
-    CHECK_EQ((uint64_t)bit_cast<uint32_t>(1234.56f), res);
+    auto res = GenAndRunTest<uint32_t>(1234.56f, fn);
+    CHECK_EQ((uint32_t)bit_cast<uint32_t>(1234.56f), res);
   }
 
   // Test FLW and FSW
@@ -1218,8 +1111,8 @@ TEST(RVC_CI) {
   // Test c.addi
   {
     auto fn = [](MacroAssembler& assm) { __ c_addi(a0, -15); };
-    auto res = GenAndRunTest<int64_t>(LARGE_INT_EXCEED_32_BIT, fn);
-    CHECK_EQ(LARGE_INT_EXCEED_32_BIT - 15, res);
+    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
+    CHECK_EQ(LARGE_INT_UNDER_32_BIT - 15, res);
   }
 
   // Test c.addiw
@@ -1238,29 +1131,29 @@ TEST(RVC_CI) {
       __ mv(a0, sp);
       __ mv(sp, t1);
     };
-    auto res = GenAndRunTest<int64_t>(66666, fn);
+    auto res = GenAndRunTest<int32_t>(66666, fn);
     CHECK_EQ(66666 - 432, res);
   }
 
   // Test c.li
   {
     auto fn = [](MacroAssembler& assm) { __ c_li(a0, -15); };
-    auto res = GenAndRunTest<int64_t>(1234543, fn);
+    auto res = GenAndRunTest<int32_t>(1234543, fn);
     CHECK_EQ(-15, res);
   }
 
   // Test c.lui
   {
     auto fn = [](MacroAssembler& assm) { __ c_lui(a0, -20); };
-    auto res = GenAndRunTest<int64_t>(0x1234567, fn);
-    CHECK_EQ(0xfffffffffffec000, (uint64_t)res);
+    auto res = GenAndRunTest<int32_t>(0x1234567, fn);
+    CHECK_EQ(0xfffffffffffec000, (uint32_t)res);
   }
 
   // Test c.slli
   {
     auto fn = [](MacroAssembler& assm) { __ c_slli(a0, 13); };
-    auto res = GenAndRunTest<int64_t>(0x1234'5678ULL, fn);
-    CHECK_EQ(0x1234'5678ULL << 13, res);
+    auto res = GenAndRunTest<int32_t>(0x12345678, fn);
+    CHECK_EQ(0x12345678LL << 13, res);
   }
 }
 
@@ -1276,7 +1169,7 @@ TEST(RVC_CIW) {
       __ c_addi4spn(a0, 924);
       __ mv(sp, t1);
     };
-    auto res = GenAndRunTest<int64_t>(66666, fn);
+    auto res = GenAndRunTest<int32_t>(66666, fn);
     CHECK_EQ(66666 + 924, res);
   }
 }
@@ -1292,8 +1185,8 @@ TEST(RVC_CR) {
       __ RV_li(a1, MIN_VAL_IMM12);
       __ c_add(a0, a1);
     };
-    auto res = GenAndRunTest<int64_t>(LARGE_INT_EXCEED_32_BIT, fn);
-    CHECK_EQ(LARGE_INT_EXCEED_32_BIT + MIN_VAL_IMM12, res);
+    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
+    CHECK_EQ(LARGE_INT_UNDER_32_BIT + MIN_VAL_IMM12, res);
   }
 }
 
@@ -1308,7 +1201,7 @@ TEST(RVC_CA) {
       __ RV_li(a1, MIN_VAL_IMM12);
       __ c_sub(a0, a1);
     };
-    auto res = GenAndRunTest<int64_t>(LARGE_INT_UNDER_32_BIT, fn);
+    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
     CHECK_EQ(LARGE_INT_UNDER_32_BIT - MIN_VAL_IMM12, res);
   }
 
@@ -1318,7 +1211,7 @@ TEST(RVC_CA) {
       __ RV_li(a1, MIN_VAL_IMM12);
       __ c_xor(a0, a1);
     };
-    auto res = GenAndRunTest<int64_t>(LARGE_INT_UNDER_32_BIT, fn);
+    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
     CHECK_EQ(LARGE_INT_UNDER_32_BIT ^ MIN_VAL_IMM12, res);
   }
 
@@ -1328,7 +1221,7 @@ TEST(RVC_CA) {
       __ RV_li(a1, MIN_VAL_IMM12);
       __ c_or(a0, a1);
     };
-    auto res = GenAndRunTest<int64_t>(LARGE_INT_UNDER_32_BIT, fn);
+    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
     CHECK_EQ(LARGE_INT_UNDER_32_BIT | MIN_VAL_IMM12, res);
   }
 
@@ -1338,7 +1231,7 @@ TEST(RVC_CA) {
       __ RV_li(a1, MIN_VAL_IMM12);
       __ c_and(a0, a1);
     };
-    auto res = GenAndRunTest<int64_t>(LARGE_INT_UNDER_32_BIT, fn);
+    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
     CHECK_EQ(LARGE_INT_UNDER_32_BIT & MIN_VAL_IMM12, res);
   }
 
@@ -1348,7 +1241,7 @@ TEST(RVC_CA) {
       __ RV_li(a1, MIN_VAL_IMM12);
       __ c_subw(a0, a1);
     };
-    auto res = GenAndRunTest<int64_t>(LARGE_INT_UNDER_32_BIT, fn);
+    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
     CHECK_EQ(LARGE_INT_UNDER_32_BIT - MIN_VAL_IMM12, res);
   }
 
@@ -1358,13 +1251,13 @@ TEST(RVC_CA) {
       __ RV_li(a1, MIN_VAL_IMM12);
       __ c_addw(a0, a1);
     };
-    auto res = GenAndRunTest<int64_t>(LARGE_INT_UNDER_32_BIT, fn);
+    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
     CHECK_EQ(LARGE_INT_UNDER_32_BIT + MIN_VAL_IMM12, res);
   }
 }
 
 TEST(RVC_LOAD_STORE_SP) {
-  // Test RV64C extension fldsp/fsdsp, lwsp/swsp, ldsp/sdsp.
+  // Test RV32C extension flwsp/fswsp, lwsp/swsp.
   i::FLAG_riscv_c_extension = true;
   CcTest::InitializeVM();
 
@@ -1373,8 +1266,8 @@ TEST(RVC_LOAD_STORE_SP) {
       __ c_fsdsp(fa0, 80);
       __ c_fldsp(fa0, 80);
     };
-    auto res = GenAndRunTest<double>(-3456.678, fn);
-    CHECK_EQ(-3456.678, res);
+    auto res = GenAndRunTest<float>(-3456.678f, fn);
+    CHECK_EQ(-3456.678f, res);
   }
 
   {
@@ -1384,15 +1277,6 @@ TEST(RVC_LOAD_STORE_SP) {
     };
     auto res = GenAndRunTest<int32_t>(0x456AF894, fn);
     CHECK_EQ(0x456AF894, res);
-  }
-
-  {
-    auto fn = [](MacroAssembler& assm) {
-      __ c_sdsp(a0, 160);
-      __ c_ldsp(a0, 160);
-    };
-    auto res = GenAndRunTest<uint64_t>(0xFBB10A9C12345678, fn);
-    CHECK_EQ(0xFBB10A9C12345678, res);
   }
 }
 
@@ -1498,9 +1382,9 @@ TEST(RVC_JUMP) {
     __ bnez(a2, &L);
   };
 
-  int64_t input = 50;
-  int64_t expected_res = 1275L;
-  auto res = GenAndRunTest<int64_t>(input, fn);
+  int32_t input = 50;
+  int32_t expected_res = 1275L;
+  auto res = GenAndRunTest<int32_t>(input, fn);
   CHECK_EQ(expected_res, res);
 }
 
@@ -1512,22 +1396,22 @@ TEST(RVC_CB) {
   // Test c.srai
   {
     auto fn = [](MacroAssembler& assm) { __ c_srai(a0, 13); };
-    auto res = GenAndRunTest<int64_t>(0x1234'5678ULL, fn);
-    CHECK_EQ(0x1234'5678ULL >> 13, res);
+    auto res = GenAndRunTest<int32_t>(0x12345678, fn);
+    CHECK_EQ(0x12345678UL >> 13, res);
   }
 
   // Test c.srli
   {
     auto fn = [](MacroAssembler& assm) { __ c_srli(a0, 13); };
-    auto res = GenAndRunTest<int64_t>(0x1234'5678ULL, fn);
+    auto res = GenAndRunTest<int32_t>(0x12345678, fn);
     CHECK_EQ(0x1234'5678ULL >> 13, res);
   }
 
   // Test c.andi
   {
     auto fn = [](MacroAssembler& assm) { __ c_andi(a0, 13); };
-    auto res = GenAndRunTest<int64_t>(LARGE_INT_EXCEED_32_BIT, fn);
-    CHECK_EQ(LARGE_INT_EXCEED_32_BIT & 13, res);
+    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
+    CHECK_EQ(LARGE_INT_UNDER_32_BIT & 13, res);
   }
 }
 
@@ -1625,10 +1509,10 @@ TEST(SET_TARGET_ADDR) {
   MacroAssembler assm(isolate, v8::internal::CodeObjectRequired::kYes);
 
   uintptr_t addr = reinterpret_cast<uintptr_t>(&buffer[0]);
-  __ set_target_value_at(static_cast<Address>(addr), 0xba9876543210L,
+  __ set_target_value_at(static_cast<Address>(addr), 0xba987654L,
                          FLUSH_ICACHE_IF_NEEDED);
   Address res = __ target_address_at(static_cast<Address>(addr));
-  CHECK_EQ(0xba9876543210L, res);
+  CHECK_EQ(0xba987654L, res);
 }
 
 // pair.first is the F_TYPE input to test, pair.second is I_TYPE expected
@@ -1660,15 +1544,15 @@ static const std::vector<std::pair<F_TYPE, I_TYPE>> out_of_range_test_values() {
 TEST(OUT_OF_RANGE_CVT) {
   CcTest::InitializeVM();
 
-  {  // test fvt_w_d
-    auto i_vec = out_of_range_test_values<double, int32_t>();
-    for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
-      auto input = *i;
-      auto fn = [](MacroAssembler& assm) { __ fcvt_w_d(a0, fa0); };
-      auto res = GenAndRunTest<int32_t>(input.first, fn);
-      CHECK_EQ(input.second, res);
-    }
-  }
+  // {  // test fvt_w_d
+  //   auto i_vec = out_of_range_test_values<double, int32_t>();
+  //   for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
+  //     auto input = *i;
+  //     auto fn = [](MacroAssembler& assm) { __ fcvt_w_d(a0, fa0); };
+  //     auto res = GenAndRunTest<int32_t>(input.first, fn);
+  //     CHECK_EQ(input.second, res);
+  //   }
+  // }
 
   {  // test fvt_w_s
     auto i_vec = out_of_range_test_values<float, int32_t>();
@@ -1680,15 +1564,15 @@ TEST(OUT_OF_RANGE_CVT) {
     }
   }
 
-  {  // test fvt_wu_d
-    auto i_vec = out_of_range_test_values<double, uint32_t>();
-    for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
-      auto input = *i;
-      auto fn = [](MacroAssembler& assm) { __ fcvt_wu_d(a0, fa0); };
-      auto res = GenAndRunTest<uint32_t>(input.first, fn);
-      CHECK_EQ(input.second, res);
-    }
-  }
+  // {  // test fvt_wu_d
+  //   auto i_vec = out_of_range_test_values<double, uint32_t>();
+  //   for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
+  //     auto input = *i;
+  //     auto fn = [](MacroAssembler& assm) { __ fcvt_wu_d(a0, fa0); };
+  //     auto res = GenAndRunTest<uint32_t>(input.first, fn);
+  //     CHECK_EQ(input.second, res);
+  //   }
+  // }
 
   {  // test fvt_wu_s
     auto i_vec = out_of_range_test_values<float, uint32_t>();
@@ -1700,42 +1584,42 @@ TEST(OUT_OF_RANGE_CVT) {
     }
   }
 
-  {  // test fvt_l_d
-    auto i_vec = out_of_range_test_values<double, int64_t>();
-    for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
-      auto input = *i;
-      auto fn = [](MacroAssembler& assm) { __ fcvt_l_d(a0, fa0); };
-      auto res = GenAndRunTest<int64_t>(input.first, fn);
-      CHECK_EQ(input.second, res);
-    }
-  }
+  // {  // test fvt_l_d
+  //   auto i_vec = out_of_range_test_values<double, int64_t>();
+  //   for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
+  //     auto input = *i;
+  //     auto fn = [](MacroAssembler& assm) { __ fcvt_l_d(a0, fa0); };
+  //     auto res = GenAndRunTest<int32_t>(input.first, fn);
+  //     CHECK_EQ(input.second, res);
+  //   }
+  // }
 
   {  // test fvt_l_s
-    auto i_vec = out_of_range_test_values<float, int64_t>();
+    auto i_vec = out_of_range_test_values<float, int32_t>();
     for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
       auto input = *i;
       auto fn = [](MacroAssembler& assm) { __ fcvt_l_s(a0, fa0); };
-      auto res = GenAndRunTest<int64_t>(input.first, fn);
+      auto res = GenAndRunTest<int32_t>(input.first, fn);
       CHECK_EQ(input.second, res);
     }
   }
 
-  {  // test fvt_lu_d
-    auto i_vec = out_of_range_test_values<double, uint64_t>();
-    for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
-      auto input = *i;
-      auto fn = [](MacroAssembler& assm) { __ fcvt_lu_d(a0, fa0); };
-      auto res = GenAndRunTest<uint64_t>(input.first, fn);
-      CHECK_EQ(input.second, res);
-    }
-  }
+  // {  // test fvt_lu_d
+  //   auto i_vec = out_of_range_test_values<double, uint64_t>();
+  //   for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
+  //     auto input = *i;
+  //     auto fn = [](MacroAssembler& assm) { __ fcvt_lu_d(a0, fa0); };
+  //     auto res = GenAndRunTest<uint32_t>(input.first, fn);
+  //     CHECK_EQ(input.second, res);
+  //   }
+  // }
 
   {  // test fvt_lu_s
-    auto i_vec = out_of_range_test_values<float, uint64_t>();
+    auto i_vec = out_of_range_test_values<float, uint32_t>();
     for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
       auto input = *i;
       auto fn = [](MacroAssembler& assm) { __ fcvt_lu_s(a0, fa0); };
-      auto res = GenAndRunTest<uint64_t>(input.first, fn);
+      auto res = GenAndRunTest<uint32_t>(input.first, fn);
       CHECK_EQ(input.second, res);
     }
   }
@@ -1785,12 +1669,12 @@ TEST(F_NAN) {
   FCMP_TEST_HELPER(float, fn3, <=);
 
   // double compare
-  auto fn4 = [](MacroAssembler& assm) { __ feq_d(a0, fa0, fa1); };
-  FCMP_TEST_HELPER(double, fn4, ==);
-  auto fn5 = [](MacroAssembler& assm) { __ flt_d(a0, fa0, fa1); };
-  FCMP_TEST_HELPER(double, fn5, <);
-  auto fn6 = [](MacroAssembler& assm) { __ fle_d(a0, fa0, fa1); };
-  FCMP_TEST_HELPER(double, fn6, <=);
+  // auto fn4 = [](MacroAssembler& assm) { __ feq_d(a0, fa0, fa1); };
+  // FCMP_TEST_HELPER(double, fn4, ==);
+  // auto fn5 = [](MacroAssembler& assm) { __ flt_d(a0, fa0, fa1); };
+  // FCMP_TEST_HELPER(double, fn5, <);
+  // auto fn6 = [](MacroAssembler& assm) { __ fle_d(a0, fa0, fa1); };
+  // FCMP_TEST_HELPER(double, fn6, <=);
 }
 
 TEST(jump_tables1) {
@@ -1806,7 +1690,7 @@ TEST(jump_tables1) {
 
   auto fn = [&labels, &done, values](MacroAssembler& assm) {
     __ addi(sp, sp, -8);
-    __ Sd(ra, MemOperand(sp));
+    __ Sw(ra, MemOperand(sp));
     __ Align(8);
     {
       __ BlockTrampolinePoolFor(kNumCases * 2 + 6);
@@ -1814,7 +1698,7 @@ TEST(jump_tables1) {
       __ auipc(ra, 0);
       __ slli(t3, a0, 3);
       __ add(t3, t3, ra);
-      __ Ld(t3, MemOperand(t3, 6 * kInstrSize));
+      __ Lw(t3, MemOperand(t3, 6 * kInstrSize));
       __ jr(t3);
       __ nop();  // For 16-byte alignment
       for (int i = 0; i < kNumCases; ++i) {
@@ -1829,7 +1713,7 @@ TEST(jump_tables1) {
     }
 
     __ bind(&done);
-    __ Ld(ra, MemOperand(sp));
+    __ Lw(ra, MemOperand(sp));
     __ addi(sp, sp, 8);
 
     CHECK_EQ(0, assm.UnboundLabelsCount());
@@ -1855,7 +1739,7 @@ TEST(jump_tables2) {
 
   auto fn = [&labels, &done, &dispatch, values](MacroAssembler& assm) {
     __ addi(sp, sp, -8);
-    __ Sd(ra, MemOperand(sp));
+    __ Sw(ra, MemOperand(sp));
     __ j(&dispatch);
 
     for (int i = 0; i < kNumCases; ++i) {
@@ -1873,7 +1757,7 @@ TEST(jump_tables2) {
       __ auipc(ra, 0);
       __ slli(t3, a0, 3);
       __ add(t3, t3, ra);
-      __ Ld(t3, MemOperand(t3, 6 * kInstrSize));
+      __ Lw(t3, MemOperand(t3, 6 * kInstrSize));
       __ jr(t3);
       __ nop();  // For 16-byte alignment
       for (int i = 0; i < kNumCases; ++i) {
@@ -1881,7 +1765,7 @@ TEST(jump_tables2) {
       }
     }
     __ bind(&done);
-    __ Ld(ra, MemOperand(sp));
+    __ Lw(ra, MemOperand(sp));
     __ addi(sp, sp, 8);
   };
   auto f = AssembleCode<F1>(fn);
@@ -1911,7 +1795,7 @@ TEST(jump_tables3) {
   auto fn = [&labels, &done, &dispatch, values, &obj,
              &imm64](MacroAssembler& assm) {
     __ addi(sp, sp, -8);
-    __ Sd(ra, MemOperand(sp));
+    __ Sw(ra, MemOperand(sp));
 
     __ j(&dispatch);
 
@@ -1932,7 +1816,7 @@ TEST(jump_tables3) {
       __ auipc(ra, 0);
       __ slli(t3, a0, 3);
       __ add(t3, t3, ra);
-      __ Ld(t3, MemOperand(t3, 6 * kInstrSize));
+      __ Lw(t3, MemOperand(t3, 6 * kInstrSize));
       __ jr(t3);
       __ nop();  // For 16-byte alignment
       for (int i = 0; i < kNumCases; ++i) {
@@ -1941,7 +1825,7 @@ TEST(jump_tables3) {
     }
 
     __ bind(&done);
-    __ Ld(ra, MemOperand(sp));
+    __ Lw(ra, MemOperand(sp));
     __ addi(sp, sp, 8);
   };
   auto f = AssembleCode<F1>(fn);
@@ -1978,6 +1862,7 @@ TEST(li_estimate) {
   }
 }
 
+#ifdef CAN_USE_RVV_INSTRUCTIONS
 #define UTEST_LOAD_STORE_RVV(ldname, stname, SEW, arry)                      \
   TEST(RISCV_UTEST_##stname##ldname##SEW) {                                  \
     if (!CpuFeatures::IsSupported(RISCV_SIMD)) return;                       \
@@ -2209,29 +2094,29 @@ UTEST_RVV_VI_VX_FORM_WITH_FN(vminu_vx, 32, ARRAY_INT32, std::min<uint32_t>)
       }                                                                    \
     }                                                                      \
   }                                                                        \
-  TEST(RISCV_UTEST_DOUBLE_##instr_name) {                                  \
-    if (!CpuFeatures::IsSupported(RISCV_SIMD)) return;                     \
-    CcTest::InitializeVM();                                                \
-    double result[2] = {0.0};                                              \
-    auto fn = [&result](MacroAssembler& assm) {                            \
-      __ VU.set(t0, VSew::E64, Vlmul::m1);                                 \
-      __ vfmv_vf(v0, fa0);                                                 \
-      __ vfmv_vf(v1, fa1);                                                 \
-      __ instr_name(v0, v0, v1);                                           \
-      __ vfmv_fs(fa0, v0);                                                 \
-      __ li(a3, Operand(int64_t(result)));                                 \
-      __ vs(v0, a3, 0, E64);                                               \
-    };                                                                     \
-    for (double rs1_fval : compiler::ValueHelper::GetVector<double>()) {   \
-      for (double rs2_fval : compiler::ValueHelper::GetVector<double>()) { \
-        GenAndRunTest<double, double>(rs1_fval, rs2_fval, fn);             \
-        for (int i = 0; i < 2; i++) {                                      \
-          CHECK_DOUBLE_EQ(UseCanonicalNan<double>(expect_res), result[i]); \
-          result[i] = 0.0;                                                 \
-        }                                                                  \
-      }                                                                    \
-    }                                                                      \
-  }
+  // TEST(RISCV_UTEST_DOUBLE_##instr_name) {                                  \
+  //   if (!CpuFeatures::IsSupported(RISCV_SIMD)) return;                     \
+  //   CcTest::InitializeVM();                                                \
+  //   double result[2] = {0.0};                                              \
+  //   auto fn = [&result](MacroAssembler& assm) {                            \
+  //     __ VU.set(t0, VSew::E64, Vlmul::m1);                                 \
+  //     __ vfmv_vf(v0, fa0);                                                 \
+  //     __ vfmv_vf(v1, fa1);                                                 \
+  //     __ instr_name(v0, v0, v1);                                           \
+  //     __ vfmv_fs(fa0, v0);                                                 \
+  //     __ li(a3, Operand(int64_t(result)));                                 \
+  //     __ vs(v0, a3, 0, E64);                                               \
+  //   };                                                                     \
+  //   for (double rs1_fval : compiler::ValueHelper::GetVector<double>()) {   \
+  //     for (double rs2_fval : compiler::ValueHelper::GetVector<double>()) { \
+  //       GenAndRunTest<double, double>(rs1_fval, rs2_fval, fn);             \
+  //       for (int i = 0; i < 2; i++) {                                      \
+  //         CHECK_DOUBLE_EQ(UseCanonicalNan<double>(expect_res), result[i]); \
+  //         result[i] = 0.0;                                                 \
+  //       }                                                                  \
+  //     }                                                                    \
+  //   }                                                                      \
+  // }
 
 // Tests for vector single-width floating-point arithmetic instructions between
 // vector and scalar
@@ -2381,16 +2266,16 @@ static inline bool is_invalid_fsub(T src1, T src2) {
           std::signbit(src1) == std::signbit(src2));
 }
 
-UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwadd_vv, +, false, is_invalid_fadd)
-UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwadd_vf, +, false, is_invalid_fadd)
-UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwsub_vv, -, false, is_invalid_fsub)
-UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwsub_vf, -, false, is_invalid_fsub)
-UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwadd_wv, +, true, is_invalid_fadd)
-UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwadd_wf, +, true, is_invalid_fadd)
-UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwsub_wv, -, true, is_invalid_fsub)
-UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwsub_wf, -, true, is_invalid_fsub)
-UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwmul_vv, *, false, is_invalid_fmul)
-UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwmul_vf, *, false, is_invalid_fmul)
+// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwadd_vv, +, false, is_invalid_fadd)
+// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwadd_vf, +, false, is_invalid_fadd)
+// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwsub_vv, -, false, is_invalid_fsub)
+// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwsub_vf, -, false, is_invalid_fsub)
+// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwadd_wv, +, true, is_invalid_fadd)
+// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwadd_wf, +, true, is_invalid_fadd)
+// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwsub_wv, -, true, is_invalid_fsub)
+// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwsub_wf, -, true, is_invalid_fsub)
+// UTEST_RVV_VFW_VV_FORM_WITH_OP(vfwmul_vv, *, false, is_invalid_fmul)
+// UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwmul_vf, *, false, is_invalid_fmul)
 
 #undef UTEST_RVV_VF_VV_FORM_WITH_OP
 #undef UTEST_RVV_VF_VF_FORM_WITH_OP
@@ -2446,23 +2331,23 @@ UTEST_RVV_VFW_VF_FORM_WITH_OP(vfwmul_vf, *, false, is_invalid_fmul)
     }                                                                         \
   }
 
-#define ARRAY_FLOAT compiler::ValueHelper::GetVector<float>()
-UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwmacc_vv, ARRAY_FLOAT,
-                                   std::fma(rs2_fval, rs3_fval, rs1_fval))
-UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwmacc_vf, ARRAY_FLOAT,
-                                   std::fma(rs2_fval, rs3_fval, rs1_fval))
-UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwnmacc_vv, ARRAY_FLOAT,
-                                   std::fma(rs2_fval, -rs3_fval, -rs1_fval))
-UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwnmacc_vf, ARRAY_FLOAT,
-                                   std::fma(rs2_fval, -rs3_fval, -rs1_fval))
-UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwmsac_vv, ARRAY_FLOAT,
-                                   std::fma(rs2_fval, rs3_fval, -rs1_fval))
-UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwmsac_vf, ARRAY_FLOAT,
-                                   std::fma(rs2_fval, rs3_fval, -rs1_fval))
-UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwnmsac_vv, ARRAY_FLOAT,
-                                   std::fma(rs2_fval, -rs3_fval, rs1_fval))
-UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwnmsac_vf, ARRAY_FLOAT,
-                                   std::fma(rs2_fval, -rs3_fval, rs1_fval))
+// #define ARRAY_FLOAT compiler::ValueHelper::GetVector<float>()
+// UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwmacc_vv, ARRAY_FLOAT,
+//                                    std::fma(rs2_fval, rs3_fval, rs1_fval))
+// UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwmacc_vf, ARRAY_FLOAT,
+//                                    std::fma(rs2_fval, rs3_fval, rs1_fval))
+// UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwnmacc_vv, ARRAY_FLOAT,
+//                                    std::fma(rs2_fval, -rs3_fval, -rs1_fval))
+// UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwnmacc_vf, ARRAY_FLOAT,
+//                                    std::fma(rs2_fval, -rs3_fval, -rs1_fval))
+// UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwmsac_vv, ARRAY_FLOAT,
+//                                    std::fma(rs2_fval, rs3_fval, -rs1_fval))
+// UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwmsac_vf, ARRAY_FLOAT,
+//                                    std::fma(rs2_fval, rs3_fval, -rs1_fval))
+// UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES(vfwnmsac_vv, ARRAY_FLOAT,
+//                                    std::fma(rs2_fval, -rs3_fval, rs1_fval))
+// UTEST_RVV_VFW_FMA_VF_FORM_WITH_RES(vfwnmsac_vf, ARRAY_FLOAT,
+//                                    std::fma(rs2_fval, -rs3_fval, rs1_fval))
 
 #undef ARRAY_FLOAT
 #undef UTEST_RVV_VFW_FMA_VV_FORM_WITH_RES
@@ -2585,8 +2470,8 @@ UTEST_RVV_FMA_VF_FORM_WITH_RES(vfnmsac_vf, ARRAY_FLOAT,
     }                                                                  \
   }
 
-UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES(vfwredusum_vv)
-UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES(vfwredosum_vv)
+// UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES(vfwredusum_vv)
+// UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES(vfwredosum_vv)
 
 #undef UTEST_RVV_VFW_REDSUM_VV_FORM_WITH_RES
 // calculate the value of r used in rounding
@@ -2825,8 +2710,7 @@ UTEST_VCPOP_M_WITH_WIDTH(16)
 UTEST_VCPOP_M_WITH_WIDTH(8)
 
 #undef UTEST_VCPOP_M_WITH_WIDTH
-
+#endif //CAN_USE_RVV_INSTRUCTIONS
 #undef __
-#endif
 }  // namespace internal
 }  // namespace v8

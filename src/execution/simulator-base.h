@@ -100,6 +100,7 @@ class SimulatorBase {
   template <typename T>
   static typename std::enable_if<std::is_integral<T>::value, intptr_t>::type
   ConvertArg(T arg) {
+  // TODO(rv32 simulator don't support double args)
     static_assert(sizeof(T) <= sizeof(intptr_t), "type bigger than ptrsize");
 #if V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_RISCV64 || \
     V8_TARGET_ARCH_LOONG64 || V8_TARGET_ARCH_RISCV32
