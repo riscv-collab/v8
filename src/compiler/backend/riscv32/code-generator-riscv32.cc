@@ -3814,7 +3814,7 @@ void CodeGenerator::AssembleConstructFrame() {
 
   // Skip callee-saved and return slots, which are pushed below.
   required_slots -= saves.Count();
-  required_slots -= saves_fpu.Count();
+  required_slots -= saves_fpu.Count() * (kDoubleSize / kSystemPointerSize);
   required_slots -= returns;
   if (required_slots > 0) {
     __ Sub(sp, sp, Operand(required_slots * kSystemPointerSize));
