@@ -69,6 +69,14 @@ inline constexpr Condition ToCondition(LiftoffCondition liftoff_cond) {
 //  -----+--------------------+  <-- stack ptr (sp)
 //
 
+#if defined(V8_TARGET_BIG_ENDIAN)
+constexpr int32_t kLowWordOffset = 4;
+constexpr int32_t kHighWordOffset = 0;
+#else
+constexpr int32_t kLowWordOffset = 0;
+constexpr int32_t kHighWordOffset = 4;
+#endif
+
 // fp-8 holds the stack marker, fp-16 is the instance parameter.
 constexpr int kInstanceOffset = 2 * kSystemPointerSize;
 constexpr int kFeedbackVectorOffset = 3 * kSystemPointerSize;
@@ -421,9 +429,14 @@ void LiftoffAssembler::LoadConstant(LiftoffRegister reg, WasmValue value,
     case kI32:
       TurboAssembler::li(reg.gp(), Operand(value.to_i32(), rmode));
       break;
-    case kI64:
-      TurboAssembler::li(reg.gp(), Operand(value.to_i64(), rmode));
+    case kI64: {
+      DCHECK(RelocInfo::IsNoInfo(rmode));
+      int32_t low_word = value.to_i64();
+      int32_t high_word = value.to_i64() >> 32;
+      TurboAssembler::li(reg.low_gp(), Operand(low_word));
+      TurboAssembler::li(reg.high_gp(), Operand(high_word));
       break;
+    }
     case kF32:
       TurboAssembler::LoadFPRImmediate(reg.fp(),
                                        value.to_f32_boxed().get_bits());
@@ -565,9 +578,14 @@ void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
     case LoadType::kI32Load:
       TurboAssembler::Lw(dst.gp(), src_op);
       break;
-    case LoadType::kI64Load:
-      TurboAssembler::Lw(dst.gp(), src_op);
-      break;
+    case LoadType::kI64Load: {
+      MemOperand src_op_low = liftoff::GetMemOp(this, src_addr, offset_reg,
+                                                +liftoff::kLowWordOffset);
+      MemOperand src_op_upper = liftoff::GetMemOp(this, src_addr, offset_reg,
+                                                  +liftoff::kHighWordOffset);
+      Lw(dst.low_gp(), src_op_low);
+      Lw(dst.high_gp(), src_op_upper);
+    } break;
     case LoadType::kF32Load:
       TurboAssembler::LoadFloat(dst.fp(), src_op);
       break;
@@ -629,9 +647,15 @@ void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
     case StoreType::kI64Store32:
       TurboAssembler::Sw(src.gp(), dst_op);
       break;
-    case StoreType::kI64Store:
-      TurboAssembler::Sw(src.gp(), dst_op);
+    case StoreType::kI64Store: {
+      MemOperand dst_op_lower(dst_op.rm(),
+                              offset_imm + liftoff::kLowWordOffset);
+      MemOperand dst_op_upper(dst_op.rm(),
+                              offset_imm + liftoff::kHighWordOffset);
+      TurboAssembler::Sw(src.low_gp(), dst_op_lower);
+      TurboAssembler::Sw(src.high_gp(), dst_op_upper);
       break;
+    }
     case StoreType::kF32Store:
       TurboAssembler::StoreFloat(src.fp(), dst_op);
       break;
@@ -800,8 +824,8 @@ void LiftoffAssembler::AtomicLoad(LiftoffRegister dst, Register src_addr,
     // TODO
     case LoadType::kI64Load:
       fence(PSR | PSW, PSR | PSW);
-      lw(dst.low_gp(), src_reg, 0);
-      lw(dst.high_gp(), src_reg, 4);
+      lw(dst.low_gp(), src_reg, liftoff::kLowWordOffset);
+      lw(dst.high_gp(), src_reg, liftoff::kHighWordOffset);
       fence(PSR, PSR | PSW);
       return;
     default:

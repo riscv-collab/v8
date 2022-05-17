@@ -1774,6 +1774,9 @@ void InstructionSelector::VisitWord32AtomicLoad(Node* node) {
     case MachineRepresentation::kWord16:
       opcode = load_rep.IsSigned() ? kAtomicLoadInt16 : kAtomicLoadUint16;
       break;
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
+    case MachineRepresentation::kTagged:
     case MachineRepresentation::kWord32:
       opcode = kAtomicLoadWord32;
       break;
@@ -1794,6 +1797,9 @@ void InstructionSelector::VisitWord32AtomicStore(Node* node) {
     case MachineRepresentation::kWord16:
       opcode = kAtomicStoreWord16;
       break;
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
+    case MachineRepresentation::kTagged:
     case MachineRepresentation::kWord32:
       opcode = kAtomicStoreWord32;
       break;

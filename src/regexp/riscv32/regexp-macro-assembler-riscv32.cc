@@ -1310,15 +1310,37 @@ void RegExpMacroAssemblerRISCV::LoadCurrentCharacterUnchecked(int cp_offset,
            Operand(cp_offset * char_size()));
     offset = kScratchReg2;
   }
-  // We assume that we cannot do unaligned loads on MIPS, so this function
-  // must only be used to load a single character at a time.
-  DCHECK_EQ(1, characters);
-  __ Add(kScratchReg, end_of_input_address(), Operand(offset));
+
+  // The ldr, str, ldrh, strh instructions can do unaligned accesses, if the CPU
+  // and the operating system running on the target allow it.
+  // If unaligned load/stores are not supported then this function must only
+  // be used to load a single character at a time.
+  if (!CanReadUnaligned()) {
+    DCHECK_EQ(1, characters);
+  }
+
   if (mode_ == LATIN1) {
-    __ Lbu(current_character(), MemOperand(kScratchReg, 0));
+    if (characters == 4) {
+      __ Add(kScratchReg, end_of_input_address(), offset);
+      __ Lw(current_character(), MemOperand(kScratchReg));
+    } else if (characters == 2) {
+      __ Add(kScratchReg, end_of_input_address(), offset);
+      __ Lhu(current_character(), MemOperand(kScratchReg));
+    } else {
+      DCHECK_EQ(1, characters);
+      __ Add(kScratchReg, end_of_input_address(), offset);
+      __ Lbu(current_character(), MemOperand(kScratchReg));
+    }
   } else {
     DCHECK_EQ(UC16, mode_);
-    __ Lhu(current_character(), MemOperand(kScratchReg, 0));
+    if (characters == 2) {
+      __ Add(kScratchReg, end_of_input_address(), offset);
+      __ Lw(current_character(), MemOperand(kScratchReg));
+    } else {
+      DCHECK_EQ(1, characters);
+      __ Add(kScratchReg, end_of_input_address(), offset);
+      __ Lhu(current_character(), MemOperand(kScratchReg));
+    }
   }
 }
 
