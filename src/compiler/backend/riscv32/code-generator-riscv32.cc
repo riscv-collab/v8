@@ -261,18 +261,6 @@ Condition FlagsConditionToConditionTst(FlagsCondition condition) {
   UNREACHABLE();
 }
 
-Condition FlagsConditionToConditionOvf(FlagsCondition condition) {
-  switch (condition) {
-    case kOverflow:
-      return ne;
-    case kNotOverflow:
-      return eq;
-    default:
-      break;
-  }
-  UNREACHABLE();
-}
-
 FPUCondition FlagsConditionToConditionCmpFPU(bool* predicate,
                                              FlagsCondition condition) {
   switch (condition) {
@@ -3490,16 +3478,6 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
     } else {
       __ Sltu(result, zero_reg, kScratchReg);
     }
-    return;
-  } else if (instr->arch_opcode() == kRiscvAdd ||
-             instr->arch_opcode() == kRiscvSub) {
-    cc = FlagsConditionToConditionOvf(condition);
-    // Check for overflow creates 1 or 0 for result.
-    __ Srl64(kScratchReg, i.OutputRegister(), 63);
-    __ Srl32(kScratchReg2, i.OutputRegister(), 31);
-    __ Xor(result, kScratchReg, kScratchReg2);
-    if (cc == eq)  // Toggle result for not overflow.
-      __ Xor(result, result, 1);
     return;
   } else if (instr->arch_opcode() == kRiscvAddOvf ||
              instr->arch_opcode() == kRiscvSubOvf) {

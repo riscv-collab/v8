@@ -1674,19 +1674,19 @@ void InstructionSelector::VisitUint32LessThanOrEqual(Node* node) {
 void InstructionSelector::VisitInt32AddWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
-    return VisitBinop(this, node, kRiscvAdd, &cont);
+    return VisitBinop(this, node, kRiscvAddOvf, &cont);
   }
   FlagsContinuation cont;
-  VisitBinop(this, node, kRiscvAdd, &cont);
+  VisitBinop(this, node, kRiscvAddOvf, &cont);
 }
 
 void InstructionSelector::VisitInt32SubWithOverflow(Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
-    return VisitBinop(this, node, kRiscvSub, &cont);
+    return VisitBinop(this, node, kRiscvSubOvf, &cont);
   }
   FlagsContinuation cont;
-  VisitBinop(this, node, kRiscvSub, &cont);
+  VisitBinop(this, node, kRiscvSubOvf, &cont);
 }
 
 void InstructionSelector::VisitInt32MulWithOverflow(Node* node) {
