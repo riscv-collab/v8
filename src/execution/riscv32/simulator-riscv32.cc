@@ -2746,12 +2746,12 @@ using SimulatorRuntimeFPIntCall = double (*)(double darg0, int32_t arg0);
 
 // This signature supports direct call in to API function native callback
 // (refer to InvocationCallback in v8.h).
-using SimulatorRuntimeDirectApiCall = void (*)(int64_t arg0);
-using SimulatorRuntimeProfilingApiCall = void (*)(int64_t arg0, void* arg1);
+using SimulatorRuntimeDirectApiCall = void (*)(int32_t arg0);
+using SimulatorRuntimeProfilingApiCall = void (*)(int32_t arg0, void* arg1);
 
 // This signature supports direct call to accessor getter callback.
-using SimulatorRuntimeDirectGetterCall = void (*)(int64_t arg0, int64_t arg1);
-using SimulatorRuntimeProfilingGetterCall = void (*)(int64_t arg0, int64_t arg1,
+using SimulatorRuntimeDirectGetterCall = void (*)(int32_t arg0, int32_t arg1);
+using SimulatorRuntimeProfilingGetterCall = void (*)(int32_t arg0, int32_t arg1,
                                                      void* arg2);
 
 // Software interrupt instructions are used by the simulator to call into the
