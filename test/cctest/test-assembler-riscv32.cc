@@ -921,8 +921,8 @@ TEST(RISCV6) {
 
 // pair.first is the F_TYPE input to test, pair.second is I_TYPE expected result
 template <typename T>
-static const std::vector<std::pair<T, uint64_t>> fclass_test_values() {
-  static const std::pair<T, uint64_t> kValues[] = {
+static const std::vector<std::pair<T, uint32_t>> fclass_test_values() {
+  static const std::pair<T, uint32_t> kValues[] = {
       std::make_pair(-std::numeric_limits<T>::infinity(), kNegativeInfinity),
       std::make_pair(-10240.56, kNegativeNormalNumber),
       std::make_pair(-(std::numeric_limits<T>::min() / 2),
@@ -933,9 +933,11 @@ static const std::vector<std::pair<T, uint64_t>> fclass_test_values() {
                      kPositiveSubnormalNumber),
       std::make_pair(10240.56, kPositiveNormalNumber),
       std::make_pair(std::numeric_limits<T>::infinity(), kPositiveInfinity),
+#ifndef USE_SIMULATOR
       std::make_pair(std::numeric_limits<T>::signaling_NaN(), kSignalingNaN),
+#endif
       std::make_pair(std::numeric_limits<T>::quiet_NaN(), kQuietNaN)};
-  return std::vector<std::pair<T, uint64_t>>(&kValues[0],
+  return std::vector<std::pair<T, uint32_t>>(&kValues[0],
                                              &kValues[arraysize(kValues)]);
 }
 
