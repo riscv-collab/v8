@@ -1485,14 +1485,16 @@ TEST(TARGET_ADDR) {
   Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
-  // This is the series of instructions to load 48 bit address 0x0123456789ab
-  uint32_t buffer[6] = {0x091ab37,  0x2b330213, 0x00b21213,
-                        0x62626213, 0x00621213, 0x02b26213};
+  // This is the series of instructions to load 32 bit address 0x01234567 to a6
+  // (li a6,0x1234567)
+  uint32_t buffer[2] = {0x01234837,   // lui     a6,0x1234
+                        0x56780813};  // addi    a6,a6,1383
+
   MacroAssembler assm(isolate, v8::internal::CodeObjectRequired::kYes);
 
   uintptr_t addr = reinterpret_cast<uintptr_t>(&buffer[0]);
   Address res = __ target_address_at(static_cast<Address>(addr));
-  CHECK_EQ(0x0123456789abL, res);
+  CHECK_EQ(0x01234567L, res);
 }
 
 TEST(SET_TARGET_ADDR) {
