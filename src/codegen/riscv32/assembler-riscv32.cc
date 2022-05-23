@@ -3168,10 +3168,14 @@ int Assembler::li_estimate(int32_t imm, bool is_get_temp_reg) {
   int32_t low_12 = imm & 0xfff;
   if (high_20) {
     count++;
-  }
-  if (low_12) {
+    if (low_12) {
+      count++;
+    }
+  } else {
+    // if high_20 is 0, always need one instruction to load the low_12 bit
     count++;
   }
+
   return count;
 }
 
