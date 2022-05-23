@@ -1058,13 +1058,6 @@ TEST(RISCV9) {
 TEST(NAN_BOX) {
   // Test float NaN-boxing.
   CcTest::InitializeVM();
-
-  // Test NaN boxing in FMV.X.D
-  {
-    auto fn = [](MacroAssembler& assm) { __ fmv_x_d(a0, fa0); };
-    auto res = GenAndRunTest<uint32_t>(1234.56f, fn);
-    CHECK_EQ(0xFFFFFFFF00000000 | bit_cast<uint32_t>(1234.56f), res);
-  }
   // Test NaN boxing in FMV.X.W
   {
     auto fn = [](MacroAssembler& assm) { __ fmv_x_w(a0, fa0); };
