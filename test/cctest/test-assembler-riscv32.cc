@@ -1575,45 +1575,7 @@ TEST(OUT_OF_RANGE_CVT) {
     }
   }
 
-  // {  // test fvt_l_d
-  //   auto i_vec = out_of_range_test_values<double, int64_t>();
-  //   for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
-  //     auto input = *i;
-  //     auto fn = [](MacroAssembler& assm) { __ fcvt_l_d(a0, fa0); };
-  //     auto res = GenAndRunTest<int32_t>(input.first, fn);
-  //     CHECK_EQ(input.second, res);
-  //   }
-  // }
 
-  {  // test fvt_l_s
-    auto i_vec = out_of_range_test_values<float, int32_t>();
-    for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
-      auto input = *i;
-      auto fn = [](MacroAssembler& assm) { __ fcvt_l_s(a0, fa0); };
-      auto res = GenAndRunTest<int32_t>(input.first, fn);
-      CHECK_EQ(input.second, res);
-    }
-  }
-
-  // {  // test fvt_lu_d
-  //   auto i_vec = out_of_range_test_values<double, uint64_t>();
-  //   for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
-  //     auto input = *i;
-  //     auto fn = [](MacroAssembler& assm) { __ fcvt_lu_d(a0, fa0); };
-  //     auto res = GenAndRunTest<uint32_t>(input.first, fn);
-  //     CHECK_EQ(input.second, res);
-  //   }
-  // }
-
-  {  // test fvt_lu_s
-    auto i_vec = out_of_range_test_values<float, uint32_t>();
-    for (auto i = i_vec.begin(); i != i_vec.end(); ++i) {
-      auto input = *i;
-      auto fn = [](MacroAssembler& assm) { __ fcvt_lu_s(a0, fa0); };
-      auto res = GenAndRunTest<uint32_t>(input.first, fn);
-      CHECK_EQ(input.second, res);
-    }
-  }
 }
 
 #define FCMP_TEST_HELPER(F, fn, op)                                         \
