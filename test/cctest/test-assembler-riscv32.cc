@@ -1144,14 +1144,14 @@ TEST(RVC_CI) {
   {
     auto fn = [](MacroAssembler& assm) { __ c_lui(a0, -20); };
     auto res = GenAndRunTest<int32_t>(0x1234567, fn);
-    CHECK_EQ(0xfffffffffffec000, (uint32_t)res);
+    CHECK_EQ(0xfffec000, (uint32_t)res);
   }
 
   // Test c.slli
   {
     auto fn = [](MacroAssembler& assm) { __ c_slli(a0, 13); };
     auto res = GenAndRunTest<int32_t>(0x12345678, fn);
-    CHECK_EQ(0x12345678LL << 13, res);
+    CHECK_EQ(0x8acf0000, (uint32_t)res);
   }
 }
 
