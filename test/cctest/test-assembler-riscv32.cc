@@ -1642,9 +1642,9 @@ TEST(jump_tables1) {
   Label labels[kNumCases], done;
 
   auto fn = [&labels, &done, values](MacroAssembler& assm) {
-    __ addi(sp, sp, -8);
+    __ addi(sp, sp, -4);
     __ Sw(ra, MemOperand(sp));
-    __ Align(8);
+    __ Align(4);
     {
       __ BlockTrampolinePoolFor(kNumCases * 2 + 6);
 
@@ -1667,14 +1667,14 @@ TEST(jump_tables1) {
 
     __ bind(&done);
     __ Lw(ra, MemOperand(sp));
-    __ addi(sp, sp, 8);
+    __ addi(sp, sp, 4);
 
     CHECK_EQ(0, assm.UnboundLabelsCount());
   };
   auto f = AssembleCode<F1>(fn);
 
   for (int i = 0; i < kNumCases; ++i) {
-    int64_t res = reinterpret_cast<int64_t>(f.Call(i, 0, 0, 0, 0));
+    int32_t res = reinterpret_cast<int32_t>(f.Call(i, 0, 0, 0, 0));
     CHECK_EQ(values[i], static_cast<int>(res));
   }
 }
@@ -1691,7 +1691,7 @@ TEST(jump_tables2) {
   Label labels[kNumCases], done, dispatch;
 
   auto fn = [&labels, &done, &dispatch, values](MacroAssembler& assm) {
-    __ addi(sp, sp, -8);
+    __ addi(sp, sp, -4);
     __ Sw(ra, MemOperand(sp));
     __ j(&dispatch);
 
@@ -1701,7 +1701,7 @@ TEST(jump_tables2) {
       __ j(&done);
     }
 
-    __ Align(8);
+    __ Align(4);
     __ bind(&dispatch);
 
     {
@@ -1719,12 +1719,12 @@ TEST(jump_tables2) {
     }
     __ bind(&done);
     __ Lw(ra, MemOperand(sp));
-    __ addi(sp, sp, 8);
+    __ addi(sp, sp, 4);
   };
   auto f = AssembleCode<F1>(fn);
 
   for (int i = 0; i < kNumCases; ++i) {
-    int64_t res = reinterpret_cast<int64_t>(f.Call(i, 0, 0, 0, 0));
+    int32_t res = reinterpret_cast<int32_t>(f.Call(i, 0, 0, 0, 0));
     CHECK_EQ(values[i], res);
   }
 }
@@ -1743,11 +1743,11 @@ TEST(jump_tables3) {
   }
   Label labels[kNumCases], done, dispatch;
   Object obj;
-  int64_t imm64;
+  int32_t imm32;
 
   auto fn = [&labels, &done, &dispatch, values, &obj,
-             &imm64](MacroAssembler& assm) {
-    __ addi(sp, sp, -8);
+             &imm32](MacroAssembler& assm) {
+    __ addi(sp, sp, -4);
     __ Sw(ra, MemOperand(sp));
 
     __ j(&dispatch);
@@ -1755,9 +1755,9 @@ TEST(jump_tables3) {
     for (int i = 0; i < kNumCases; ++i) {
       __ bind(&labels[i]);
       obj = *values[i];
-      imm64 = obj.ptr();
+      imm32 = obj.ptr();
       __ nop();  // For 8 byte alignment
-      __ RV_li(a0, imm64);
+      __ RV_li(a0, imm32);
       __ nop();  // For 8 byte alignment
       __ j(&done);
     }
@@ -1765,7 +1765,7 @@ TEST(jump_tables3) {
     __ bind(&dispatch);
     {
       __ BlockTrampolinePoolFor(kNumCases * 2 + 6);
-      __ Align(8);
+      __ Align(4);
       __ auipc(ra, 0);
       __ slli(t3, a0, 3);
       __ add(t3, t3, ra);
@@ -1779,7 +1779,7 @@ TEST(jump_tables3) {
 
     __ bind(&done);
     __ Lw(ra, MemOperand(sp));
-    __ addi(sp, sp, 8);
+    __ addi(sp, sp, 4);
   };
   auto f = AssembleCode<F1>(fn);
 
