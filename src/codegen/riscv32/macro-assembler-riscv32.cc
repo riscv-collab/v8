@@ -2136,18 +2136,20 @@ void TurboAssembler::BranchFalseF(Register rs, Label* target) {
 
 void TurboAssembler::InsertHighWordF64(FPURegister dst, Register src_high) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
-
+  Add(sp, sp, Operand(-8));
   StoreDouble(dst, MemOperand(sp, 0));
-  Sw(src_high, MemOperand(sp, 0));
+  Sw(src_high, MemOperand(sp, 4));
   LoadDouble(dst, MemOperand(sp, 0));
+  Add(sp, sp, Operand(8));
 }
 
 void TurboAssembler::InsertLowWordF64(FPURegister dst, Register src_low) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
-
+  Add(sp, sp, Operand(-8));
   StoreDouble(dst, MemOperand(sp, 0));
-  Sw(src_low, MemOperand(sp, 4));
+  Sw(src_low, MemOperand(sp, 0));
   LoadDouble(dst, MemOperand(sp, 0));
+  Add(sp, sp, Operand(8));
 }
 
 void TurboAssembler::LoadFPRImmediate(FPURegister dst, uint32_t src) {

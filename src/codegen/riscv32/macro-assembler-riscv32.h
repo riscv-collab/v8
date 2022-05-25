@@ -685,8 +685,10 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   // Extract sign-extended word from high-half of FPR to GPR
   inline void ExtractHighWordFromF64(Register dst_high, FPURegister src) {
     // todo(riscv32): delete storedouble
+    Add(sp, sp, Operand(-8));
     StoreDouble(src, MemOperand(sp, 0));
-    Lw(dst_high, MemOperand(sp, 0));
+    Lw(dst_high, MemOperand(sp, 4));
+    Add(sp, sp, Operand(8));
   }
 
   // Insert low-word from GPR (src_high) to the high-half of FPR (dst)

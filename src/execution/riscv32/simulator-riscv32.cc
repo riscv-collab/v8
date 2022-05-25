@@ -1690,6 +1690,7 @@ void RiscvDebugger::Debug() {
         Instruction* instr = reinterpret_cast<Instruction*>(sim_->get_pc());
         if (!(instr->IsTrap()) ||
             instr->InstructionBits() == rtCallRedirInstr) {
+          sim_->icount_++;
           sim_->InstructionDecode(
               reinterpret_cast<Instruction*>(sim_->get_pc()));
         } else {
@@ -1829,7 +1830,17 @@ void RiscvDebugger::Debug() {
           PrintF("\n");
           cur++;
         }
-
+      } else if ((strcmp(cmd, "watch") == 0)) {
+        if (argc < 2) {
+          PrintF("Need to specify <address> to mem command\n");
+          continue;
+        }
+        int32_t value;
+        if (!GetValue(arg1, &value)) {
+          PrintF("%s unrecognized\n", arg1);
+          continue;
+        }
+        sim_->watch_value_ = reinterpret_cast<int32_t*>(value);
       } else if ((strcmp(cmd, "disasm") == 0) || (strcmp(cmd, "dpc") == 0) ||
                  (strcmp(cmd, "di") == 0)) {
         disasm::NameConverter converter;
@@ -2002,6 +2013,9 @@ void RiscvDebugger::Debug() {
         PrintF("mem\n");
         PrintF("  mem <address> [<words>]\n");
         PrintF("  Dump memory content, default dump 10 words)\n");
+        PrintF("watch\n");
+        PrintF("  watch <address> \n");
+        PrintF("  watch memory content.)\n");
         PrintF("flags\n");
         PrintF("  print flags\n");
         PrintF("disasm (alias 'di')\n");
@@ -6952,6 +6966,24 @@ void Simulator::InstructionDecode(Instruction* instr) {
   if (!pc_modified_) {
     set_register(pc,
                  reinterpret_cast<int64_t>(instr) + instr->InstructionSize());
+  }
+
+  if (watch_value_ != nullptr) {
+    PrintF("  0x%012" PRIxPTR " :  0x%016" PRIx32 "  %14" PRId32 " ",
+           reinterpret_cast<intptr_t>(watch_value_), *watch_value_,
+           *watch_value_);
+    Object obj(*watch_value_);
+    Heap* current_heap = isolate_->heap();
+    if (obj.IsSmi() || IsValidHeapObject(current_heap, HeapObject::cast(obj))) {
+      PrintF(" (");
+      if (obj.IsSmi()) {
+        PrintF("smi %d", Smi::ToInt(obj));
+      } else {
+        obj.ShortPrint();
+      }
+      PrintF(")");
+    }
+    PrintF("\n");
   }
 }
 
