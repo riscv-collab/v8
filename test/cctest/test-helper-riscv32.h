@@ -24,7 +24,7 @@ namespace internal {
 
 using Func = std::function<void(MacroAssembler&)>;
 
-int64_t GenAndRunTest(Func test_generator);
+int32_t GenAndRunTest(Func test_generator);
 
 // f.Call(...) interface is implemented as varargs in V8. For varargs,
 // floating-point arguments and return values are passed in GPRs, therefore

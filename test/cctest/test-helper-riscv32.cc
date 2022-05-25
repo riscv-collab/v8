@@ -12,7 +12,7 @@
 namespace v8 {
 namespace internal {
 
-int64_t GenAndRunTest(Func test_generator) {
+int32_t GenAndRunTest(Func test_generator) {
   Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 

@@ -6966,7 +6966,7 @@ void Simulator::InstructionDecode(Instruction* instr) {
 
   if (!pc_modified_) {
     set_register(pc,
-                 reinterpret_cast<int64_t>(instr) + instr->InstructionSize());
+                 reinterpret_cast<int32_t>(instr) + instr->InstructionSize());
   }
 
   if (watch_address_ != nullptr) {
@@ -6996,11 +6996,11 @@ void Simulator::InstructionDecode(Instruction* instr) {
 void Simulator::Execute() {
   // Get the PC to simulate. Cannot use the accessor here as we need the
   // raw PC value and not the one used as input to arithmetic instructions.
-  int64_t program_counter = get_pc();
+  int32_t program_counter = get_pc();
   while (program_counter != end_sim_pc) {
     Instruction* instr = reinterpret_cast<Instruction*>(program_counter);
     icount_++;
-    if (icount_ == static_cast<int64_t>(::v8::internal::FLAG_stop_sim_at)) {
+    if (icount_ == static_cast<int32_t>(::v8::internal::FLAG_stop_sim_at)) {
       RiscvDebugger dbg(this);
       dbg.Debug();
     } else {
@@ -7016,31 +7016,31 @@ void Simulator::CallInternal(Address entry) {
   isolate_->stack_guard()->AdjustStackLimitForSimulator();
 
   // Prepare to execute the code at entry.
-  set_register(pc, static_cast<int64_t>(entry));
+  set_register(pc, static_cast<int32_t>(entry));
   // Put down marker for end of simulation. The simulator will stop simulation
   // when the PC reaches this value. By saving the "end simulation" value into
   // the LR the simulation stops when returning to this call point.
   set_register(ra, end_sim_pc);
 
   // Remember the values of callee-saved registers.
-  int64_t s0_val = get_register(s0);
-  int64_t s1_val = get_register(s1);
-  int64_t s2_val = get_register(s2);
-  int64_t s3_val = get_register(s3);
-  int64_t s4_val = get_register(s4);
-  int64_t s5_val = get_register(s5);
-  int64_t s6_val = get_register(s6);
-  int64_t s7_val = get_register(s7);
-  int64_t s8_val = get_register(s8);
-  int64_t s9_val = get_register(s9);
-  int64_t s10_val = get_register(s10);
-  int64_t s11_val = get_register(s11);
-  int64_t gp_val = get_register(gp);
-  int64_t sp_val = get_register(sp);
+  int32_t s0_val = get_register(s0);
+  int32_t s1_val = get_register(s1);
+  int32_t s2_val = get_register(s2);
+  int32_t s3_val = get_register(s3);
+  int32_t s4_val = get_register(s4);
+  int32_t s5_val = get_register(s5);
+  int32_t s6_val = get_register(s6);
+  int32_t s7_val = get_register(s7);
+  int32_t s8_val = get_register(s8);
+  int32_t s9_val = get_register(s9);
+  int32_t s10_val = get_register(s10);
+  int32_t s11_val = get_register(s11);
+  int32_t gp_val = get_register(gp);
+  int32_t sp_val = get_register(sp);
 
   // Set up the callee-saved registers with a known value. To be able to check
   // that they are preserved properly across JS execution.
-  int64_t callee_saved_value = icount_;
+  int32_t callee_saved_value = icount_;
   set_register(s0, callee_saved_value);
   set_register(s1, callee_saved_value);
   set_register(s2, callee_saved_value);
@@ -7118,11 +7118,11 @@ intptr_t Simulator::CallImpl(Address entry, int argument_count,
   }
 
   // Remaining arguments passed on stack.
-  int64_t original_stack = get_register(sp);
+  int32_t original_stack = get_register(sp);
   // Compute position of stack on entry to generated code.
   int stack_args_count = argument_count - reg_arg_count;
   int stack_args_size = stack_args_count * sizeof(*arguments) + kCArgsSlotsSize;
-  int64_t entry_stack = original_stack - stack_args_size;
+  int32_t entry_stack = original_stack - stack_args_size;
 
   if (base::OS::ActivationFrameAlignment() != 0) {
     entry_stack &= -base::OS::ActivationFrameAlignment();

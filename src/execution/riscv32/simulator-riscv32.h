@@ -111,20 +111,20 @@ static inline bool isSnan(double fp) { return !QUIET_BIT_D(fp); }
 
 inline uint32_t mulhu(uint32_t a, uint32_t b) {
   uint64_t full_result = ((uint64_t)a) * ((uint64_t)b);
-  uint32_t upper_part = full_result >> 32;
-  return upper_part;
+  uint64_t upper_part = full_result >> 32;
+  return (uint32_t)upper_part;
 }
 
 inline int32_t mulh(int32_t a, int32_t b) {
   int64_t full_result = ((int64_t)a) * ((int64_t)b);
-  int32_t upper_part = full_result >> 32;
-  return upper_part;
+  int64_t upper_part = full_result >> 32;
+  return (int32_t)upper_part;
 }
 
 inline int32_t mulhsu(int32_t a, uint32_t b) {
   int64_t full_result = ((int64_t)a) * ((uint64_t)b);
-  int32_t upper_part = full_result >> 32;
-  return upper_part;
+  int64_t upper_part = full_result >> 32;
+  return (int32_t)upper_part;
 }
 
 // Floating point helpers
@@ -136,11 +136,15 @@ union u32_f32 {
 inline float fsgnj32(float rs1, float rs2, bool n, bool x) {
   u32_f32 a = {.f = rs1}, b = {.f = rs2};
   u32_f32 res;
-  res.u = (a.u & ~F32_SIGN) | ((((x)   ? a.u
-                                 : (n) ? F32_SIGN
-                                       : 0) ^
-                                b.u) &
-                               F32_SIGN);
+  if (x) {  // RO_FSQNJX_S
+    res.u = (a.u & ~F32_SIGN) | ((a.u ^ b.u) & F32_SIGN);
+  } else {
+    if (n) {  // RO_FSGNJN_S
+      res.u = (a.u & ~F32_SIGN) | ((F32_SIGN ^ b.u) & F32_SIGN);
+    } else {  // RO_FSGNJ_S
+      res.u = (a.u & ~F32_SIGN) | ((0 ^ b.u) & F32_SIGN);
+    }
+  }
   return res.f;
 }
 #define F64_SIGN ((uint64_t)1 << 63)
@@ -151,11 +155,15 @@ union u64_f64 {
 inline double fsgnj64(double rs1, double rs2, bool n, bool x) {
   u64_f64 a = {.d = rs1}, b = {.d = rs2};
   u64_f64 res;
-  res.u = (a.u & ~F64_SIGN) | ((((x)   ? a.u
-                                 : (n) ? F64_SIGN
-                                       : 0) ^
-                                b.u) &
-                               F64_SIGN);
+  if (x) {  // RO_FSQNJX_D
+    res.u = (a.u & ~F64_SIGN) | ((a.u ^ b.u) & F64_SIGN);
+  } else {
+    if (n) {  // RO_FSGNJN_D
+      res.u = (a.u & ~F64_SIGN) | ((F64_SIGN ^ b.u) & F64_SIGN);
+    } else {  // RO_FSGNJ_D
+      res.u = (a.u & ~F64_SIGN) | ((0 ^ b.u) & F64_SIGN);
+    }
+  }
   return res.d;
 }
 
