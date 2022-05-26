@@ -1236,18 +1236,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ fmin_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
                 i.InputDoubleRegister(1));
       break;
-    case kRiscvFloat64RoundDown: {
-      __ Floor_d_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                   kScratchDoubleReg);
-      break;
-    }
     case kRiscvFloat32RoundDown: {
       __ Floor_s_s(i.OutputSingleRegister(), i.InputSingleRegister(0),
-                   kScratchDoubleReg);
-      break;
-    }
-    case kRiscvFloat64RoundTruncate: {
-      __ Trunc_d_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
                    kScratchDoubleReg);
       break;
     }
@@ -1256,19 +1246,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                    kScratchDoubleReg);
       break;
     }
-    case kRiscvFloat64RoundUp: {
-      __ Ceil_d_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                  kScratchDoubleReg);
-      break;
-    }
     case kRiscvFloat32RoundUp: {
       __ Ceil_s_s(i.OutputSingleRegister(), i.InputSingleRegister(0),
                   kScratchDoubleReg);
-      break;
-    }
-    case kRiscvFloat64RoundTiesEven: {
-      __ Round_d_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                   kScratchDoubleReg);
       break;
     }
     case kRiscvFloat32RoundTiesEven: {

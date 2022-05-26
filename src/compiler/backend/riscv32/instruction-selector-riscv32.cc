@@ -824,61 +824,12 @@ void InstructionSelector::VisitTruncateFloat32ToUint32(Node* node) {
 void InstructionSelector::VisitChangeFloat64ToInt32(Node* node) {
   RiscvOperandGenerator g(this);
   Node* value = node->InputAt(0);
-  // Match ChangeFloat64ToInt32(Float64Round##OP) to corresponding instruction
-  // which does rounding and conversion to integer format.
   if (CanCover(node, value)) {
-    switch (value->opcode()) {
-      case IrOpcode::kFloat64RoundDown:
-        Emit(kRiscvFloorWD, g.DefineAsRegister(node),
-             g.UseRegister(value->InputAt(0)));
-        return;
-      case IrOpcode::kFloat64RoundUp:
-        Emit(kRiscvCeilWD, g.DefineAsRegister(node),
-             g.UseRegister(value->InputAt(0)));
-        return;
-      case IrOpcode::kFloat64RoundTiesEven:
-        Emit(kRiscvRoundWD, g.DefineAsRegister(node),
-             g.UseRegister(value->InputAt(0)));
-        return;
-      case IrOpcode::kFloat64RoundTruncate:
-        Emit(kRiscvTruncWD, g.DefineAsRegister(node),
-             g.UseRegister(value->InputAt(0)));
-        return;
-      default:
-        break;
-    }
     if (value->opcode() == IrOpcode::kChangeFloat32ToFloat64) {
-      Node* next = value->InputAt(0);
-      if (CanCover(value, next)) {
-        // Match ChangeFloat64ToInt32(ChangeFloat32ToFloat64(Float64Round##OP))
-        switch (next->opcode()) {
-          case IrOpcode::kFloat32RoundDown:
-            Emit(kRiscvFloorWS, g.DefineAsRegister(node),
-                 g.UseRegister(next->InputAt(0)));
-            return;
-          case IrOpcode::kFloat32RoundUp:
-            Emit(kRiscvCeilWS, g.DefineAsRegister(node),
-                 g.UseRegister(next->InputAt(0)));
-            return;
-          case IrOpcode::kFloat32RoundTiesEven:
-            Emit(kRiscvRoundWS, g.DefineAsRegister(node),
-                 g.UseRegister(next->InputAt(0)));
-            return;
-          case IrOpcode::kFloat32RoundTruncate:
-            Emit(kRiscvTruncWS, g.DefineAsRegister(node),
-                 g.UseRegister(next->InputAt(0)));
-            return;
-          default:
-            Emit(kRiscvTruncWS, g.DefineAsRegister(node),
-                 g.UseRegister(value->InputAt(0)));
-            return;
-        }
-      } else {
-        // Match float32 -> float64 -> int32 representation change path.
-        Emit(kRiscvTruncWS, g.DefineAsRegister(node),
-             g.UseRegister(value->InputAt(0)));
-        return;
-      }
+      // Match float32 -> float64 -> int32 representation change path.
+      Emit(kRiscvTruncWS, g.DefineAsRegister(node),
+           g.UseRegister(value->InputAt(0)));
+      return;
     }
   }
   VisitRR(this, kRiscvTruncWD, node);
@@ -1005,24 +956,20 @@ void InstructionSelector::VisitFloat32RoundDown(Node* node) {
   VisitRR(this, kRiscvFloat32RoundDown, node);
 }
 
-void InstructionSelector::VisitFloat64RoundDown(Node* node) {
-  VisitRR(this, kRiscvFloat64RoundDown, node);
-}
+void InstructionSelector::VisitFloat64RoundDown(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitFloat32RoundUp(Node* node) {
   VisitRR(this, kRiscvFloat32RoundUp, node);
 }
 
-void InstructionSelector::VisitFloat64RoundUp(Node* node) {
-  VisitRR(this, kRiscvFloat64RoundUp, node);
-}
+void InstructionSelector::VisitFloat64RoundUp(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitFloat32RoundTruncate(Node* node) {
   VisitRR(this, kRiscvFloat32RoundTruncate, node);
 }
 
 void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
-  VisitRR(this, kRiscvFloat64RoundTruncate, node);
+  UNIMPLEMENTED();
 }
 
 void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
@@ -1034,7 +981,7 @@ void InstructionSelector::VisitFloat32RoundTiesEven(Node* node) {
 }
 
 void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
-  VisitRR(this, kRiscvFloat64RoundTiesEven, node);
+  UNIMPLEMENTED();
 }
 
 void InstructionSelector::VisitFloat32Neg(Node* node) {
@@ -2529,13 +2476,9 @@ InstructionSelector::SupportedMachineOperatorFlags() {
   return flags | MachineOperatorBuilder::kWord32ShiftIsSafe |
          MachineOperatorBuilder::kInt32DivIsSafe |
          MachineOperatorBuilder::kUint32DivIsSafe |
-         MachineOperatorBuilder::kFloat64RoundDown |
          MachineOperatorBuilder::kFloat32RoundDown |
-         MachineOperatorBuilder::kFloat64RoundUp |
          MachineOperatorBuilder::kFloat32RoundUp |
-         MachineOperatorBuilder::kFloat64RoundTruncate |
          MachineOperatorBuilder::kFloat32RoundTruncate |
-         MachineOperatorBuilder::kFloat64RoundTiesEven |
          MachineOperatorBuilder::kFloat32RoundTiesEven;
 }
 

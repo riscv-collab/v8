@@ -217,20 +217,6 @@ const Conversion kConversionInstructions[] = {
       kRiscvTruncUwD, MachineType::Float64()},
      MachineType::Int32()}};
 
-const Conversion kFloat64RoundInstructions[] = {
-    {{&RawMachineAssembler::Float64RoundUp, "Float64RoundUp", kRiscvCeilWD,
-      MachineType::Int32()},
-     MachineType::Float64()},
-    {{&RawMachineAssembler::Float64RoundDown, "Float64RoundDown", kRiscvFloorWD,
-      MachineType::Int32()},
-     MachineType::Float64()},
-    {{&RawMachineAssembler::Float64RoundTiesEven, "Float64RoundTiesEven",
-      kRiscvRoundWD, MachineType::Int32()},
-     MachineType::Float64()},
-    {{&RawMachineAssembler::Float64RoundTruncate, "Float64RoundTruncate",
-      kRiscvTruncWD, MachineType::Int32()},
-     MachineType::Float64()}};
-
 const Conversion kFloat32RoundInstructions[] = {
     {{&RawMachineAssembler::Float32RoundUp, "Float32RoundUp", kRiscvCeilWS,
       MachineType::Int32()},
@@ -613,10 +599,6 @@ TEST_P(CombineChangeFloat64ToInt32WithRoundFloat64, Parameter) {
     EXPECT_EQ(1U, s[0]->OutputCount());
   }
 }
-
-INSTANTIATE_TEST_SUITE_P(InstructionSelectorTest,
-                         CombineChangeFloat64ToInt32WithRoundFloat64,
-                         ::testing::ValuesIn(kFloat64RoundInstructions));
 
 using CombineChangeFloat32ToInt32WithRoundFloat32 =
     InstructionSelectorTestWithParam<Conversion>;

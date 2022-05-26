@@ -804,12 +804,6 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   // Floor double to signed word.
   void Floor_w_d(Register rd, FPURegister fs, Register result = no_reg);
 
-  // Round double functions
-  void Trunc_d_d(FPURegister fd, FPURegister fs, FPURegister fpu_scratch);
-  void Round_d_d(FPURegister fd, FPURegister fs, FPURegister fpu_scratch);
-  void Floor_d_d(FPURegister fd, FPURegister fs, FPURegister fpu_scratch);
-  void Ceil_d_d(FPURegister fd, FPURegister fs, FPURegister fpu_scratch);
-
   // Round float functions
   void Trunc_s_s(FPURegister fd, FPURegister fs, FPURegister fpu_scratch);
   void Round_s_s(FPURegister fd, FPURegister fs, FPURegister fpu_scratch);

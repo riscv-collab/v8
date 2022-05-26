@@ -138,10 +138,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvFloat64InsertHighWord32:
     case kRiscvFloat64Max:
     case kRiscvFloat64Min:
-    case kRiscvFloat64RoundDown:
-    case kRiscvFloat64RoundTiesEven:
-    case kRiscvFloat64RoundTruncate:
-    case kRiscvFloat64RoundUp:
     case kRiscvFloat64SilenceNaN:
     case kRiscvFloorWD:
     case kRiscvFloorWS:
@@ -937,13 +933,6 @@ int NegdLatency() {
          Latency::MOVF_HIGH_DREG + 1 + XorLatency() + Latency::MOVT_DREG;
 }
 
-int Float64RoundLatency() {
-  // For ceil_l_d, floor_l_d, round_l_d, trunc_l_d latency is 4.
-  return Latency::MOVF_HIGH_DREG + 1 + Latency::BRANCH + Latency::MOV_D + 4 +
-         Latency::MOVF_HIGH_DREG + Latency::BRANCH + Latency::CVT_D_L + 2 +
-         Latency::MOVT_HIGH_FREG;
-}
-
 int Float32RoundLatency() {
   // For ceil_w_s, floor_w_s, round_w_s, trunc_w_s latency is 4.
   return Latency::MOVF_FREG + 1 + Latency::BRANCH + Latency::MOV_S + 4 +
@@ -1278,11 +1267,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
       return Latency::MAX_D;
     case kRiscvMinD:
       return Latency::MIN_D;
-    case kRiscvFloat64RoundDown:
-    case kRiscvFloat64RoundTruncate:
-    case kRiscvFloat64RoundUp:
-    case kRiscvFloat64RoundTiesEven:
-      return Float64RoundLatency();
     case kRiscvFloat32RoundDown:
     case kRiscvFloat32RoundTruncate:
     case kRiscvFloat32RoundUp:

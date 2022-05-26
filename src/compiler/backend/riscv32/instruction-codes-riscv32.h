@@ -67,10 +67,6 @@ namespace compiler {
   V(RiscvMaxD)                              \
   V(RiscvMinD)                              \
   V(RiscvAddPair)                           \
-  V(RiscvFloat64RoundDown)                  \
-  V(RiscvFloat64RoundTruncate)              \
-  V(RiscvFloat64RoundUp)                    \
-  V(RiscvFloat64RoundTiesEven)              \
   V(RiscvFloat32RoundDown)                  \
   V(RiscvFloat32RoundTruncate)              \
   V(RiscvFloat32RoundUp)                    \

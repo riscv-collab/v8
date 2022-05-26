@@ -1422,6 +1422,10 @@ void LiftoffAssembler::emit_f64_copysign(DoubleRegister dst, DoubleRegister lhs,
     instruction(dst, src, kScratchDoubleReg);                                  \
     return true;                                                               \
   }
+#define FP_UNOP_RETURN_FALSE(name)                                             \
+  bool LiftoffAssembler::emit_##name(DoubleRegister dst, DoubleRegister src) { \
+    return false;                                                              \
+  }
 
 FP_BINOP(f32_add, fadd_s)
 FP_BINOP(f32_sub, fsub_s)
@@ -1438,15 +1442,16 @@ FP_BINOP(f64_sub, fsub_d)
 FP_BINOP(f64_mul, fmul_d)
 FP_BINOP(f64_div, fdiv_d)
 FP_UNOP(f64_abs, fabs_d)
-FP_UNOP_RETURN_TRUE(f64_ceil, Ceil_d_d)
-FP_UNOP_RETURN_TRUE(f64_floor, Floor_d_d)
-FP_UNOP_RETURN_TRUE(f64_trunc, Trunc_d_d)
-FP_UNOP_RETURN_TRUE(f64_nearest_int, Round_d_d)
+FP_UNOP_RETURN_FALSE(f64_ceil)
+FP_UNOP_RETURN_FALSE(f64_floor)
+FP_UNOP_RETURN_FALSE(f64_trunc)
+FP_UNOP_RETURN_FALSE(f64_nearest_int)
 FP_UNOP(f64_sqrt, fsqrt_d)
 
 #undef FP_BINOP
 #undef FP_UNOP
 #undef FP_UNOP_RETURN_TRUE
+#undef FP_UNOP_RETURN_FALSE
 
 bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
                                             LiftoffRegister dst,

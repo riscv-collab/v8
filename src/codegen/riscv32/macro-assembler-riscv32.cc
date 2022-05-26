@@ -1729,42 +1729,12 @@ void TurboAssembler::Floor_w_d(Register rd, FPURegister fs, Register result) {
         tasm->fcvt_w_d(dst, src, RDN);
       });
 }
+
 // According to JS ECMA specification, for floating-point round operations, if
 // the input is NaN, +/-infinity, or +/-0, the same input is returned as the
 // rounded result; this differs from behavior of RISCV fcvt instructions (which
 // round out-of-range values to the nearest max or min value), therefore special
 // handling is needed by NaN, +/-Infinity, +/-0
-void TurboAssembler::RoundDouble(FPURegister dst, FPURegister src,
-                                 FPURegister fpu_scratch, RoundingMode frm) {
-  BlockTrampolinePoolScope block_trampoline_pool(this);
-  UseScratchRegisterScope temps(this);
-
-  // Need at least two FPRs, so check against dst == src == fpu_scratch
-  DCHECK(!(dst == src && dst == fpu_scratch));
-
-  // TODO(riscv32): need judge the input is NaN, +/-infinity, or +/-0
-
-  // Since only input whose real exponent value is less than kMantissaBits
-  // (i.e., 23 or 52-bits) falls into this path, the value range of the input
-  // falls into that of 23- or 53-bit integers. So we round the input to integer
-  // values, then convert them back to floating-point.
-  {
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-    fcvt_l_d(scratch, src, frm);
-    fcvt_d_l(dst, scratch, frm);
-  }
-
-  // A special handling is needed if the input is a very small positive/negative
-  // number that rounds to zero. JS semantics requires that the rounded result
-  // retains the sign of the input, so a very small positive (negative)
-  // floating-point number should be rounded to positive (negative) 0.
-  // Therefore, we use sign-bit injection to produce +/-0 correctly. Instead of
-  // testing for zero w/ a branch, we just insert sign-bit for everyone on this
-  // path (this is where old_src is needed)
-  fsgnj_d(dst, dst, src);
-}
-
 void TurboAssembler::RoundFloat(FPURegister dst, FPURegister src,
                                 FPURegister fpu_scratch, RoundingMode frm) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
@@ -1950,26 +1920,6 @@ void TurboAssembler::Round_f(VRegister vdst, VRegister vsrc, Register scratch,
 void TurboAssembler::Round_d(VRegister vdst, VRegister vsrc, Register scratch,
                              VRegister v_scratch) {
   RoundHelper<double>(vdst, vsrc, scratch, v_scratch, RNE);
-}
-
-void TurboAssembler::Floor_d_d(FPURegister dst, FPURegister src,
-                               FPURegister fpu_scratch) {
-  RoundDouble(dst, src, fpu_scratch, RDN);
-}
-
-void TurboAssembler::Ceil_d_d(FPURegister dst, FPURegister src,
-                              FPURegister fpu_scratch) {
-  RoundDouble(dst, src, fpu_scratch, RUP);
-}
-
-void TurboAssembler::Trunc_d_d(FPURegister dst, FPURegister src,
-                               FPURegister fpu_scratch) {
-  RoundDouble(dst, src, fpu_scratch, RTZ);
-}
-
-void TurboAssembler::Round_d_d(FPURegister dst, FPURegister src,
-                               FPURegister fpu_scratch) {
-  RoundDouble(dst, src, fpu_scratch, RNE);
 }
 
 void TurboAssembler::Floor_s_s(FPURegister dst, FPURegister src,
