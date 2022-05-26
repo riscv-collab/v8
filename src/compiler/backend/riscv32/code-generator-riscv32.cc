@@ -1627,9 +1627,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
           }
           __ VU.set(kScratchReg, E8, m1);
           __ vs(i.InputSimd128Register(0), dst, 0, E8);
-        } else {
+        } else if (instr->InputAt(0)->IsDoubleRegister()) {
           __ StoreDouble(i.InputDoubleRegister(0),
                          MemOperand(sp, i.InputInt32(1)));
+        } else if (instr->InputAt(0)->IsFloatRegister()) {
+          __ StoreFloat(i.InputSingleRegister(0),
+                        MemOperand(sp, i.InputInt32(1)));
         }
       } else {
         __ Sw(i.InputOrZeroRegister(0), MemOperand(sp, i.InputInt32(1)));

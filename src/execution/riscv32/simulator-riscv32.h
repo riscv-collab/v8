@@ -956,7 +956,8 @@ class Simulator : public SimulatorBase {
   char* stack_;
   bool pc_modified_;
   int64_t icount_;
-  int32_t* watch_value_ = nullptr;
+  int32_t* watch_address_ = nullptr;
+  int32_t watch_value_ = 0;
   int break_count_;
   base::EmbeddedVector<char, 256> trace_buf_;
 
