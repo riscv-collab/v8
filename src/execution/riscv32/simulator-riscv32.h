@@ -109,19 +109,22 @@ static inline bool isSnan(double fp) { return !QUIET_BIT_D(fp); }
 #undef QUIET_BIT_S
 #undef QUIET_BIT_D
 // RV32Gtodo: in RV32 mul's operands are 32bit
-inline uint64_t mulhu(uint64_t a, uint64_t b) {
+inline uint64_t mulhu(uint32_t a, uint32_t b) {
   uint64_t full_result = ((uint64_t)a) * ((uint64_t)b);
-  return full_result;
+  uint32_t upper_part = full_result >> 32;
+  return upper_part;
 }
 
-inline int64_t mulh(int64_t a, int64_t b) {
+inline int64_t mulh(int32_t a, int32_t b) {
   int64_t full_result = ((int64_t)a) * ((int64_t)b);
-  return full_result;
+  int32_t upper_part = full_result >> 32;
+  return upper_part;
 }
 
-inline int64_t mulhsu(int64_t a, uint64_t b) {
+inline int32_t mulhsu(int32_t a, uint32_t b) {
   int64_t full_result = ((int64_t)a) * ((uint64_t)b);
-  return full_result;
+  int32_t upper_part = full_result >> 32;
+  return upper_part;
 }
 
 // Floating point helpers
