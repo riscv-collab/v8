@@ -3264,8 +3264,7 @@ void TurboAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
              target_is_isolate_independent_builtin) {
     // Inline the trampoline.
     RecordCommentForOffHeapTrampoline(builtin);
-    li(t6, Operand(BuiltinEntry(builtin), RelocInfo::OFF_HEAP_TARGET));
-    Jump(t6, cond, rs, rt);
+    Jump(BuiltinEntry(builtin), RelocInfo::OFF_HEAP_TARGET, cond, rs, rt);
     RecordComment("]");
     return;
   }
@@ -3344,8 +3343,7 @@ void TurboAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
              target_is_isolate_independent_builtin) {
     // Inline the trampoline.
     RecordCommentForOffHeapTrampoline(builtin);
-    li(t6, Operand(BuiltinEntry(builtin), RelocInfo::OFF_HEAP_TARGET));
-    Call(t6, cond, rs, rt);
+    Call(BuiltinEntry(builtin), RelocInfo::OFF_HEAP_TARGET, cond, rs, rt);
     RecordComment("]");
     return;
   }
