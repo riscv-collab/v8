@@ -218,17 +218,17 @@ const Conversion kConversionInstructions[] = {
      MachineType::Int32()}};
 
 const Conversion kFloat32RoundInstructions[] = {
-    {{&RawMachineAssembler::Float32RoundUp, "Float32RoundUp", kRiscvCeilWS,
-      MachineType::Int32()},
+    {{&RawMachineAssembler::Float32RoundUp, "Float32RoundUp",
+      kRiscvFloat32RoundUp, MachineType::Int32()},
      MachineType::Float32()},
-    {{&RawMachineAssembler::Float32RoundDown, "Float32RoundDown", kRiscvFloorWS,
-      MachineType::Int32()},
+    {{&RawMachineAssembler::Float32RoundDown, "Float32RoundDown",
+      kRiscvFloat32RoundDown, MachineType::Int32()},
      MachineType::Float32()},
     {{&RawMachineAssembler::Float32RoundTiesEven, "Float32RoundTiesEven",
-      kRiscvRoundWS, MachineType::Int32()},
+      kRiscvFloat32RoundTiesEven, MachineType::Int32()},
      MachineType::Float32()},
     {{&RawMachineAssembler::Float32RoundTruncate, "Float32RoundTruncate",
-      kRiscvTruncWS, MachineType::Int32()},
+      kRiscvFloat32RoundTruncate, MachineType::Int32()},
      MachineType::Float32()}};
 
 }  // namespace
@@ -583,23 +583,6 @@ INSTANTIATE_TEST_SUITE_P(InstructionSelectorTest,
                          InstructionSelectorConversionTest,
                          ::testing::ValuesIn(kConversionInstructions));
 
-using CombineChangeFloat64ToInt32WithRoundFloat64 =
-    InstructionSelectorTestWithParam<Conversion>;
-
-TEST_P(CombineChangeFloat64ToInt32WithRoundFloat64, Parameter) {
-  {
-    const Conversion conv = GetParam();
-    StreamBuilder m(this, conv.mi.machine_type, conv.src_machine_type);
-    m.Return(m.ChangeFloat64ToInt32((m.*conv.mi.constructor)(m.Parameter(0))));
-    Stream s = m.Build();
-    ASSERT_EQ(1U, s.size());
-    EXPECT_EQ(conv.mi.arch_opcode, s[0]->arch_opcode());
-    EXPECT_EQ(kMode_None, s[0]->addressing_mode());
-    ASSERT_EQ(1U, s[0]->InputCount());
-    EXPECT_EQ(1U, s[0]->OutputCount());
-  }
-}
-
 using CombineChangeFloat32ToInt32WithRoundFloat32 =
     InstructionSelectorTestWithParam<Conversion>;
 
@@ -610,8 +593,9 @@ TEST_P(CombineChangeFloat32ToInt32WithRoundFloat32, Parameter) {
     m.Return(m.ChangeFloat64ToInt32(
         m.ChangeFloat32ToFloat64((m.*conv.mi.constructor)(m.Parameter(0)))));
     Stream s = m.Build();
-    ASSERT_EQ(1U, s.size());
+    ASSERT_EQ(2U, s.size());
     EXPECT_EQ(conv.mi.arch_opcode, s[0]->arch_opcode());
+    EXPECT_EQ(kRiscvTruncWS, s[1]->arch_opcode());
     EXPECT_EQ(kMode_None, s[0]->addressing_mode());
     ASSERT_EQ(1U, s[0]->InputCount());
     EXPECT_EQ(1U, s[0]->OutputCount());
