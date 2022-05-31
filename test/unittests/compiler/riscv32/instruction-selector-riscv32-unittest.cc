@@ -1170,24 +1170,6 @@ TEST_F(InstructionSelectorTest, ExternalReferenceLoad1) {
   }
 }
 
-TEST_F(InstructionSelectorTest, ExternalReferenceLoad2) {
-  // Offset too large, we cannot use kMode_Root.
-  StreamBuilder m(this, MachineType::Int32());
-  // RV32Gtodo re-impl offset
-  int32_t offset = 0x10000;
-  ExternalReference reference =
-      bit_cast<ExternalReference>(int32_t(isolate()->isolate_root() + offset));
-  Node* const value =
-      m.Load(MachineType::Int32(), m.ExternalConstant(reference));
-  m.Return(value);
-
-  Stream s = m.Build();
-
-  ASSERT_EQ(1U, s.size());
-  EXPECT_EQ(kRiscvLw, s[0]->arch_opcode());
-  EXPECT_NE(kMode_Root, s[0]->addressing_mode());
-}
-
 }  // namespace compiler
 }  // namespace internal
 }  // namespace v8
