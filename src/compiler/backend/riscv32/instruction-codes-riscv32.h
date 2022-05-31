@@ -19,7 +19,6 @@ namespace compiler {
   V(RiscvMul32)                             \
   V(RiscvMulOvf32)                          \
   V(RiscvMulHigh32)                         \
-  V(RiscvMulHigh64)                         \
   V(RiscvMulHighU32)                        \
   V(RiscvDiv32)                             \
   V(RiscvDivU32)                            \

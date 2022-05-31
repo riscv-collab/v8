@@ -46,7 +46,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvCvtSUl:
     case kRiscvCvtSUw:
     case kRiscvCvtSW:
-    case kRiscvMulHigh64:
     case kRiscvMulHighU32:
     case kRiscvAddOvf:
     case kRiscvDiv32:
@@ -1147,8 +1146,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
       return Mulh32Latency();
     case kRiscvMulHighU32:
       return Mulhu32Latency();
-    case kRiscvMulHigh64:
-      return Mulh64Latency();
     case kRiscvDiv32: {
       int latency = Div32Latency(instr->InputAt(1)->IsRegister());
       return latency + MovzLatency();
