@@ -3531,7 +3531,7 @@ void Generate_DeoptimizationEntry(MacroAssembler* masm,
   __ bind(&pop_loop);
   __ pop(a4);
   __ Sw(a4, MemOperand(a3, 0));
-  __ Add(a3, a3, sizeof(uint64_t));
+  __ Add(a3, a3, sizeof(uint32_t));
   __ bind(&pop_loop_header);
   __ Branch(&pop_loop, ne, a2, Operand(sp), Label::Distance::kNear);
   // Compute the output frame in the deoptimizer.
@@ -3561,7 +3561,7 @@ void Generate_DeoptimizationEntry(MacroAssembler* masm,
   __ Lw(a3, MemOperand(a2, FrameDescription::frame_size_offset()));
   __ BranchShort(&inner_loop_header);
   __ bind(&inner_push_loop);
-  __ Sub(a3, a3, Operand(sizeof(uint64_t)));
+  __ Sub(a3, a3, Operand(sizeof(uint32_t)));
   __ Add(a6, a2, Operand(a3));
   __ Lw(a7, MemOperand(a6, FrameDescription::frame_content_offset()));
   __ push(a7);
