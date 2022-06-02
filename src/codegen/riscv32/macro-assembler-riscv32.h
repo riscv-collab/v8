@@ -614,7 +614,6 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void Ush(Register rd, const MemOperand& rs);
 
   void Ulw(Register rd, const MemOperand& rs);
-  void Ulwu(Register rd, const MemOperand& rs);
   void Usw(Register rd, const MemOperand& rs);
 
   void Uld(Register rd, const MemOperand& rs);
@@ -711,11 +710,11 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void LoadFPRImmediate(FPURegister dst, uint32_t src);
   void LoadFPRImmediate(FPURegister dst, uint64_t src);
 
-  // AddOverflow64 sets overflow register to a negative value if
+  // AddOverflow sets overflow register to a negative value if
   // overflow occured, otherwise it is zero or positive
   void AddOverflow(Register dst, Register left, const Operand& right,
                    Register overflow);
-  // SubOverflow64 sets overflow register to a negative value if
+  // SubOverflow sets overflow register to a negative value if
   // overflow occured, otherwise it is zero or positive
   void SubOverflow(Register dst, Register left, const Operand& right,
                    Register overflow);

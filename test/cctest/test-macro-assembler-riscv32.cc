@@ -45,25 +45,25 @@
 
 namespace v8 {
 namespace internal {
-#if 0
-//RV32Gtodo
+
+// RV32Gtodo
 const float qnan_f = std::numeric_limits<float>::quiet_NaN();
 const float snan_f = std::numeric_limits<float>::signaling_NaN();
 const double qnan_d = std::numeric_limits<double>::quiet_NaN();
-const double snan_d = std::numeric_limits<double>::signaling_NaN();
+// const double snan_d = std::numeric_limits<double>::signaling_NaN();
 
 const float inf_f = std::numeric_limits<float>::infinity();
 const double inf_d = std::numeric_limits<double>::infinity();
 const float minf_f = -inf_f;
 const double minf_d = -inf_d;
 
-using FV = void*(int64_t x, int64_t y, int p2, int p3, int p4);
+using FV = void*(int32_t x, int32_t y, int p2, int p3, int p4);
 using F1 = void*(int x, int p1, int p2, int p3, int p4);
 using F3 = void*(void* p, int p1, int p2, int p3, int p4);
 using F4 = void*(void* p0, void* p1, int p2, int p3, int p4);
 
 #define __ masm.
-static uint64_t run_CalcScaledAddress(uint64_t rt, uint64_t rs, int8_t sa) {
+static uint32_t run_CalcScaledAddress(uint32_t rt, uint32_t rs, int8_t sa) {
   Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
@@ -72,7 +72,7 @@ static uint64_t run_CalcScaledAddress(uint64_t rt, uint64_t rs, int8_t sa) {
   };
   auto f = AssembleCode<FV>(fn);
 
-  uint64_t res = reinterpret_cast<uint64_t>(f.Call(rt, rs, 0, 0, 0));
+  uint32_t res = reinterpret_cast<uint32_t>(f.Call(rt, rs, 0, 0, 0));
 
   return res;
 }
@@ -114,11 +114,11 @@ TEST(LoadConstants) {
   Isolate* isolate = CcTest::i_isolate();
   HandleScope handles(isolate);
 
-  int64_t refConstants[64];
-  int64_t result[64];
+  int32_t refConstants[32];
+  int32_t result[32];
 
   int64_t mask = 1;
-  for (int i = 0; i < 64; i++) {
+  for (int i = 0; i < 32; i++) {
     refConstants[i] = ~(mask << i);
   }
 
@@ -127,15 +127,15 @@ TEST(LoadConstants) {
     for (int i = 0; i < 64; i++) {
       // Load constant.
       __ li(a5, Operand(refConstants[i]));
-      __ Sd(a5, MemOperand(a4));
-      __ Add64(a4, a4, Operand(kSystemPointerSize));
+      __ Sw(a5, MemOperand(a4));
+      __ Add(a4, a4, Operand(kSystemPointerSize));
     }
   };
   auto f = AssembleCode<FV>(fn);
 
   (void)f.Call(reinterpret_cast<int64_t>(result), 0, 0, 0, 0);
   // Check results.
-  for (int i = 0; i < 64; i++) {
+  for (int i = 0; i < 32; i++) {
     CHECK(refConstants[i] == result[i]);
   }
 }
@@ -163,7 +163,7 @@ TEST(LoadAddress) {
   int check_size = masm.InstructionsGeneratedSince(&skip);
   // NOTE (RISCV): current li generates 6 instructions, if the sequence is
   // changed, need to adjust the CHECK_EQ value too
-  CHECK_EQ(6, check_size);
+  CHECK_EQ(2, check_size);
   __ jr(a4);
   __ nop();
   __ stop();
@@ -288,7 +288,7 @@ TEST(jump_tables6) {
   gen_insn += kFillInstr;
 
   __ GenerateSwitchTable(a0, kSwitchTableCases,
-                         [&labels](size_t i) { return labels + i; });
+                         [&labels](int i) { return labels + i; });
   gen_insn += (kSwitchTablePrologueSize + 2 * kSwitchTableCases);
 
   for (int i = 0; i < kSwitchTableCases; ++i) {
@@ -323,7 +323,7 @@ TEST(jump_tables6) {
   auto f = GeneratedCode<F1>::FromCode(*code);
   for (int i = 0; i < kSwitchTableCases; ++i) {
     int64_t res = reinterpret_cast<int64_t>(f.Call(i, 0, 0, 0, 0));
-    // ::printf("f(%d) = %" PRId64 "\n", i, res);
+    ::printf("f(%d) = %" PRId64 "\n", i, res);
     CHECK_EQ(values[i], res);
   }
 }
@@ -331,10 +331,10 @@ TEST(jump_tables6) {
 TEST(CalcScaledAddress) {
   CcTest::InitializeVM();
   struct TestCaseLsa {
-    int64_t rt;
-    int64_t rs;
+    int32_t rt;
+    int32_t rs;
     uint8_t sa;
-    uint64_t expected_res;
+    int32_t expected_res;
   };
 
   struct TestCaseLsa tc[] = {// rt, rs, sa, expected_res
@@ -355,18 +355,18 @@ TEST(CalcScaledAddress) {
                              {0x4, 0x0, 5, 0x4},
 
                              // Shift overflow.
-                             {0x4, INT64_MAX, 1, 0x2},
-                             {0x4, INT64_MAX >> 1, 2, 0x0},
-                             {0x4, INT64_MAX >> 2, 3, 0xFFFFFFFFFFFFFFFC},
-                             {0x4, INT64_MAX >> 3, 4, 0xFFFFFFFFFFFFFFF4},
-                             {0x4, INT64_MAX >> 4, 5, 0xFFFFFFFFFFFFFFE4},
+                             {0x4, INT32_MAX, 1, 0x2},
+                             {0x4, INT32_MAX >> 1, 2, 0x0},
+                             {0x4, INT32_MAX >> 2, 3, 0xFFFFFFC},
+                             {0x4, INT32_MAX >> 3, 4, 0xFFFFFF4},
+                             {0x4, INT32_MAX >> 4, 5, 0xFFFFFE4},
 
                              // Signed addition overflow.
-                             {INT64_MAX - 1, 0x1, 1, 0x8000000000000000},
-                             {INT64_MAX - 3, 0x1, 2, 0x8000000000000000},
-                             {INT64_MAX - 7, 0x1, 3, 0x8000000000000000},
-                             {INT64_MAX - 15, 0x1, 4, 0x8000000000000000},
-                             {INT64_MAX - 31, 0x1, 5, 0x8000000000000000},
+                             {INT32_MAX - 1, 0x1, 1, 0x8000000},
+                             {INT32_MAX - 3, 0x1, 2, 0x8000000},
+                             {INT32_MAX - 7, 0x1, 3, 0x8000000},
+                             {INT32_MAX - 15, 0x1, 4, 0x8000000},
+                             {INT32_MAX - 31, 0x1, 5, 0x8000000},
 
                              // Addition overflow.
                              {-2, 0x1, 1, 0x0},
@@ -377,7 +377,7 @@ TEST(CalcScaledAddress) {
 
   size_t nr_test_cases = sizeof(tc) / sizeof(TestCaseLsa);
   for (size_t i = 0; i < nr_test_cases; ++i) {
-    uint64_t res = run_CalcScaledAddress(tc[i].rt, tc[i].rs, tc[i].sa);
+    uint32_t res = run_CalcScaledAddress(tc[i].rt, tc[i].rs, tc[i].sa);
     CHECK_EQ(tc[i].expected_res, res);
   }
 }
@@ -397,27 +397,6 @@ static const std::vector<int32_t> cvt_trunc_int32_test_values() {
       static_cast<int32_t>(0x80FFFF00), static_cast<int32_t>(0x8FFFFFFF),
       static_cast<int32_t>(0xFFFFFFFF)};
   return std::vector<int32_t>(&kValues[0], &kValues[arraysize(kValues)]);
-}
-
-static const std::vector<uint64_t> cvt_trunc_uint64_test_values() {
-  static const uint64_t kValues[] = {
-      0x0000000000000000, 0x0000000000000001, 0x0000FFFFFFFF0000,
-      0x7FFFFFFFFFFFFFFF, 0x8000000000000000, 0x8000000000000001,
-      0x8000FFFFFFFF0000, 0x8FFFFFFFFFFFFFFF /*, 0xFFFFFFFFFFFFFFFF*/};
-  return std::vector<uint64_t>(&kValues[0], &kValues[arraysize(kValues)]);
-}
-
-static const std::vector<int64_t> cvt_trunc_int64_test_values() {
-  static const int64_t kValues[] = {static_cast<int64_t>(0x0000000000000000),
-                                    static_cast<int64_t>(0x0000000000000001),
-                                    static_cast<int64_t>(0x0000FFFFFFFF0000),
-                                    // static_cast<int64_t>(0x7FFFFFFFFFFFFFFF),
-                                    static_cast<int64_t>(0x8000000000000000),
-                                    static_cast<int64_t>(0x8000000000000001),
-                                    static_cast<int64_t>(0x8000FFFFFFFF0000),
-                                    static_cast<int64_t>(0x8FFFFFFFFFFFFFFF),
-                                    static_cast<int64_t>(0xFFFFFFFFFFFFFFFF)};
-  return std::vector<int64_t>(&kValues[0], &kValues[arraysize(kValues)]);
 }
 
 #define FOR_INPUTS3(ctype, var, test_vector)    \
@@ -463,23 +442,23 @@ TEST(Cvt_s_ul_Trunc_ul_s) {
     __ Cvt_s_ul(fa0, a0);
     __ Trunc_ul_s(a0, fa0);
   };
-  FOR_UINT64_INPUTS3(i, cvt_trunc_uint64_test_values) {
-    CHECK_EQ(static_cast<uint64_t>(static_cast<float>(i)),
-             GenAndRunTest<uint64_t>(i, fn));
+  FOR_UINT32_INPUTS3(i, cvt_trunc_uint32_test_values) {
+    CHECK_EQ(static_cast<uint32_t>(static_cast<float>(i)),
+             GenAndRunTest<uint32_t>(i, fn));
   }
 }
 
-TEST(Cvt_d_ul_Trunc_ul_d) {
-  CcTest::InitializeVM();
-  auto fn = [](MacroAssembler& masm) {
-    __ Cvt_d_ul(fa0, a0);
-    __ Trunc_ul_d(a0, fa0);
-  };
-  FOR_UINT64_INPUTS3(i, cvt_trunc_uint64_test_values) {
-    CHECK_EQ(static_cast<uint64_t>(static_cast<double>(i)),
-             GenAndRunTest<uint64_t>(i, fn));
-  }
-}
+// TEST(Cvt_d_ul_Trunc_ul_d) {
+//   CcTest::InitializeVM();
+//   auto fn = [](MacroAssembler& masm) {
+//     __ Cvt_d_ul(fa0, a0);
+//     __ Trunc_ul_d(a0, fa0);
+//   };
+//   FOR_UINT32_INPUTS3(i, cvt_trunc_uint32_test_values) {
+//     CHECK_EQ(static_cast<uint32_t>(static_cast<double>(i)),
+//              GenAndRunTest<uint32_t>(i, fn));
+//   }
+// }
 
 TEST(cvt_d_l_Trunc_l_d) {
   CcTest::InitializeVM();
@@ -487,9 +466,9 @@ TEST(cvt_d_l_Trunc_l_d) {
     __ fcvt_d_l(fa0, a0);
     __ Trunc_l_d(a0, fa0);
   };
-  FOR_INT64_INPUTS3(i, cvt_trunc_int64_test_values) {
-    CHECK_EQ(static_cast<int64_t>(static_cast<double>(i)),
-             GenAndRunTest<int64_t>(i, fn));
+  FOR_INT32_INPUTS3(i, cvt_trunc_int32_test_values) {
+    CHECK_EQ(static_cast<int32_t>(static_cast<double>(i)),
+             GenAndRunTest<int32_t>(i, fn));
   }
 }
 
@@ -505,17 +484,14 @@ TEST(cvt_d_w_Trunc_w_d) {
   }
 }
 
-static const std::vector<int64_t> overflow_int64_test_values() {
-  static const int64_t kValues[] = {static_cast<int64_t>(0xF000000000000000),
-                                    static_cast<int64_t>(0x0000000000000001),
-                                    static_cast<int64_t>(0xFF00000000000000),
-                                    static_cast<int64_t>(0x0000F00111111110),
-                                    static_cast<int64_t>(0x0F00001000000000),
-                                    static_cast<int64_t>(0x991234AB12A96731),
-                                    static_cast<int64_t>(0xB0FFFF0F0F0F0F01),
-                                    static_cast<int64_t>(0x00006FFFFFFFFFFF),
-                                    static_cast<int64_t>(0xFFFFFFFFFFFFFFFF)};
-  return std::vector<int64_t>(&kValues[0], &kValues[arraysize(kValues)]);
+static const std::vector<int32_t> overflow_int32_test_values() {
+  static const int32_t kValues[] = {
+      static_cast<int32_t>(0xF0000000), static_cast<int32_t>(0x00000001),
+      static_cast<int32_t>(0xFF000000), static_cast<int32_t>(0x0F000011),
+      static_cast<int32_t>(0x00F00100), static_cast<int32_t>(0x991234AB),
+      static_cast<int32_t>(0xB0FFFF0F), static_cast<int32_t>(0x6FFFFFFF),
+      static_cast<int32_t>(0xFFFFFFFF)};
+  return std::vector<int32_t>(&kValues[0], &kValues[arraysize(kValues)]);
 }
 
 TEST(OverflowInstructions) {
@@ -524,66 +500,64 @@ TEST(OverflowInstructions) {
   HandleScope handles(isolate);
 
   struct T {
-    int64_t lhs;
-    int64_t rhs;
-    int64_t output_add;
-    int64_t output_add2;
-    int64_t output_sub;
-    int64_t output_sub2;
-    int64_t output_mul;
-    int64_t output_mul2;
-    int64_t overflow_add;
-    int64_t overflow_add2;
-    int64_t overflow_sub;
-    int64_t overflow_sub2;
-    int64_t overflow_mul;
+    int32_t lhs;
+    int32_t rhs;
+    int32_t output_add;
+    int32_t output_add2;
+    int32_t output_sub;
+    int32_t output_sub2;
+    int32_t output_mul;
+    int32_t output_mul2;
+    int32_t overflow_add;
+    int32_t overflow_add2;
+    int32_t overflow_sub;
+    int32_t overflow_sub2;
+    int32_t overflow_mul;
     int64_t overflow_mul2;
   } t;
 
-  FOR_INT64_INPUTS3(i, overflow_int64_test_values) {
-    FOR_INT64_INPUTS3(j, overflow_int64_test_values) {
+  FOR_INT32_INPUTS3(i, overflow_int32_test_values) {
+    FOR_INT32_INPUTS3(j, overflow_int32_test_values) {
       auto ii = i;
       auto jj = j;
-      int64_t expected_add, expected_sub;
+      int32_t expected_add, expected_sub;
       int32_t ii32 = static_cast<int32_t>(ii);
       int32_t jj32 = static_cast<int32_t>(jj);
       int32_t expected_mul;
-      int64_t expected_add_ovf, expected_sub_ovf, expected_mul_ovf;
+      int32_t expected_add_ovf, expected_sub_ovf, expected_mul_ovf;
 
       auto fn = [](MacroAssembler& masm) {
-        __ Ld(t0, MemOperand(a0, offsetof(T, lhs)));
-        __ Ld(t1, MemOperand(a0, offsetof(T, rhs)));
+        __ Lw(t0, MemOperand(a0, offsetof(T, lhs)));
+        __ Lw(t1, MemOperand(a0, offsetof(T, rhs)));
 
-        __ AddOverflow64(t2, t0, Operand(t1), a1);
-        __ Sd(t2, MemOperand(a0, offsetof(T, output_add)));
-        __ Sd(a1, MemOperand(a0, offsetof(T, overflow_add)));
+        __ AddOverflow(t2, t0, Operand(t1), a1);
+        __ Sw(t2, MemOperand(a0, offsetof(T, output_add)));
+        __ Sw(a1, MemOperand(a0, offsetof(T, overflow_add)));
         __ mv(a1, zero_reg);
-        __ AddOverflow64(t0, t0, Operand(t1), a1);
-        __ Sd(t0, MemOperand(a0, offsetof(T, output_add2)));
-        __ Sd(a1, MemOperand(a0, offsetof(T, overflow_add2)));
+        __ AddOverflow(t0, t0, Operand(t1), a1);
+        __ Sw(t0, MemOperand(a0, offsetof(T, output_add2)));
+        __ Sw(a1, MemOperand(a0, offsetof(T, overflow_add2)));
 
-        __ Ld(t0, MemOperand(a0, offsetof(T, lhs)));
-        __ Ld(t1, MemOperand(a0, offsetof(T, rhs)));
+        __ Lw(t0, MemOperand(a0, offsetof(T, lhs)));
+        __ Lw(t1, MemOperand(a0, offsetof(T, rhs)));
 
-        __ SubOverflow64(t2, t0, Operand(t1), a1);
-        __ Sd(t2, MemOperand(a0, offsetof(T, output_sub)));
-        __ Sd(a1, MemOperand(a0, offsetof(T, overflow_sub)));
+        __ SubOverflow(t2, t0, Operand(t1), a1);
+        __ Sw(t2, MemOperand(a0, offsetof(T, output_sub)));
+        __ Sw(a1, MemOperand(a0, offsetof(T, overflow_sub)));
         __ mv(a1, zero_reg);
-        __ SubOverflow64(t0, t0, Operand(t1), a1);
-        __ Sd(t0, MemOperand(a0, offsetof(T, output_sub2)));
-        __ Sd(a1, MemOperand(a0, offsetof(T, overflow_sub2)));
+        __ SubOverflow(t0, t0, Operand(t1), a1);
+        __ Sw(t0, MemOperand(a0, offsetof(T, output_sub2)));
+        __ Sw(a1, MemOperand(a0, offsetof(T, overflow_sub2)));
 
-        __ Ld(t0, MemOperand(a0, offsetof(T, lhs)));
-        __ Ld(t1, MemOperand(a0, offsetof(T, rhs)));
-        __ SignExtendWord(t0, t0);
-        __ SignExtendWord(t1, t1);
+        __ Lw(t0, MemOperand(a0, offsetof(T, lhs)));
+        __ Lw(t1, MemOperand(a0, offsetof(T, rhs)));
         __ MulOverflow32(t2, t0, Operand(t1), a1);
-        __ Sd(t2, MemOperand(a0, offsetof(T, output_mul)));
-        __ Sd(a1, MemOperand(a0, offsetof(T, overflow_mul)));
+        __ Sw(t2, MemOperand(a0, offsetof(T, output_mul)));
+        __ Sw(a1, MemOperand(a0, offsetof(T, overflow_mul)));
         __ mv(a1, zero_reg);
         __ MulOverflow32(t0, t0, Operand(t1), a1);
-        __ Sd(t0, MemOperand(a0, offsetof(T, output_mul2)));
-        __ Sd(a1, MemOperand(a0, offsetof(T, overflow_mul2)));
+        __ Sw(t0, MemOperand(a0, offsetof(T, output_mul2)));
+        __ Sw(a1, MemOperand(a0, offsetof(T, overflow_mul2)));
       };
       auto f = AssembleCode<F3>(fn);
 
@@ -591,8 +565,8 @@ TEST(OverflowInstructions) {
       t.rhs = jj;
       f.Call(&t, 0, 0, 0, 0);
 
-      expected_add_ovf = base::bits::SignedAddOverflow64(ii, jj, &expected_add);
-      expected_sub_ovf = base::bits::SignedSubOverflow64(ii, jj, &expected_sub);
+      expected_add_ovf = base::bits::SignedAddOverflow32(ii, jj, &expected_add);
+      expected_sub_ovf = base::bits::SignedSubOverflow32(ii, jj, &expected_sub);
       expected_mul_ovf =
           base::bits::SignedMulOverflow32(ii32, jj32, &expected_mul);
 
@@ -762,17 +736,17 @@ TEST(Ulh_bitextension) {
 
     // If signed and unsigned values are same, check
     // the upper bits to see if they are zero
-    __ sraiw(t0, t0, 15);
+    __ srai(t0, t0, 15);
     __ Branch(&success, eq, t0, Operand(zero_reg));
     __ Branch(&fail);
 
     // If signed and unsigned values are different,
     // check that the upper bits are complementary
     __ bind(&different);
-    __ sraiw(t1, t1, 15);
+    __ srai(t1, t1, 15);
     __ Branch(&fail, ne, t1, Operand(1));
-    __ sraiw(t0, t0, 15);
-    __ addiw(t0, t0, 1);
+    __ srai(t0, t0, 15);
+    __ addi(t0, t0, 1);
     __ Branch(&fail, ne, t0, Operand(zero_reg));
     // Fall through to success
 
@@ -816,17 +790,6 @@ TEST(Ulw) {
     __ Usw(a0, MemOperand(t0, out_offset));
   };
 
-  auto fn_3 = [](MacroAssembler& masm, int32_t in_offset, int32_t out_offset) {
-    __ Ulwu(t0, MemOperand(a0, in_offset));
-    __ Usw(t0, MemOperand(a0, out_offset));
-  };
-
-  auto fn_4 = [](MacroAssembler& masm, int32_t in_offset, int32_t out_offset) {
-    __ mv(t0, a0);
-    __ Ulwu(a0, MemOperand(a0, in_offset));
-    __ Usw(a0, MemOperand(t0, out_offset));
-  };
-
   FOR_UINT32_INPUTS(i) {
     FOR_INT32_TWO_INPUTS(j1, j2, unsigned_test_offset) {
       FOR_INT32_TWO_INPUTS(k1, k2, unsigned_test_offset_increment) {
@@ -839,11 +802,6 @@ TEST(Ulw) {
         // test when loaded value overwrites base-register of load address
         CHECK_EQ(value, run_Unaligned(buffer_middle, in_offset, out_offset,
                                       value, fn_2));
-        CHECK_EQ(value, run_Unaligned(buffer_middle, in_offset, out_offset,
-                                      value, fn_3));
-        // test when loaded value overwrites base-register of load address
-        CHECK_EQ(value, run_Unaligned(buffer_middle, in_offset, out_offset,
-                                      value, fn_4));
       }
     }
   }
@@ -859,7 +817,8 @@ TEST(Ulw_extension) {
   auto fn = [](MacroAssembler& masm, int32_t in_offset, int32_t out_offset) {
     Label success, fail, end, different;
     __ Ulw(t0, MemOperand(a0, in_offset));
-    __ Ulwu(t1, MemOperand(a0, in_offset));
+    // TODO(fix this): Ulwu(t1, MemOperand(a0, in_offset));
+    __ Ulw(t1, MemOperand(a0, in_offset));
     __ Branch(&different, ne, t0, Operand(t1));
 
     // If signed and unsigned values are same, check
@@ -900,48 +859,11 @@ TEST(Ulw_extension) {
   }
 }
 
-TEST(Uld) {
-  CcTest::InitializeVM();
-
-  static const int kBufferSize = 300 * KB;
-  char memory_buffer[kBufferSize];
-  char* buffer_middle = memory_buffer + (kBufferSize / 2);
-
-  auto fn_1 = [](MacroAssembler& masm, int32_t in_offset, int32_t out_offset) {
-    __ Uld(t0, MemOperand(a0, in_offset));
-    __ Usd(t0, MemOperand(a0, out_offset));
-  };
-
-  auto fn_2 = [](MacroAssembler& masm, int32_t in_offset, int32_t out_offset) {
-    __ mv(t0, a0);
-    __ Uld(a0, MemOperand(a0, in_offset));
-    __ Usd(a0, MemOperand(t0, out_offset));
-  };
-
-  FOR_UINT64_INPUTS(i) {
-    FOR_INT32_TWO_INPUTS(j1, j2, unsigned_test_offset) {
-      FOR_INT32_TWO_INPUTS(k1, k2, unsigned_test_offset_increment) {
-        auto value = i;
-        int32_t in_offset = *j1 + *k1;
-        int32_t out_offset = *j2 + *k2;
-
-        CHECK_EQ(value, run_Unaligned(buffer_middle, in_offset, out_offset,
-                                      value, fn_1));
-
-        // test when loaded value overwrites base-register of load address
-        CHECK_EQ(value, run_Unaligned(buffer_middle, in_offset, out_offset,
-                                      value, fn_2));
-      }
-    }
-  }
-}
-
-auto fn = [](MacroAssembler& masm, int32_t in_offset, int32_t out_offset) {
-  __ ULoadFloat(fa0, MemOperand(a0, in_offset), t0);
-  __ UStoreFloat(fa0, MemOperand(a0, out_offset), t0);
-};
-
 TEST(ULoadFloat) {
+  auto fn = [](MacroAssembler& masm, int32_t in_offset, int32_t out_offset) {
+    __ ULoadFloat(fa0, MemOperand(a0, in_offset), t0);
+    __ UStoreFloat(fa0, MemOperand(a0, out_offset), t0);
+  };
   CcTest::InitializeVM();
 
   static const int kBufferSize = 300 * KB;
@@ -993,8 +915,8 @@ TEST(ULoadDouble) {
 TEST(Sltu) {
   CcTest::InitializeVM();
 
-  FOR_UINT64_INPUTS(i) {
-    FOR_UINT64_INPUTS(j) {
+  FOR_UINT32_INPUTS(i) {
+    FOR_UINT32_INPUTS(j) {
       // compare against immediate value
       auto fn_1 = [j](MacroAssembler& masm) { __ Sltu(a0, a0, Operand(j)); };
       CHECK_EQ(i < j, GenAndRunTest<int32_t>(i, fn_1));
@@ -1253,15 +1175,15 @@ static void FCompare32Helper(FPUCondition cond) {
   }
 }
 
-static void FCompare64Helper(FPUCondition cond) {
-  auto fn = [cond](MacroAssembler& masm) { __ CompareF64(a0, cond, fa0, fa1); };
-  FOR_FLOAT64_INPUTS(i) {
-    FOR_FLOAT64_INPUTS(j) {
-      bool comp_res = CompareF(i, j, cond);
-      CHECK_EQ(comp_res, GenAndRunTest<int32_t>(i, j, fn));
-    }
-  }
-}
+// static void FCompare64Helper(FPUCondition cond) {
+//   auto fn = [cond](MacroAssembler& masm) { __ CompareF64(a0, cond, fa0, fa1);
+//   }; FOR_FLOAT64_INPUTS(i) {
+//     FOR_FLOAT64_INPUTS(j) {
+//       bool comp_res = CompareF(i, j, cond);
+//       CHECK_EQ(comp_res, GenAndRunTest<int32_t>(i, j, fn));
+//     }
+//   }
+// }
 
 TEST(FCompare32_Branch) {
   CcTest::InitializeVM();
@@ -1281,26 +1203,26 @@ TEST(FCompare32_Branch) {
   CHECK_EQ(true, GenAndRunTest<int32_t>(snan_f, qnan_f, fn));
 }
 
-TEST(FCompare64_Branch) {
-  CcTest::InitializeVM();
-  FCompare64Helper(EQ);
-  FCompare64Helper(LT);
-  FCompare64Helper(LE);
-  FCompare64Helper(NE);
-  FCompare64Helper(GT);
-  FCompare64Helper(GE);
+// TEST(FCompare64_Branch) {
+//   CcTest::InitializeVM();
+//   FCompare64Helper(EQ);
+//   FCompare64Helper(LT);
+//   FCompare64Helper(LE);
+//   FCompare64Helper(NE);
+//   FCompare64Helper(GT);
+//   FCompare64Helper(GE);
 
-  // test CompareIsNanF64: return true if any operand isnan
-  auto fn = [](MacroAssembler& masm) { __ CompareIsNanF64(a0, fa0, fa1); };
-  CHECK_EQ(false, GenAndRunTest<int32_t>(1023.01, -100.23, fn));
-  CHECK_EQ(true, GenAndRunTest<int32_t>(1023.01, snan_d, fn));
-  CHECK_EQ(true, GenAndRunTest<int32_t>(snan_d, -100.23, fn));
-  CHECK_EQ(true, GenAndRunTest<int32_t>(snan_d, qnan_d, fn));
-}
+//   // test CompareIsNanF64: return true if any operand isnan
+//   auto fn = [](MacroAssembler& masm) { __ CompareIsNanF64(a0, fa0, fa1); };
+//   CHECK_EQ(false, GenAndRunTest<int32_t>(1023.01, -100.23, fn));
+//   CHECK_EQ(true, GenAndRunTest<int32_t>(1023.01, snan_d, fn));
+//   CHECK_EQ(true, GenAndRunTest<int32_t>(snan_d, -100.23, fn));
+//   CHECK_EQ(true, GenAndRunTest<int32_t>(snan_d, qnan_d, fn));
+// }
 
 static void CompareIHelper(Condition cond) {
-  FOR_UINT64_INPUTS(i) {
-    FOR_UINT64_INPUTS(j) {
+  FOR_UINT32_INPUTS(i) {
+    FOR_UINT32_INPUTS(j) {
       auto input1 = i;
       auto input2 = j;
       bool comp_res = CompareU(input1, input2, cond);
@@ -1354,84 +1276,10 @@ TEST(Ctz32) {
   }
 }
 
-TEST(Clz64) {
-  CcTest::InitializeVM();
-  auto fn = [](MacroAssembler& masm) { __ Clz64(a0, a0); };
-  FOR_UINT64_INPUTS(i) {
-    // __builtin_clzll(0) is undefined
-    if (i == 0) continue;
-    CHECK_EQ(__builtin_clzll(i), GenAndRunTest<int>(i, fn));
-  }
-}
-
-TEST(Ctz64) {
-  CcTest::InitializeVM();
-  auto fn = [](MacroAssembler& masm) { __ Ctz64(a0, a0); };
-  FOR_UINT64_INPUTS(i) {
-    // __builtin_clzll(0) is undefined
-    if (i == 0) continue;
-    CHECK_EQ(__builtin_ctzll(i), GenAndRunTest<int>(i, fn));
-  }
-}
-
 TEST(ByteSwap) {
   CcTest::InitializeVM();
   auto fn0 = [](MacroAssembler& masm) { __ ByteSwap(a0, a0, 4, t0); };
   CHECK_EQ((int32_t)0x89ab'cdef, GenAndRunTest<int32_t>(0xefcd'ab89, fn0));
-  auto fn1 = [](MacroAssembler& masm) { __ ByteSwap(a0, a0, 8, t0); };
-  CHECK_EQ((int64_t)0x0123'4567'89ab'cdef,
-           GenAndRunTest<int64_t>(0xefcd'ab89'6745'2301, fn1));
-}
-
-TEST(Dpopcnt) {
-  CcTest::InitializeVM();
-  Isolate* isolate = CcTest::i_isolate();
-  HandleScope handles(isolate);
-
-  uint64_t in[9];
-  uint64_t out[9];
-  uint64_t result[9];
-  uint64_t val = 0xffffffffffffffffl;
-  uint64_t cnt = 64;
-
-  for (int i = 0; i < 7; i++) {
-    in[i] = val;
-    out[i] = cnt;
-    cnt >>= 1;
-    val >>= cnt;
-  }
-
-  in[7] = 0xaf1000000000000bl;
-  out[7] = 10;
-  in[8] = 0xe030000f00003000l;
-  out[8] = 11;
-
-  auto fn = [&in](MacroAssembler& masm) {
-    __ mv(a4, a0);
-    for (int i = 0; i < 7; i++) {
-      // Load constant.
-      __ li(a3, Operand(in[i]));
-      __ Popcnt64(a5, a3, t0);
-      __ Sd(a5, MemOperand(a4));
-      __ Add64(a4, a4, Operand(kSystemPointerSize));
-    }
-    __ li(a3, Operand(in[7]));
-    __ Popcnt64(a5, a3, t0);
-    __ Sd(a5, MemOperand(a4));
-    __ Add64(a4, a4, Operand(kSystemPointerSize));
-
-    __ li(a3, Operand(in[8]));
-    __ Popcnt64(a5, a3, t0);
-    __ Sd(a5, MemOperand(a4));
-    __ Add64(a4, a4, Operand(kSystemPointerSize));
-  };
-  auto f = AssembleCode<FV>(fn);
-
-  (void)f.Call(reinterpret_cast<int64_t>(result), 0, 0, 0, 0);
-  // Check results.
-  for (int i = 0; i < 9; i++) {
-    CHECK(out[i] == result[i]);
-  }
 }
 
 TEST(Popcnt) {
@@ -1463,19 +1311,19 @@ TEST(Popcnt) {
       // Load constant.
       __ li(a3, Operand(in[i]));
       __ Popcnt32(a5, a3, t0);
-      __ Sd(a5, MemOperand(a4));
-      __ Add64(a4, a4, Operand(kSystemPointerSize));
+      __ Sw(a5, MemOperand(a4));
+      __ Add(a4, a4, Operand(kSystemPointerSize));
     }
 
     __ li(a3, Operand(in[6]));
-    __ Popcnt64(a5, a3, t0);
-    __ Sd(a5, MemOperand(a4));
-    __ Add64(a4, a4, Operand(kSystemPointerSize));
+    __ Popcnt32(a5, a3, t0);
+    __ Sw(a5, MemOperand(a4));
+    __ Add(a4, a4, Operand(kSystemPointerSize));
 
     __ li(a3, Operand(in[7]));
-    __ Popcnt64(a5, a3, t0);
-    __ Sd(a5, MemOperand(a4));
-    __ Add64(a4, a4, Operand(kSystemPointerSize));
+    __ Popcnt32(a5, a3, t0);
+    __ Sw(a5, MemOperand(a4));
+    __ Add(a4, a4, Operand(kSystemPointerSize));
   };
   auto f = AssembleCode<FV>(fn);
 
@@ -1486,41 +1334,30 @@ TEST(Popcnt) {
   }
 }
 
-TEST(Move) {
-  CcTest::InitializeVM();
-  union {
-    double dval;
-    int32_t ival[2];
-  } t;
+// TEST(Move) {
+//   CcTest::InitializeVM();
+//   union {
+//     double dval;
+//     int32_t ival[2];
+//   } t;
 
-  {
-    auto fn = [](MacroAssembler& masm) { __ ExtractHighWordFromF64(a0, fa0); };
-    t.ival[0] = 256;
-    t.ival[1] = -123;
-    CHECK_EQ(static_cast<int64_t>(t.ival[1]),
-             GenAndRunTest<int64_t>(t.dval, fn));
-    t.ival[0] = 645;
-    t.ival[1] = 127;
-    CHECK_EQ(static_cast<int64_t>(t.ival[1]),
-             GenAndRunTest<int64_t>(t.dval, fn));
-  }
+//   {
+//     auto fn = [](MacroAssembler& masm) { __ ExtractHighWordFromF64(a0, fa0);
+//     }; t.ival[0] = 256; t.ival[1] = -123;
+//     CHECK_EQ(static_cast<int32_t>(t.ival[1]),
+//              GenAndRunTest<int32_t>(t.dval, fn));
+//   }
 
-  {
-    auto fn = [](MacroAssembler& masm) { __ ExtractLowWordFromF64(a0, fa0); };
-    t.ival[0] = 256;
-    t.ival[1] = -123;
-    CHECK_EQ(static_cast<int64_t>(t.ival[0]),
-             GenAndRunTest<int64_t>(t.dval, fn));
-    t.ival[0] = -645;
-    t.ival[1] = 127;
-    CHECK_EQ(static_cast<int64_t>(t.ival[0]),
-             GenAndRunTest<int64_t>(t.dval, fn));
-  }
-}
+//   {
+//     auto fn = [](MacroAssembler& masm) { __ ExtractLowWordFromF64(a0, fa0);
+//     }; t.ival[0] = 256; t.ival[1] = -123;
+//     CHECK_EQ(static_cast<int32_t>(t.ival[0]),
+//              GenAndRunTest<int32_t>(t.dval, fn));
+
+//   }
+// }
 
 TEST(DeoptExitSizeIsFixed) {
-  CHECK(Deoptimizer::kSupportsFixedDeoptExitSizes);
-
   Isolate* isolate = CcTest::i_isolate();
   HandleScope handles(isolate);
   auto buffer = AllocateAssemblerBuffer();
@@ -1530,23 +1367,19 @@ TEST(DeoptExitSizeIsFixed) {
   for (int i = 0; i < kDeoptimizeKindCount; i++) {
     DeoptimizeKind kind = static_cast<DeoptimizeKind>(i);
     Label before_exit;
-    masm.bind(&before_exit);
-    if (kind == DeoptimizeKind::kEagerWithResume) {
-      Builtin target = Deoptimizer::GetDeoptWithResumeBuiltin(
-          DeoptimizeReason::kDynamicCheckMaps);
-      masm.CallForDeoptimization(target, 42, &before_exit, kind, &before_exit,
-                                 nullptr);
-      CHECK_EQ(masm.SizeOfCodeGeneratedSince(&before_exit),
-               Deoptimizer::kEagerWithResumeBeforeArgsSize);
+    Builtin target = Deoptimizer::GetDeoptimizationEntry(kind);
+    // Mirroring logic in code-generator.cc.
+    if (kind == DeoptimizeKind::kLazy) {
+      // CFI emits an extra instruction here.
+      masm.BindExceptionHandler(&before_exit);
     } else {
-      Builtin target = Deoptimizer::GetDeoptimizationEntry(kind);
-      masm.CallForDeoptimization(target, 42, &before_exit, kind, &before_exit,
-                                 nullptr);
-      CHECK_EQ(masm.SizeOfCodeGeneratedSince(&before_exit),
-               kind == DeoptimizeKind::kLazy
-                   ? Deoptimizer::kLazyDeoptExitSize
-                   : Deoptimizer::kNonLazyDeoptExitSize);
+      masm.bind(&before_exit);
     }
+    masm.CallForDeoptimization(target, 42, &before_exit, kind, &before_exit,
+                               &before_exit);
+    CHECK_EQ(masm.SizeOfCodeGeneratedSince(&before_exit),
+             kind == DeoptimizeKind::kLazy ? Deoptimizer::kLazyDeoptExitSize
+                                           : Deoptimizer::kEagerDeoptExitSize);
   }
 }
 
@@ -1558,13 +1391,10 @@ TEST(AddWithImm) {
     CHECK_EQ(static_cast<int64_t>(Expected), GenAndRunTest(fn));        \
   }
 
-  Test(Add64, 4095, 4095);
-  Test(Add32, 4095, 4095);
-  Test(Sub64, 4095, -4095);
-  Test(Sub32, 4095, -4095);
+  Test(Add, 4095, 4095);
+  Test(Sub, 4095, -4095);
 #undef Test
 }
-#endif
 
 #undef __
 

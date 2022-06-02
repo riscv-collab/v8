@@ -298,7 +298,7 @@ void Assembler::emit(Instr x) {
   if (!is_buffer_growth_blocked()) {
     CheckBuffer();
   }
-  DEBUG_PRINTF("%p: ", pc_);
+  DEBUG_PRINTF("%p(%x): ", pc_, pc_offset());
   disassembleInstr(x);
   EmitHelper(x);
   CheckTrampolinePoolQuick();
@@ -308,7 +308,7 @@ void Assembler::emit(ShortInstr x) {
   if (!is_buffer_growth_blocked()) {
     CheckBuffer();
   }
-  DEBUG_PRINTF("%p: ", pc_);
+  DEBUG_PRINTF("%p(%x): ", pc_, pc_offset());
   disassembleInstr(x);
   EmitHelper(x);
   CheckTrampolinePoolQuick();

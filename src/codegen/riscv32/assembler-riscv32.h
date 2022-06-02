@@ -237,7 +237,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
     return branch_offset_helper(L, OffsetSize::kOffset8);
   }
 
-  uint64_t jump_address(Label* L);
+  uint32_t jump_address(Label* L);
   uint64_t branch_long_offset(Label* L);
 
   // Puts a labels target address at the given position.

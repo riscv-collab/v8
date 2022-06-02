@@ -353,12 +353,12 @@ bool Assembler::IsLw(Instr instr) {
 
 int Assembler::target_at(int pos, bool is_internal) {
   if (is_internal) {
-    int64_t* p = reinterpret_cast<int64_t*>(buffer_start_ + pos);
-    int64_t address = *p;
+    int32_t* p = reinterpret_cast<int32_t*>(buffer_start_ + pos);
+    int32_t address = *p;
     if (address == kEndOfJumpChain) {
       return kEndOfChain;
     } else {
-      int64_t instr_address = reinterpret_cast<int64_t>(p);
+      int32_t instr_address = reinterpret_cast<int32_t>(p);
       DCHECK(instr_address - address < INT_MAX);
       int delta = static_cast<int>(instr_address - address);
       DCHECK(pos > delta);
@@ -1385,8 +1385,8 @@ int32_t Assembler::get_trampoline_entry(int32_t pos) {
   return trampoline_entry;
 }
 
-uint64_t Assembler::jump_address(Label* L) {
-  int64_t target_pos;
+uint32_t Assembler::jump_address(Label* L) {
+  int32_t target_pos;
   DEBUG_PRINTF("jump_address: %p to %p (%d)\n", L,
                reinterpret_cast<Instr*>(buffer_start_ + pc_offset()),
                pc_offset());
@@ -1406,7 +1406,7 @@ uint64_t Assembler::jump_address(Label* L) {
       return kEndOfJumpChain;
     }
   }
-  uint64_t imm = reinterpret_cast<uint64_t>(buffer_start_) + target_pos;
+  uint32_t imm = reinterpret_cast<uint32_t>(buffer_start_) + target_pos;
   if (FLAG_riscv_c_extension)
     DCHECK_EQ(imm & 1, 0);
   else
@@ -3361,7 +3361,7 @@ void Assembler::GrowBuffer() {
 
 void Assembler::db(uint8_t data) {
   if (!is_buffer_growth_blocked()) CheckBuffer();
-  DEBUG_PRINTF("%p: constant 0x%x\n", pc_, data);
+  DEBUG_PRINTF("%p(%x): constant 0x%x\n", pc_, pc_offset(), data);
   EmitHelper(data);
 }
 
@@ -3372,7 +3372,7 @@ void Assembler::dd(uint32_t data, RelocInfo::Mode rmode) {
     RecordRelocInfo(rmode);
   }
   if (!is_buffer_growth_blocked()) CheckBuffer();
-  DEBUG_PRINTF("%p: constant 0x%x\n", pc_, data);
+  DEBUG_PRINTF("%p(%x): constant 0x%x\n", pc_, pc_offset(), data);
   EmitHelper(data);
 }
 
@@ -3383,12 +3383,12 @@ void Assembler::dq(uint64_t data, RelocInfo::Mode rmode) {
     RecordRelocInfo(rmode);
   }
   if (!is_buffer_growth_blocked()) CheckBuffer();
-  DEBUG_PRINTF("%p: constant 0x%llx\n", pc_, data);
+  DEBUG_PRINTF("%p(%x): constant 0x%llx\n", pc_, pc_offset(), data);
   EmitHelper(data);
 }
 
 void Assembler::dd(Label* label) {
-  uint64_t data;
+  uint32_t data;
   if (!is_buffer_growth_blocked()) CheckBuffer();
   if (label->is_bound()) {
     data = reinterpret_cast<uint64_t>(buffer_start_ + label->pos());
@@ -3397,6 +3397,7 @@ void Assembler::dd(Label* label) {
     internal_reference_positions_.insert(label->pos());
   }
   RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
+  DEBUG_PRINTF("%p(%x): constant 0x%x\n", pc_, pc_offset(), data);
   EmitHelper(data);
 }
 

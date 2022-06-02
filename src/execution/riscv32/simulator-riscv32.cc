@@ -4418,7 +4418,7 @@ void Simulator::DecodeRVIType() {
     case RO_JALR: {
       set_rd(get_pc() + kInstrSize);
       // Note: No need to shift 2 for JALR's imm12, but set lowest bit to 0.
-      int64_t next_pc = (rs1() + imm12()) & ~reg_t(1);
+      int32_t next_pc = (rs1() + imm12()) & ~reg_t(1);
       set_pc(next_pc);
       if (::v8::internal::FLAG_trace_sim) {
         Builtin builtin = LookUp((Address)get_pc());
