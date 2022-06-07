@@ -522,7 +522,7 @@ TEST(RISCV2) {
 
   // ----- Test all instructions.
 
-  // Test lui, ori, and addiw, used in the
+  // Test lui, ori, and addi, used in the
   // li pseudo-instruction. This way we
   // can then safely load registers with
   // chosen values.
@@ -574,48 +574,24 @@ TEST(RISCV2) {
     __ RV_li(t5, 0xEDCBA983);
     __ bne(t0, t5, &error);
 
-    // Shift both 32bit number to left, to
-    // preserve meaning of next comparison.
-    __ slli(a7, a7, 32);
-    __ slli(t3, t3, 32);
-
-    __ slt(t0, t3, a7);
+    // Test slli, slt and sltu.
+    __ slli(a7, a7, 31);  // 0x80000000
+    __ addi(t3, t3, 1);   // 0x80000001
+    __ slli(t3, t3, 30);  // 0x40000000
     __ RV_li(t5, 1);
-    __ bne(t0, t5, &error);
-    __ sltu(t0, t3, a7);
-    __ bne(t0, zero_reg, &error);
 
-    // Restore original values in registers.
-    __ srli(a7, a7, 32);
-    __ srli(t3, t3, 32);
+    __ slt(t0, a7, t3);
+    __ bne(t0, t5, &error);
+    __ sltu(t0, a7, t3);
+    __ bne(t0, zero_reg, &error);
 
     __ RV_li(t0, 0x7421);    // 0x00007421
     __ addi(t0, t0, -0x1);   // 0x00007420
     __ addi(t0, t0, -0x20);  // 0x00007400
     __ RV_li(t5, 0x00007400);
     __ bne(t0, t5, &error);
-    __ addi(a1, a7, 0x1);  // 0x80000000 - result is sign-extended.
+    __ addi(a1, a7, 0x0);  // 0x80000000 -
     __ RV_li(t5, 0x80000000);
-    __ bne(a1, t5, &error);
-
-    __ RV_li(t5, 0x00002000);
-    __ slt(t0, a5, t5);  // 0x1
-    __ RV_li(t6, 0xFFFF8000);
-    __ slt(t0, t0, t6);  // 0x0
-    __ bne(t0, zero_reg, &error);
-    __ sltu(t0, a5, t5);  // 0x1
-    __ RV_li(t6, 0x00008000);
-    __ sltu(t0, t0, t6);  // 0x1
-    __ RV_li(t5, 1);
-    __ bne(t0, t5, &error);
-
-    __ andi(t0, a5, 0x0F0);  // 0x00000030
-    __ ori(t0, t0, 0x200);   // 0x00000230
-    __ xori(t0, t0, 0x3CC);  // 0x000001FC
-    __ RV_li(t5, 0x000001FC);
-    __ bne(t0, t5, &error);
-    __ lui(a1, -519628);  // Result is sign-extended into 64bit register.
-    __ RV_li(t5, 0x81234000);
     __ bne(a1, t5, &error);
 
     // Everything was correctly executed.
