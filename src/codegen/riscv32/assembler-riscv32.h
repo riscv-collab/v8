@@ -238,7 +238,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   }
 
   uint32_t jump_address(Label* L);
-  uint64_t branch_long_offset(Label* L);
+  uint32_t branch_long_offset(Label* L);
 
   // Puts a labels target address at the given position.
   // The high 8 bits are set to zero.

@@ -289,7 +289,7 @@ TEST(jump_tables6) {
 
   __ GenerateSwitchTable(a0, kSwitchTableCases,
                          [&labels](int i) { return labels + i; });
-  gen_insn += (kSwitchTablePrologueSize + 2 * kSwitchTableCases);
+  gen_insn += (kSwitchTablePrologueSize + 1 * kSwitchTableCases);
 
   for (int i = 0; i < kSwitchTableCases; ++i) {
     __ bind(&labels[i]);
@@ -322,8 +322,8 @@ TEST(jump_tables6) {
 #endif
   auto f = GeneratedCode<F1>::FromCode(*code);
   for (int i = 0; i < kSwitchTableCases; ++i) {
-    int64_t res = reinterpret_cast<int64_t>(f.Call(i, 0, 0, 0, 0));
-    ::printf("f(%d) = %" PRId64 "\n", i, res);
+    int32_t res = reinterpret_cast<int32_t>(f.Call(i, 0, 0, 0, 0));
+    ::printf("f(%d) = %" PRId32 "\n", i, res);
     CHECK_EQ(values[i], res);
   }
 }

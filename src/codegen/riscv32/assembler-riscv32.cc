@@ -203,7 +203,7 @@ void Assembler::AllocateAndInstallRequestedHeapObjects(Isolate* isolate) {
         break;
     }
     Address pc = reinterpret_cast<Address>(buffer_start_) + request.offset();
-    set_target_value_at(pc, reinterpret_cast<uint64_t>(object.location()));
+    set_target_value_at(pc, reinterpret_cast<uint32_t>(object.location()));
   }
 }
 
@@ -402,8 +402,8 @@ int Assembler::target_at(int pos, bool is_internal) {
     case LUI: {
       Address pc = reinterpret_cast<Address>(buffer_start_ + pos);
       pc = target_address_at(pc);
-      uint64_t instr_address = reinterpret_cast<uint64_t>(buffer_start_ + pos);
-      uint64_t imm = reinterpret_cast<uint32_t>(pc);
+      uint32_t instr_address = reinterpret_cast<uint32_t>(buffer_start_ + pos);
+      uint32_t imm = reinterpret_cast<uint32_t>(pc);
       if (imm == kEndOfJumpChain) {
         return kEndOfChain;
       } else {
@@ -533,8 +533,8 @@ static inline Instr SetCBranchOffset(int32_t pos, int32_t target_pos,
 void Assembler::target_at_put(int pos, int target_pos, bool is_internal,
                               bool trampoline) {
   if (is_internal) {
-    uint64_t imm = reinterpret_cast<uint64_t>(buffer_start_) + target_pos;
-    *reinterpret_cast<uint64_t*>(buffer_start_ + pos) = imm;
+    uint32_t imm = reinterpret_cast<uint32_t>(buffer_start_) + target_pos;
+    *reinterpret_cast<uint32_t*>(buffer_start_ + pos) = imm;
     return;
   }
   DEBUG_PRINTF("target_at_put: %p (%d) to %p (%d)\n",
@@ -557,14 +557,14 @@ void Assembler::target_at_put(int pos, int target_pos, bool is_internal,
     case LUI: {
       Address pc = reinterpret_cast<Address>(buffer_start_ + pos);
       set_target_value_at(
-          pc, reinterpret_cast<uint64_t>(buffer_start_ + target_pos));
+          pc, reinterpret_cast<uint32_t>(buffer_start_ + target_pos));
     } break;
     case AUIPC: {
       Instr instr_auipc = instr;
       Instr instr_I = instr_at(pos + 4);
       DCHECK(IsJalr(instr_I) || IsAddi(instr_I));
 
-      int64_t offset = target_pos - pos;
+      int32_t offset = target_pos - pos;
       if (is_int21(offset) && IsJalr(instr_I) && trampoline) {
         DCHECK(is_int21(offset) && ((offset & 1) == 0));
         Instr instr = JAL;
@@ -1415,8 +1415,8 @@ uint32_t Assembler::jump_address(Label* L) {
   return imm;
 }
 
-uint64_t Assembler::branch_long_offset(Label* L) {
-  int64_t target_pos;
+uint32_t Assembler::branch_long_offset(Label* L) {
+  int32_t target_pos;
 
   DEBUG_PRINTF("branch_long_offset: %p to %p (%d)\n", L,
                reinterpret_cast<Instr*>(buffer_start_ + pc_offset()),
@@ -1437,13 +1437,13 @@ uint64_t Assembler::branch_long_offset(Label* L) {
       return kEndOfJumpChain;
     }
   }
-  int64_t offset = target_pos - pc_offset();
+  int32_t offset = target_pos - pc_offset();
   if (FLAG_riscv_c_extension)
     DCHECK_EQ(offset & 1, 0);
   else
     DCHECK_EQ(offset & 3, 0);
 
-  return static_cast<uint64_t>(offset);
+  return static_cast<uint32_t>(offset);
 }
 
 int32_t Assembler::branch_offset_helper(Label* L, OffsetSize bits) {
@@ -3391,7 +3391,7 @@ void Assembler::dd(Label* label) {
   uint32_t data;
   if (!is_buffer_growth_blocked()) CheckBuffer();
   if (label->is_bound()) {
-    data = reinterpret_cast<uint64_t>(buffer_start_ + label->pos());
+    data = reinterpret_cast<uint32_t>(buffer_start_ + label->pos());
   } else {
     data = jump_address(label);
     internal_reference_positions_.insert(label->pos());
@@ -3453,11 +3453,11 @@ void Assembler::CheckTrampolinePool() {
 
       int pool_start = pc_offset();
       for (int i = 0; i < unbound_labels_count_; i++) {
-        int64_t imm64;
-        imm64 = branch_long_offset(&after_pool);
-        CHECK(is_int32(imm64 + 0x800));
-        int32_t Hi20 = (((int32_t)imm64 + 0x800) >> 12);
-        int32_t Lo12 = (int32_t)imm64 << 20 >> 20;
+        int32_t imm32;
+        imm32 = branch_long_offset(&after_pool);
+        CHECK(is_int32(imm32 + 0x800));
+        int32_t Hi20 = (((int32_t)imm32 + 0x800) >> 12);
+        int32_t Lo12 = (int32_t)imm32 << 20 >> 20;
         auipc(t6, Hi20);  // Read PC + Hi20 into t6
         jr(t6, Lo12);     // jump PC + Hi20 + Lo12
       }
