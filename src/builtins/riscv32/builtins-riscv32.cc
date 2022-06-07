@@ -531,7 +531,7 @@ static void Generate_CheckStackOverflow(MacroAssembler* masm, Register argc,
   // here which will cause r2 to become negative.
   __ Sub(scratch1, sp, scratch1);
   // Check if the arguments will overflow the stack.
-  __ Sll64(scratch2, argc, kSystemPointerSizeLog2);
+  __ Sll(scratch2, argc, kSystemPointerSizeLog2);
   __ Branch(&okay, gt, scratch1, Operand(scratch2),
             Label::Distance::kNear);  // Signed comparison.
 
@@ -857,7 +857,7 @@ static void LeaveInterpreterFrame(MacroAssembler* masm, Register scratch1,
   // Compute the size of the actual parameters + receiver (in bytes).
   __ Lw(actual_params_size,
         MemOperand(fp, StandardFrameConstants::kArgCOffset));
-  __ Sll64(actual_params_size, actual_params_size, kSystemPointerSizeLog2);
+  __ Sll(actual_params_size, actual_params_size, kSystemPointerSizeLog2);
   // If actual is bigger than formal, then we should use it to free up the stack
   // arguments.
   __ Branch(&L1, le, actual_params_size, Operand(params_size),
@@ -1489,7 +1489,7 @@ static void GenerateInterpreterPushArgs(MacroAssembler* masm, Register num_args,
   ASM_CODE_COMMENT(masm);
   // Find the address of the last argument.
   __ Sub(scratch, num_args, Operand(1));
-  __ Sll64(scratch, scratch, kSystemPointerSizeLog2);
+  __ Sll(scratch, scratch, kSystemPointerSizeLog2);
   __ Sub(start_address, start_address, scratch);
 
   // Push the arguments.
@@ -2209,7 +2209,7 @@ void Builtins::Generate_CallOrConstructVarargs(MacroAssembler* masm,
     Register hole_value = temps.Acquire();
     __ Add(src, args, FixedArray::kHeaderSize - kHeapObjectTag);
     __ Branch(&done, eq, len, Operand(zero_reg), Label::Distance::kNear);
-    __ Sll64(scratch, len, kTaggedSizeLog2);
+    __ Sll(scratch, len, kTaggedSizeLog2);
     __ Sub(scratch, sp, Operand(scratch));
     __ LoadRoot(hole_value, RootIndex::kTheHoleValue);
     __ bind(&loop);
@@ -2991,7 +2991,7 @@ void Builtins::Generate_DoubleToI(MacroAssembler* masm) {
   // Shift the mantissa bits to the correct position.
   // We don't need to clear non-mantissa bits as they will be shifted away.
   // If they weren't, it would mean that the answer is in the 32bit range.
-  __ Sll32(input_high, input_high, scratch);
+  __ Sll(input_high, input_high, scratch);
 
   __ bind(&high_shift_done);
 
@@ -3003,7 +3003,7 @@ void Builtins::Generate_DoubleToI(MacroAssembler* masm) {
 
   // Negate scratch.
   __ Sub(scratch, zero_reg, scratch);
-  __ Sll32(input_low, input_low, scratch);
+  __ Sll(input_low, input_low, scratch);
   __ BranchShort(&shift_done);
 
   __ bind(&pos_shift);

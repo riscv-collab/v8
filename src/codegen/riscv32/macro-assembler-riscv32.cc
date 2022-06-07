@@ -732,7 +732,7 @@ void TurboAssembler::Sgtu(Register rd, Register rs, const Operand& rt) {
   }
 }
 
-void TurboAssembler::Sll32(Register rd, Register rs, const Operand& rt) {
+void TurboAssembler::Sll(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
     sll(rd, rs, rt.rm());
   } else {
@@ -741,7 +741,7 @@ void TurboAssembler::Sll32(Register rd, Register rs, const Operand& rt) {
   }
 }
 
-void TurboAssembler::Sra32(Register rd, Register rs, const Operand& rt) {
+void TurboAssembler::Sra(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
     sra(rd, rs, rt.rm());
   } else {
@@ -750,52 +750,12 @@ void TurboAssembler::Sra32(Register rd, Register rs, const Operand& rt) {
   }
 }
 
-void TurboAssembler::Srl32(Register rd, Register rs, const Operand& rt) {
+void TurboAssembler::Srl(Register rd, Register rs, const Operand& rt) {
   if (rt.is_reg()) {
     srl(rd, rs, rt.rm());
   } else {
     uint8_t shamt = static_cast<uint8_t>(rt.immediate());
     srli(rd, rs, shamt);
-  }
-}
-
-void TurboAssembler::Sra64(Register rd, Register rs, const Operand& rt) {
-  if (rt.is_reg()) {
-    sra(rd, rs, rt.rm());
-  } else if (FLAG_riscv_c_extension && (rd.code() == rs.code()) &&
-             ((rd.code() & 0b11000) == 0b01000) && is_int6(rt.immediate())) {
-    uint8_t shamt = static_cast<uint8_t>(rt.immediate());
-    c_srai(rd, shamt);
-  } else {
-    uint8_t shamt = static_cast<uint8_t>(rt.immediate());
-    srai(rd, rs, shamt);
-  }
-}
-
-void TurboAssembler::Srl64(Register rd, Register rs, const Operand& rt) {
-  if (rt.is_reg()) {
-    srl(rd, rs, rt.rm());
-  } else if (FLAG_riscv_c_extension && (rd.code() == rs.code()) &&
-             ((rd.code() & 0b11000) == 0b01000) && is_int6(rt.immediate())) {
-    uint8_t shamt = static_cast<uint8_t>(rt.immediate());
-    c_srli(rd, shamt);
-  } else {
-    uint8_t shamt = static_cast<uint8_t>(rt.immediate());
-    srli(rd, rs, shamt);
-  }
-}
-
-void TurboAssembler::Sll64(Register rd, Register rs, const Operand& rt) {
-  if (rt.is_reg()) {
-    sll(rd, rs, rt.rm());
-  } else {
-    uint8_t shamt = static_cast<uint8_t>(rt.immediate());
-    if (FLAG_riscv_c_extension && (rd.code() == rs.code()) &&
-        (rd != zero_reg) && (shamt != 0) && is_uint6(shamt)) {
-      c_slli(rd, shamt);
-    } else {
-      slli(rd, rs, shamt);
-    }
   }
 }
 
@@ -2357,14 +2317,14 @@ void TurboAssembler::Popcnt32(Register rd, Register rs, Register scratch) {
   DCHECK((rd != value) && (rs != value));
   li(value, 0x01010101);     // value = 0x01010101;
   li(scratch2, 0x55555555);  // B0 = 0x55555555;
-  Srl32(scratch, rs, 1);
+  Srl(scratch, rs, 1);
   And(scratch, scratch, scratch2);
   Sub(scratch, rs, scratch);
   li(scratch2, 0x33333333);  // B1 = 0x33333333;
   slli(rd, scratch2, 4);
   or_(scratch2, scratch2, rd);
   And(rd, scratch, scratch2);
-  Srl32(scratch, scratch, 2);
+  Srl(scratch, scratch, 2);
   And(scratch, scratch, scratch2);
   Add(scratch, rd, scratch);
   srli(rd, scratch, 4);
@@ -2373,7 +2333,7 @@ void TurboAssembler::Popcnt32(Register rd, Register rs, Register scratch) {
   Mul(scratch2, value, scratch2);  // B2 = 0x0F0F0F0F;
   And(rd, rd, scratch2);
   Mul(rd, rd, value);
-  Srl32(rd, rd, shift);
+  Srl(rd, rd, shift);
 }
 
 void TurboAssembler::TryInlineTruncateDoubleToI(Register result,
@@ -3306,7 +3266,7 @@ void MacroAssembler::StackOverflowCheck(Register num_args, Register scratch1,
   // here which will cause scratch1 to become negative.
   Sub(scratch1, sp, scratch1);
   // Check if the arguments will overflow the stack.
-  Sll64(scratch2, num_args, kSystemPointerSizeLog2);
+  Sll(scratch2, num_args, kSystemPointerSizeLog2);
   // Signed comparison.
   if (stack_overflow != nullptr) {
     Branch(stack_overflow, le, scratch1, Operand(scratch2));
@@ -3353,7 +3313,7 @@ void MacroAssembler::InvokePrologue(Register expected_parameter_count,
     Label copy;
     Register src = a6, dest = a7;
     Move(src, sp);
-    Sll64(t0, expected_parameter_count, kSystemPointerSizeLog2);
+    Sll(t0, expected_parameter_count, kSystemPointerSizeLog2);
     Sub(sp, sp, Operand(t0));
     // Update stack pointer.
     Move(dest, sp);
