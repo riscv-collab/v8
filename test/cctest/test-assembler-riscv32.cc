@@ -1649,7 +1649,7 @@ TEST(jump_tables1) {
       __ BlockTrampolinePoolFor(kNumCases * 2 + 6);
 
       __ auipc(ra, 0);
-      __ slli(t3, a0, 3);
+      __ slli(t3, a0, 2);
       __ add(t3, t3, ra);
       __ Lw(t3, MemOperand(t3, 6 * kInstrSize));
       __ jr(t3);
