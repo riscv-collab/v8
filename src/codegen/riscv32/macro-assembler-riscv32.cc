@@ -3121,7 +3121,7 @@ void TurboAssembler::LoadAddress(Register dst, Label* target,
     auipc(dst, Hi20);
     addi(dst, dst, Lo12);
   } else {
-    uint64_t address = jump_address(target);
+    uint32_t address = jump_address(target);
     li(dst, Operand(address, rmode), ADDRESS_LOAD);
   }
 }

@@ -117,14 +117,14 @@ TEST(LoadConstants) {
   int32_t refConstants[32];
   int32_t result[32];
 
-  int64_t mask = 1;
+  int32_t mask = 1;
   for (int i = 0; i < 32; i++) {
     refConstants[i] = ~(mask << i);
   }
 
   auto fn = [&refConstants](MacroAssembler& masm) {
     __ mv(a4, a0);
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0; i < 32; i++) {
       // Load constant.
       __ li(a5, Operand(refConstants[i]));
       __ Sw(a5, MemOperand(a4));
@@ -133,7 +133,7 @@ TEST(LoadConstants) {
   };
   auto f = AssembleCode<FV>(fn);
 
-  (void)f.Call(reinterpret_cast<int64_t>(result), 0, 0, 0, 0);
+  (void)f.Call(reinterpret_cast<int32_t>(result), 0, 0, 0, 0);
   // Check results.
   for (int i = 0; i < 32; i++) {
     CHECK(refConstants[i] == result[i]);
@@ -460,17 +460,17 @@ TEST(Cvt_s_ul_Trunc_ul_s) {
 //   }
 // }
 
-TEST(cvt_d_l_Trunc_l_d) {
-  CcTest::InitializeVM();
-  auto fn = [](MacroAssembler& masm) {
-    __ fcvt_d_l(fa0, a0);
-    __ Trunc_l_d(a0, fa0);
-  };
-  FOR_INT32_INPUTS3(i, cvt_trunc_int32_test_values) {
-    CHECK_EQ(static_cast<int32_t>(static_cast<double>(i)),
-             GenAndRunTest<int32_t>(i, fn));
-  }
-}
+// TEST(cvt_d_l_Trunc_l_d) {
+//   CcTest::InitializeVM();
+//   auto fn = [](MacroAssembler& masm) {
+//     __ fcvt_d_l(fa0, a0);
+//     __ Trunc_l_d(a0, fa0);
+//   };
+//   FOR_INT32_INPUTS3(i, cvt_trunc_int32_test_values) {
+//     CHECK_EQ(static_cast<int32_t>(static_cast<double>(i)),
+//              GenAndRunTest<int32_t>(i, fn));
+//   }
+// }
 
 TEST(cvt_d_w_Trunc_w_d) {
   CcTest::InitializeVM();
@@ -513,7 +513,7 @@ TEST(OverflowInstructions) {
     int32_t overflow_sub;
     int32_t overflow_sub2;
     int32_t overflow_mul;
-    int64_t overflow_mul2;
+    int32_t overflow_mul2;
   } t;
 
   FOR_INT32_INPUTS3(i, overflow_int32_test_values) {
@@ -802,58 +802,6 @@ TEST(Ulw) {
         // test when loaded value overwrites base-register of load address
         CHECK_EQ(value, run_Unaligned(buffer_middle, in_offset, out_offset,
                                       value, fn_2));
-      }
-    }
-  }
-}
-
-TEST(Ulw_extension) {
-  CcTest::InitializeVM();
-
-  static const int kBufferSize = 300 * KB;
-  char memory_buffer[kBufferSize];
-  char* buffer_middle = memory_buffer + (kBufferSize / 2);
-
-  auto fn = [](MacroAssembler& masm, int32_t in_offset, int32_t out_offset) {
-    Label success, fail, end, different;
-    __ Ulw(t0, MemOperand(a0, in_offset));
-    // TODO(fix this): Ulwu(t1, MemOperand(a0, in_offset));
-    __ Ulw(t1, MemOperand(a0, in_offset));
-    __ Branch(&different, ne, t0, Operand(t1));
-
-    // If signed and unsigned values are same, check
-    // the upper bits to see if they are zero
-    __ srai(t0, t0, 31);
-    __ Branch(&success, eq, t0, Operand(zero_reg));
-    __ Branch(&fail);
-
-    // If signed and unsigned values are different,
-    // check that the upper bits are complementary
-    __ bind(&different);
-    __ srai(t1, t1, 31);
-    __ Branch(&fail, ne, t1, Operand(1));
-    __ srai(t0, t0, 31);
-    __ addi(t0, t0, 1);
-    __ Branch(&fail, ne, t0, Operand(zero_reg));
-    // Fall through to success
-
-    __ bind(&success);
-    __ Ulw(t0, MemOperand(a0, in_offset));
-    __ Usw(t0, MemOperand(a0, out_offset));
-    __ Branch(&end);
-    __ bind(&fail);
-    __ Usw(zero_reg, MemOperand(a0, out_offset));
-    __ bind(&end);
-  };
-
-  FOR_UINT32_INPUTS(i) {
-    FOR_INT32_TWO_INPUTS(j1, j2, unsigned_test_offset) {
-      FOR_INT32_TWO_INPUTS(k1, k2, unsigned_test_offset_increment) {
-        auto value = i;
-        int32_t in_offset = *j1 + *k1;
-        int32_t out_offset = *j2 + *k2;
-        CHECK_EQ(value, run_Unaligned(buffer_middle, in_offset, out_offset,
-                                      value, fn));
       }
     }
   }
@@ -1287,11 +1235,11 @@ TEST(Popcnt) {
   Isolate* isolate = CcTest::i_isolate();
   HandleScope handles(isolate);
 
-  uint64_t in[8];
-  uint64_t out[8];
-  uint64_t result[8];
-  uint64_t val = 0xffffffff;
-  uint64_t cnt = 32;
+  uint32_t in[8];
+  uint32_t out[8];
+  uint32_t result[8];
+  uint32_t val = 0xffffffff;
+  uint32_t cnt = 32;
 
   for (int i = 0; i < 6; i++) {
     in[i] = val;
@@ -1327,7 +1275,7 @@ TEST(Popcnt) {
   };
   auto f = AssembleCode<FV>(fn);
 
-  (void)f.Call(reinterpret_cast<int64_t>(result), 0, 0, 0, 0);
+  (void)f.Call(reinterpret_cast<uint32_t>(result), 0, 0, 0, 0);
   // Check results.
   for (int i = 0; i < 8; i++) {
     CHECK(out[i] == result[i]);
