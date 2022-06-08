@@ -760,29 +760,28 @@ TEST(RISCV4) {
   HandleScope scope(isolate);
 
   struct T {
-    double a;
-    double b;
-    double c;
+    float a;
+    float b;
+    float c;
     float d;
-    int64_t e;
+    int32_t e;
   } t;
 
   auto fn = [](MacroAssembler& assm) {
-    __ fld(ft0, a0, offsetof(T, a));
-    __ fld(fa1, a0, offsetof(T, b));
+    __ flw(ft0, a0, offsetof(T, a));
+    __ flw(fa1, a0, offsetof(T, b));
 
     // Swap ft0 and fa1, by using 2 integer registers, a4-a5,
-    __ fmv_x_d(a4, ft0);
-    __ fmv_x_d(a5, fa1);
+    __ fmv_x_w(a4, ft0);
+    __ fmv_x_w(a5, fa1);
 
-    __ fmv_d_x(fa1, a4);
-    __ fmv_d_x(ft0, a5);
+    __ fmv_w_x(fa1, a4);
+    __ fmv_w_x(ft0, a5);
 
     // Store the swapped ft0 and fa1 back to memory.
-    __ fsd(ft0, a0, offsetof(T, a));
-    __ fsd(fa1, a0, offsetof(T, c));
+    __ fsw(ft0, a0, offsetof(T, a));
+    __ fsw(fa1, a0, offsetof(T, c));
 
-    // Test sign extension of move operations from coprocessor.
     __ flw(ft0, a0, offsetof(T, d));
     __ fmv_x_w(a4, ft0);
 
@@ -796,10 +795,10 @@ TEST(RISCV4) {
   t.d = -2.75e11;
   f.Call(&t, 0, 0, 0, 0);
 
-  CHECK_EQ(2.75e11, t.a);
-  CHECK_EQ(2.75e11, t.b);
-  CHECK_EQ(1.5e22, t.c);
-  CHECK_EQ(static_cast<int64_t>(0xFFFFFFFFD2800E8EL), t.e);
+  CHECK_EQ(2.75e11f, t.a);
+  CHECK_EQ(2.75e11f, t.b);
+  CHECK_EQ(1.5e22f, t.c);
+  CHECK_EQ(static_cast<int32_t>(0xD2800E8E), t.e);
 }
 
 TEST(RISCV5) {
@@ -824,33 +823,33 @@ TEST(RISCV5) {
     __ lw(a5, a0, offsetof(T, j));
 
     // Convert double in ft0 to int in element i.
-    __ fcvt_l_d(a6, ft0);
+    __ fcvt_w_d(a6, ft0);
     __ sw(a6, a0, offsetof(T, i));
 
     // Convert double in ft1 to int in element j.
-    __ fcvt_l_d(a7, ft1);
+    __ fcvt_w_d(a7, ft1);
     __ sw(a7, a0, offsetof(T, j));
 
     // Convert int in original i (a4) to double in a.
-    __ fcvt_d_l(fa0, a4);
+    __ fcvt_d_w(fa0, a4);
     __ fsd(fa0, a0, offsetof(T, a));
 
     // Convert int in original j (a5) to double in b.
-    __ fcvt_d_l(fa1, a5);
+    __ fcvt_d_w(fa1, a5);
     __ fsd(fa1, a0, offsetof(T, b));
   };
   auto f = AssembleCode<F3>(fn);
 
   t.a = 1.5e4;
-  t.b = 2.75e8;
-  t.i = 12345678;
+  t.b = 2.75e4;
+  t.i = 24000;
   t.j = -100000;
   f.Call(&t, 0, 0, 0, 0);
 
-  CHECK_EQ(12345678.0, t.a);
+  CHECK_EQ(24000, t.a);
   CHECK_EQ(-100000.0, t.b);
   CHECK_EQ(15000, t.i);
-  CHECK_EQ(275000000, t.j);
+  CHECK_EQ(27500, t.j);
 }
 
 TEST(RISCV6) {
