@@ -193,7 +193,7 @@ TEST(jump_tables4) {
   MacroAssembler masm(isolate, v8::internal::CodeObjectRequired::kYes);
 
   const int kNumCases = 128;
-  int values[kNumCases];
+  int32_t values[kNumCases];
   isolate->random_number_generator()->NextBytes(values, sizeof(values));
   Label labels[kNumCases];
   Label near_start, end, done;
@@ -235,7 +235,7 @@ TEST(jump_tables4) {
 #endif
   auto f = GeneratedCode<F1>::FromCode(*code);
   for (int i = 0; i < kNumCases; ++i) {
-    int64_t res = reinterpret_cast<int64_t>(f.Call(i, 0, 0, 0, 0));
+    int32_t res = reinterpret_cast<int32_t>(f.Call(i, 0, 0, 0, 0));
     // ::printf("f(%d) = %" PRId64 "\n", i, res);
     CHECK_EQ(values[i], res);
   }
