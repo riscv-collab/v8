@@ -334,7 +334,7 @@ TEST(CalcScaledAddress) {
     int32_t rt;
     int32_t rs;
     uint8_t sa;
-    int32_t expected_res;
+    uint32_t expected_res;
   };
 
   struct TestCaseLsa tc[] = {// rt, rs, sa, expected_res
@@ -357,16 +357,16 @@ TEST(CalcScaledAddress) {
                              // Shift overflow.
                              {0x4, INT32_MAX, 1, 0x2},
                              {0x4, INT32_MAX >> 1, 2, 0x0},
-                             {0x4, INT32_MAX >> 2, 3, 0xFFFFFFC},
-                             {0x4, INT32_MAX >> 3, 4, 0xFFFFFF4},
-                             {0x4, INT32_MAX >> 4, 5, 0xFFFFFE4},
+                             {0x4, INT32_MAX >> 2, 3, 0xFFFFFFFC},
+                             {0x4, INT32_MAX >> 3, 4, 0xFFFFFFF4},
+                             {0x4, INT32_MAX >> 4, 5, 0xFFFFFFE4},
 
                              // Signed addition overflow.
-                             {INT32_MAX - 1, 0x1, 1, 0x8000000},
-                             {INT32_MAX - 3, 0x1, 2, 0x8000000},
-                             {INT32_MAX - 7, 0x1, 3, 0x8000000},
-                             {INT32_MAX - 15, 0x1, 4, 0x8000000},
-                             {INT32_MAX - 31, 0x1, 5, 0x8000000},
+                             {INT32_MAX - 1, 0x1, 1, 0x80000000},
+                             {INT32_MAX - 3, 0x1, 2, 0x80000000},
+                             {INT32_MAX - 7, 0x1, 3, 0x80000000},
+                             {INT32_MAX - 15, 0x1, 4, 0x80000000},
+                             {INT32_MAX - 31, 0x1, 5, 0x80000000},
 
                              // Addition overflow.
                              {-2, 0x1, 1, 0x0},
