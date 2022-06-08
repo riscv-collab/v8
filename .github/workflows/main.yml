@@ -83,7 +83,7 @@ jobs:
         working-directory: ./v8
         run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ unittests
 
-      - name: run nittest
+      - name: run cctest
         working-directory: ./v8
         continue-on-error: true
         run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ cctest
