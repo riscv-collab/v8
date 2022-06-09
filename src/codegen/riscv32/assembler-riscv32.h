@@ -139,6 +139,8 @@ class V8_EXPORT_PRIVATE MemOperand : public Operand {
                       OffsetAddend offset_addend = offset_zero);
   int32_t offset() const { return offset_; }
 
+  void set_offset(int32_t offset) { offset_ = offset; }
+
   bool OffsetIsInt12Encodable() const { return is_int12(offset_); }
 
  private:

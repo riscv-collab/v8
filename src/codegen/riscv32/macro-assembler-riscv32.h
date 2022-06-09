@@ -594,8 +594,12 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   template <int NBYTES>
   void UnalignedFLoadHelper(FPURegister frd, const MemOperand& rs,
                             Register scratch);
+  void UnalignedDoubleHelper(FPURegister frd, const MemOperand& rs,
+                             Register scratch_base);
   template <int NBYTES>
   void UnalignedFStoreHelper(FPURegister frd, const MemOperand& rs,
+                             Register scratch);
+  void UnalignedDStoreHelper(FPURegister frd, const MemOperand& rs,
                              Register scratch);
 
   template <typename Reg_T, typename Func>
