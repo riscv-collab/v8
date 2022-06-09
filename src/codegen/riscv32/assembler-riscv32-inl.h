@@ -50,7 +50,7 @@ bool CpuFeatures::SupportsOptimizer() { return IsSupported(FPU); }
 
 bool Operand::is_reg() const { return rm_.is_valid(); }
 
-int64_t Operand::immediate() const {
+int32_t Operand::immediate() const {
   DCHECK(!is_reg());
   DCHECK(!IsHeapObjectRequest());
   return value_.immediate;
@@ -91,7 +91,7 @@ Address RelocInfo::target_address_address() {
   // place, ready to be patched with the target. After jump optimization,
   // that is the address of the instruction that follows J/JAL/JR/JALR
   // instruction.
-  return pc_ + Assembler::kInstructionsFor64BitConstant * kInstrSize;
+  return pc_ + Assembler::kInstructionsFor32BitConstant * kInstrSize;
 }
 
 Address RelocInfo::constant_pool_entry_address() { UNREACHABLE(); }
@@ -142,7 +142,7 @@ int Assembler::deserialization_special_target_size(
 
 void Assembler::set_target_internal_reference_encoded_at(Address pc,
                                                          Address target) {
-  set_target_value_at(pc, static_cast<uint64_t>(target));
+  set_target_value_at(pc, static_cast<uint32_t>(target));
 }
 
 void Assembler::deserialization_set_target_internal_reference_at(

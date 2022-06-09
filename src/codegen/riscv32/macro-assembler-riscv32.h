@@ -537,13 +537,13 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void LoadZeroIfConditionZero(Register dest, Register condition);
 
   void SignExtendByte(Register rd, Register rs) {
-    slli(rd, rs, 64 - 8);
-    srai(rd, rd, 64 - 8);
+    slli(rd, rs, 32 - 8);
+    srai(rd, rd, 32 - 8);
   }
 
   void SignExtendShort(Register rd, Register rs) {
-    slli(rd, rs, 64 - 16);
-    srai(rd, rd, 64 - 16);
+    slli(rd, rs, 32 - 16);
+    srai(rd, rd, 32 - 16);
   }
 
   void Clz32(Register rd, Register rs);

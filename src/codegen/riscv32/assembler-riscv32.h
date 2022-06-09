@@ -62,7 +62,7 @@ class SafepointTableBuilder;
 // -----------------------------------------------------------------------------
 // Machine instruction Operands.
 constexpr int kSmiShift = kSmiTagSize + kSmiShiftSize;
-constexpr uint64_t kSmiShiftMask = (1UL << kSmiShift) - 1;
+constexpr uint32_t kSmiShiftMask = (1UL << kSmiShift) - 1;
 // Class Operand represents a shifter operand in data processing instructions.
 class Operand {
  public:
@@ -74,7 +74,7 @@ class Operand {
   }
   V8_INLINE explicit Operand(const ExternalReference& f)
       : rm_(no_reg), rmode_(RelocInfo::EXTERNAL_REFERENCE) {
-    value_.immediate = static_cast<int64_t>(f.address());
+    value_.immediate = static_cast<int32_t>(f.address());
   }
   V8_INLINE explicit Operand(const char* s);
   explicit Operand(Handle<HeapObject> handle);
@@ -92,7 +92,7 @@ class Operand {
   // Return true if this is a register operand.
   V8_INLINE bool is_reg() const;
 
-  inline int64_t immediate() const;
+  inline int32_t immediate() const;
 
   bool IsImmediate() const { return !rm_.is_valid(); }
 
@@ -118,7 +118,7 @@ class Operand {
   union Value {
     Value() {}
     HeapObjectRequest heap_object_request;  // if is_heap_object_request_
-    int64_t immediate;                      // otherwise
+    int32_t immediate;                      // otherwise
   } value_;                                 // valid if rm_ == no_reg
   bool is_heap_object_request_ = false;
   RelocInfo::Mode rmode_;
@@ -1398,7 +1398,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline static void set_target_internal_reference_encoded_at(Address pc,
                                                               Address target);
 
-  int64_t buffer_space() const { return reloc_info_writer.pos() - pc_; }
+  int32_t buffer_space() const { return reloc_info_writer.pos() - pc_; }
 
   // Decode branch instruction at pos and return branch target pos.
   int target_at(int pos, bool is_internal);
@@ -1740,7 +1740,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
 
   // Internal reference positions, required for unbounded internal reference
   // labels.
-  std::set<int64_t> internal_reference_positions_;
+  std::set<int32_t> internal_reference_positions_;
   bool is_internal_reference(Label* L) {
     return internal_reference_positions_.find(L->pos()) !=
            internal_reference_positions_.end();

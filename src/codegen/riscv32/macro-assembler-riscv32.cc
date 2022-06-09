@@ -406,6 +406,7 @@ void TurboAssembler::Sub(Register rd, Register rs, const Operand& rt) {
     addi(rd, rs, -rt.immediate() / 2);
     addi(rd, rd, -rt.immediate() - (-rt.immediate() / 2));
   } else {
+    // RV32G todo: imm64 or imm32 here
     int li_count = InstrCountForLi64Bit(rt.immediate());
     int li_neg_count = InstrCountForLi64Bit(-rt.immediate());
     if (li_neg_count < li_count && !MustUseReg(rt.rmode())) {
@@ -1532,7 +1533,7 @@ void TurboAssembler::ExtractBits(Register rt, Register rs, uint16_t pos,
 
 void TurboAssembler::InsertBits(Register dest, Register source, Register pos,
                                 int size) {
-  DCHECK_LT(size, 64);
+  DCHECK_LT(size, 32);
   UseScratchRegisterScope temps(this);
   Register mask = temps.Acquire();
   BlockTrampolinePoolScope block_trampoline_pool(this);
@@ -2141,11 +2142,13 @@ void TurboAssembler::LoadFPRImmediate(FPURegister dst, uint64_t src) {
       Register scratch = temps.Acquire();
       uint32_t low_32 = src & 0xffffffffull;
       uint32_t up_32 = src >> 32;
+      Add(sp, sp, Operand(-8));
       li(scratch, Operand(static_cast<int32_t>(low_32)));
       Sw(scratch, MemOperand(sp, 0));
       li(scratch, Operand(static_cast<int32_t>(up_32)));
       Sw(scratch, MemOperand(sp, 4));
       LoadDouble(dst, MemOperand(sp, 0));
+      Add(sp, sp, Operand(8));
     }
   }
 }
@@ -2888,7 +2891,7 @@ void MacroAssembler::JumpIfIsInRange(Register value, unsigned lower_limit,
 
 void TurboAssembler::Call(Address target, RelocInfo::Mode rmode, Condition cond,
                           Register rs, const Operand& rt) {
-  li(t6, Operand(static_cast<int64_t>(target), rmode), ADDRESS_LOAD);
+  li(t6, Operand(static_cast<int32_t>(target), rmode), ADDRESS_LOAD);
   Call(t6, cond, rs, rt);
 }
 
@@ -2989,9 +2992,9 @@ void TurboAssembler::PatchAndJump(Address target) {
   Lw(t6, MemOperand(scratch, kInstrSize * 4));
   jr(t6);
   nop();  // For alignment
-  DCHECK_EQ(reinterpret_cast<uint64_t>(pc_) % 8, 0);
-  *reinterpret_cast<uint64_t*>(pc_) = target;  // pc_ should be align.
-  pc_ += sizeof(uint64_t);
+  DCHECK_EQ(reinterpret_cast<uint32_t>(pc_) % 4, 0);
+  *reinterpret_cast<uint32_t*>(pc_) = target;  // pc_ should be align.
+  pc_ += sizeof(uint32_t);
 }
 
 void TurboAssembler::StoreReturnAddressAndCall(Register target) {
@@ -3042,18 +3045,18 @@ void TurboAssembler::Ret(Condition cond, Register rs, const Operand& rt) {
 void TurboAssembler::BranchLong(Label* L) {
   // Generate position independent long branch.
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  int64_t imm64;
-  imm64 = branch_long_offset(L);
-  GenPCRelativeJump(t6, imm64);
+  int32_t imm32;
+  imm32 = branch_long_offset(L);
+  GenPCRelativeJump(t6, imm32);
   EmitConstPoolWithJumpIfNeeded();
 }
 
 void TurboAssembler::BranchAndLinkLong(Label* L) {
   // Generate position independent long branch and link.
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  int64_t imm64;
-  imm64 = branch_long_offset(L);
-  GenPCRelativeJumpAndLink(t6, imm64);
+  int32_t imm32;
+  imm32 = branch_long_offset(L);
+  GenPCRelativeJumpAndLink(t6, imm32);
 }
 
 void TurboAssembler::DropAndRet(int drop) {
@@ -3196,7 +3199,7 @@ void MacroAssembler::PopStackHandler() {
   STATIC_ASSERT(StackHandlerConstants::kNextOffset == 0);
   pop(a1);
   Add(sp, sp,
-      Operand(static_cast<int64_t>(StackHandlerConstants::kSize -
+      Operand(static_cast<int32_t>(StackHandlerConstants::kSize -
                                    kSystemPointerSize)));
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
@@ -3835,7 +3838,7 @@ void TurboAssembler::Abort(AbortReason reason) {
     // We don't care if we constructed a frame. Just pretend we did.
     FrameScope assume_frame(this, StackFrame::NO_FRAME_TYPE);
     PrepareCallCFunction(0, a0);
-    li(a0, Operand(static_cast<int64_t>(reason)));
+    li(a0, Operand(static_cast<int32_t>(reason)));
     CallCFunction(ExternalReference::abort_with_reason(), 1);
     return;
   }

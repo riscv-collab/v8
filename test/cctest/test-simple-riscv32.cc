@@ -65,7 +65,7 @@ TEST(RISCV_SIMPLE0) {
   Handle<Code> code =
       Factory::CodeBuilder(isolate, desc, CodeKind::FOR_TESTING).Build();
   auto f = GeneratedCode<F2>::FromCode(*code);
-  int64_t res = reinterpret_cast<int64_t>(f.Call(0xAB0, 0xC, 0, 0, 0));
+  int32_t res = reinterpret_cast<int32_t>(f.Call(0xAB0, 0xC, 0, 0, 0));
   CHECK_EQ(0xABCL, res);
 }
 
@@ -85,7 +85,7 @@ TEST(RISCV_SIMPLE1) {
   Handle<Code> code =
       Factory::CodeBuilder(isolate, desc, CodeKind::FOR_TESTING).Build();
   auto f = GeneratedCode<F1>::FromCode(*code);
-  int64_t res = reinterpret_cast<int64_t>(f.Call(100, 0, 0, 0, 0));
+  int32_t res = reinterpret_cast<int32_t>(f.Call(100, 0, 0, 0, 0));
   CHECK_EQ(99L, res);
 }
 
@@ -119,7 +119,7 @@ TEST(RISCV_SIMPLE2) {
   code->Print();
 #endif
   auto f = GeneratedCode<F1>::FromCode(*code);
-  int64_t res = reinterpret_cast<int64_t>(f.Call(100, 0, 0, 0, 0));
+  int32_t res = reinterpret_cast<int32_t>(f.Call(100, 0, 0, 0, 0));
   CHECK_EQ(5050, res);
 }
 
@@ -140,7 +140,7 @@ TEST(RISCV_SIMPLE3) {
   Handle<Code> code =
       Factory::CodeBuilder(isolate, desc, CodeKind::FOR_TESTING).Build();
   auto f = GeneratedCode<F1>::FromCode(*code);
-  int64_t res = reinterpret_cast<int64_t>(f.Call(255, 0, 0, 0, 0));
+  int32_t res = reinterpret_cast<int32_t>(f.Call(255, 0, 0, 0, 0));
   CHECK_EQ(-1, res);
 }
 
@@ -180,7 +180,7 @@ TEST(LI) {
   Handle<Code> code =
       Factory::CodeBuilder(isolate, desc, CodeKind::FOR_TESTING).Build();
   auto f = GeneratedCode<F1>::FromCode(*code);
-  int64_t res = reinterpret_cast<int64_t>(f.Call(0xDEADBEEF, 0, 0, 0, 0));
+  int32_t res = reinterpret_cast<int32_t>(f.Call(0xDEADBEEF, 0, 0, 0, 0));
   CHECK_EQ(0L, res);
 }
 
@@ -219,7 +219,7 @@ TEST(LI_CONST) {
   Handle<Code> code =
       Factory::CodeBuilder(isolate, desc, CodeKind::FOR_TESTING).Build();
   auto f = GeneratedCode<F1>::FromCode(*code);
-  int64_t res = reinterpret_cast<int64_t>(f.Call(0xDEADBEEF, 0, 0, 0, 0));
+  int32_t res = reinterpret_cast<int32_t>(f.Call(0xDEADBEEF, 0, 0, 0, 0));
   CHECK_EQ(0L, res);
 }
 
