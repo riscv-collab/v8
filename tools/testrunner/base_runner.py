@@ -377,7 +377,7 @@ class BaseTestRunner(object):
                       help="Path to a file for storing json results.")
     parser.add_option('--slow-tests-cutoff', type="int", default=100,
                       help='Collect N slowest tests')
-    parser.add_option("--exit-after-n-failures", type="int", default=100,
+    parser.add_option("--exit-after-n-failures", type="int", default=100000,
                       help="Exit after the first N failures instead of "
                            "running all tests. Pass 0 to disable this feature.")
     parser.add_option("--ci-test-completion",
