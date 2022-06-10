@@ -304,7 +304,7 @@ void LiftoffAssembler::PrepareTailCall(int num_callee_stack_params,
   Register scratch = temps.Acquire();
 
   // Push the return address and frame pointer to complete the stack frame.
-  Lw(scratch, MemOperand(fp, 8));
+  Lw(scratch, MemOperand(fp, 4));
   Push(scratch);
   Lw(scratch, MemOperand(fp, 0));
   Push(scratch);
@@ -312,12 +312,12 @@ void LiftoffAssembler::PrepareTailCall(int num_callee_stack_params,
   // Shift the whole frame upwards.
   int slot_count = num_callee_stack_params + 2;
   for (int i = slot_count - 1; i >= 0; --i) {
-    Lw(scratch, MemOperand(sp, i * 8));
-    Sw(scratch, MemOperand(fp, (i - stack_param_delta) * 8));
+    Lw(scratch, MemOperand(sp, i * 4));
+    Sw(scratch, MemOperand(fp, (i - stack_param_delta) * 4));
   }
 
   // Set the new stack and frame pointer.
-  Add(sp, fp, -stack_param_delta * 8);
+  Add(sp, fp, -stack_param_delta * 4);
   Pop(ra, fp);
 }
 
