@@ -1504,11 +1504,180 @@ void TurboAssembler::AddPair(Register dst_low, Register dst_high,
   UseScratchRegisterScope temps(this);
   Register scratch3 = temps.Acquire();
   BlockTrampolinePoolScope block_trampoline_pool(this);
+
   Add(scratch1, left_low, right_low);
+  // Save the carry
   Sltu(scratch3, scratch1, left_low);
   Add(scratch2, left_high, right_high);
+
+  // Output higher 32 bits + carry
   Add(dst_high, scratch2, scratch3);
   Move(dst_low, scratch1);
+}
+
+void TurboAssembler::SubPair(Register dst_low, Register dst_high,
+                             Register left_low, Register left_high,
+                             Register right_low, Register right_high,
+                             Register scratch1, Register scratch2) {
+  UseScratchRegisterScope temps(this);
+  Register scratch3 = temps.Acquire();
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+
+  // Check if we need a borrow
+  Sltu(scratch3, left_low, right_low);
+  Sub(scratch1, left_low, right_low);
+  Sub(scratch2, left_high, right_high);
+
+  // Output higher 32 bits - borrow
+  Sub(dst_high, scratch2, scratch3);
+  Move(dst_low, scratch1);
+}
+
+void TurboAssembler::AndPair(Register dst_low, Register dst_high,
+                             Register left_low, Register left_high,
+                             Register right_low, Register right_high) {
+  And(dst_low, left_low, right_low);
+  And(dst_high, left_high, right_high);
+}
+
+void TurboAssembler::OrPair(Register dst_low, Register dst_high,
+                            Register left_low, Register left_high,
+                            Register right_low, Register right_high) {
+  Or(dst_low, left_low, right_low);
+  Or(dst_high, left_high, right_high);
+}
+void TurboAssembler::XorPair(Register dst_low, Register dst_high,
+                             Register left_low, Register left_high,
+                             Register right_low, Register right_high) {
+  Xor(dst_low, left_low, right_low);
+  Xor(dst_high, left_high, right_high);
+}
+
+void TurboAssembler::MulPair(Register dst_low, Register dst_high,
+                             Register left_low, Register left_high,
+                             Register right_low, Register right_high,
+                             Register scratch1, Register scratch2) {
+  UseScratchRegisterScope temps(this);
+  Register scratch3 = temps.Acquire();
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+
+  // NOTE: do not move these around, recommended sequence is MULH-MUL
+  // LL * RL : higher 32 bits
+  mulhu(scratch2, left_low, right_low);
+  // LL * RL : lower 32 bits
+  Mul(dst_low, left_low, right_low);
+  Mul(scratch3, left_low, right_high);
+
+  // (LL * RH) + (LL * RL : higher 32 bits)
+  Add(scratch2, scratch2, scratch3);
+  Mul(scratch3, left_high, right_low);
+
+  Add(dst_high, scratch2, scratch3);
+}
+
+void TurboAssembler::ShlPair(Register dst_low, Register dst_high,
+                             Register src_low, Register src_high,
+                             Register shift, Register scratch1,
+                             Register scratch2) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+  Label done;
+
+  And(scratch1, shift, 0x1F);
+  // LOW32 << shamt
+  sll(dst_low, src_low, scratch1);
+  // HIGH32 << shamt
+  sll(dst_high, src_high, scratch1);
+
+  // If the shift amount is 0, we're done
+  Branch(&done, eq, shift, Operand(zero_reg));
+
+  // LOW32 >> (32 - shamt)
+  Add(scratch2, zero_reg, 32);
+  Sub(scratch2, scratch2, scratch1);
+  srl(scratch1, src_low, scratch2);
+
+  // (HIGH32 << shamt) | (LOW32 >> (32 - shamt))
+  Or(dst_high, dst_high, scratch1);
+
+  // If the shift amount is < 32, we're done
+  // Note: the shift amount is always < 64, so we can just test if the 6th bit
+  // is set
+  And(scratch1, shift, 32);
+  Branch(&done, eq, scratch1, Operand(zero_reg));
+  Move(dst_high, dst_low);
+  Move(dst_low, zero_reg);
+
+  bind(&done);
+}
+
+void TurboAssembler::ShrPair(Register dst_low, Register dst_high,
+                             Register src_low, Register src_high,
+                             Register shift, Register scratch1,
+                             Register scratch2) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+  Label done;
+
+  And(scratch1, shift, 0x1F);
+  // HIGH32 >> shamt
+  srl(dst_high, src_high, scratch1);
+  // LOW32 >> shamt
+  srl(dst_low, src_low, scratch1);
+
+  // If the shift amount is 0, we're done
+  Branch(&done, eq, shift, Operand(zero_reg));
+
+  // HIGH32 << (32 - shamt)
+  Add(scratch2, zero_reg, 32);
+  Sub(scratch2, scratch2, scratch1);
+  sll(scratch1, src_high, scratch2);
+
+  // (HIGH32 << (32 - shamt)) | (LOW32 >> shamt)
+  Or(dst_low, dst_low, scratch1);
+
+  // If the shift amount is < 32, we're done
+  // Note: the shift amount is always < 64, so we can just test if the 6th bit
+  // is set
+  And(scratch1, shift, 32);
+  Branch(&done, eq, scratch1, Operand(zero_reg));
+  Move(dst_low, dst_high);
+  Move(dst_high, zero_reg);
+
+  bind(&done);
+}
+
+void TurboAssembler::SarPair(Register dst_low, Register dst_high,
+                             Register src_low, Register src_high,
+                             Register shift, Register scratch1,
+                             Register scratch2) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
+  Label done;
+
+  And(scratch1, shift, 0x1F);
+  // HIGH32 >> shamt (arithmetic)
+  sra(dst_high, src_high, scratch1);
+  // LOW32 >> shamt (logical)
+  srl(dst_low, src_low, scratch1);
+
+  // If the shift amount is 0, we're done
+  Branch(&done, eq, shift, Operand(zero_reg));
+
+  // HIGH32 << (32 - shamt)
+  Add(scratch2, zero_reg, 32);
+  Sub(scratch2, scratch2, scratch1);
+  sll(scratch1, src_high, scratch2);
+
+  // (HIGH32 << (32 - shamt)) | (LOW32 >> shamt)
+  Or(dst_low, dst_low, scratch1);
+
+  // If the shift amount is < 32, we're done
+  // Note: the shift amount is always < 64, so we can just test if the 6th bit
+  // is set
+  And(scratch1, shift, 32);
+  Branch(&done, eq, scratch1, Operand(zero_reg));
+  Move(dst_low, dst_high);
+  Sra(dst_high, dst_high, 31);
+
+  bind(&done);
 }
 
 void TurboAssembler::ExtractBits(Register rt, Register rs, uint16_t pos,

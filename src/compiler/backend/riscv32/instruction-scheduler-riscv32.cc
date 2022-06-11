@@ -20,6 +20,14 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvAddD:
     case kRiscvAddS:
     case kRiscvAddPair:
+    case kRiscvSubPair:
+    case kRiscvMulPair:
+    case kRiscvAndPair:
+    case kRiscvOrPair:
+    case kRiscvXorPair:
+    case kRiscvShlPair:
+    case kRiscvShrPair:
+    case kRiscvSarPair:
     case kRiscvAnd:
     case kRiscvAnd32:
     case kRiscvAssertEqual:

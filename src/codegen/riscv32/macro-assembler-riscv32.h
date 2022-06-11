@@ -550,11 +550,35 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void AddPair(Register dst_low, Register dst_high, Register left_low,
                Register left_high, Register right_low, Register right_high,
                Register scratch1, Register scratch2);
-#if 0
-  void AddPair(Register dst_low, Register dst_high, Register left_low,
-               Register left_high, int32_t imm, Register scratch1,
+
+  void SubPair(Register dst_low, Register dst_high, Register left_low,
+               Register left_high, Register right_low, Register right_high,
+               Register scratch1, Register scratch2);
+
+  void AndPair(Register dst_low, Register dst_high, Register left_low,
+               Register left_high, Register right_low, Register right_high);
+
+  void OrPair(Register dst_low, Register dst_high, Register left_low,
+              Register left_high, Register right_low, Register right_high);
+
+  void XorPair(Register dst_low, Register dst_high, Register left_low,
+               Register left_high, Register right_low, Register right_high);
+
+  void MulPair(Register dst_low, Register dst_high, Register left_low,
+               Register left_high, Register right_low, Register right_high,
+               Register scratch1, Register scratch2);
+
+  void ShlPair(Register dst_low, Register dst_high, Register src_low,
+               Register src_high, Register shift, Register scratch1,
                Register scratch2);
-#endif
+
+  void ShrPair(Register dst_low, Register dst_high, Register src_low,
+               Register src_high, Register shift, Register scratch1,
+               Register scratch2);
+
+  void SarPair(Register dst_low, Register dst_high, Register src_low,
+               Register src_high, Register shift, Register scratch1,
+               Register scratch2);
 
   // Bit field starts at bit pos and extending for size bits is extracted from
   // rs and stored zero/sign-extended and right-justified in rt

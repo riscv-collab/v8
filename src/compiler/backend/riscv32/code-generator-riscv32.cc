@@ -1188,6 +1188,43 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                  i.InputRegister(1), i.InputRegister(2), i.InputRegister(3),
                  kScratchReg, kScratchReg2);
       break;
+    case kRiscvSubPair:
+      __ SubPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+                 i.InputRegister(1), i.InputRegister(2), i.InputRegister(3),
+                 kScratchReg, kScratchReg2);
+      break;
+    case kRiscvAndPair:
+      __ AndPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+                 i.InputRegister(1), i.InputRegister(2), i.InputRegister(3));
+      break;
+    case kRiscvOrPair:
+      __ OrPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+                i.InputRegister(1), i.InputRegister(2), i.InputRegister(3));
+      break;
+    case kRiscvXorPair:
+      __ XorPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+                 i.InputRegister(1), i.InputRegister(2), i.InputRegister(3));
+      break;
+    case kRiscvMulPair:
+      __ MulPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+                 i.InputRegister(1), i.InputRegister(2), i.InputRegister(3),
+                 kScratchReg, kScratchReg2);
+      break;
+    case kRiscvShlPair:
+      __ ShlPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+                 i.InputRegister(1), i.InputRegister(2), kScratchReg,
+                 kScratchReg2);
+      break;
+    case kRiscvShrPair:
+      __ ShrPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+                 i.InputRegister(1), i.InputRegister(2), kScratchReg,
+                 kScratchReg2);
+      break;
+    case kRiscvSarPair:
+      __ SarPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+                 i.InputRegister(1), i.InputRegister(2), kScratchReg,
+                 kScratchReg2);
+      break;
     case kRiscvAddD:
       // TODO(plind): add special case: combine mult & add.
       __ fadd_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
