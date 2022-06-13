@@ -177,7 +177,7 @@ inline void push(LiftoffAssembler* assm, LiftoffRegister reg, ValueKind kind) {
       assm->StoreFloat(reg.fp(), MemOperand(sp, 0));
       break;
     case kF64:
-      assm->addi(sp, sp, -kSystemPointerSize);
+      assm->addi(sp, sp, -kDoubleSize);
       assm->StoreDouble(reg.fp(), MemOperand(sp, 0));
       break;
     default:
