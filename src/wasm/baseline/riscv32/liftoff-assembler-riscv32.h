@@ -185,6 +185,18 @@ inline void push(LiftoffAssembler* assm, LiftoffRegister reg, ValueKind kind) {
   }
 }
 
+inline Register EnsureNoAlias(Assembler* assm, Register reg,
+                              LiftoffRegister must_not_alias,
+                              UseScratchRegisterScope* temps) {
+  if (reg != must_not_alias.low_gp() && reg != must_not_alias.high_gp())
+    return reg;
+  Register tmp = temps->Acquire();
+  DCHECK_NE(must_not_alias.low_gp(), tmp);
+  DCHECK_NE(must_not_alias.high_gp(), tmp);
+  assm->mv(tmp, reg);
+  return tmp;
+}
+
 #if defined(V8_TARGET_BIG_ENDIAN)
 inline void ChangeEndiannessLoad(LiftoffAssembler* assm, LiftoffRegister dst,
                                  LoadType type, LiftoffRegList pinned) {
@@ -1329,6 +1341,41 @@ bool LiftoffAssembler::emit_i64_remu(LiftoffRegister dst, LiftoffRegister lhs,
   return false;
 }
 
+namespace liftoff {
+
+inline bool IsRegInRegPair(LiftoffRegister pair, Register reg) {
+  DCHECK(pair.is_gp_pair());
+  return pair.low_gp() == reg || pair.high_gp() == reg;
+}
+
+inline void Emit64BitShiftOperation(
+    LiftoffAssembler* assm, LiftoffRegister dst, LiftoffRegister src,
+    Register amount,
+    void (TurboAssembler::*emit_shift)(Register, Register, Register, Register,
+                                       Register, Register, Register)) {
+  LiftoffRegList pinned = {dst, src, amount};
+
+  // If some of destination registers are in use, get another, unused pair.
+  // That way we prevent overwriting some input registers while shifting.
+  // Do this before any branch so that the cache state will be correct for
+  // all conditions.
+  LiftoffRegister tmp = assm->GetUnusedRegister(kGpRegPair, pinned);
+
+  if (liftoff::IsRegInRegPair(dst, amount) || dst.overlaps(src)) {
+    // Do the actual shift.
+    (assm->*emit_shift)(tmp.low_gp(), tmp.high_gp(), src.low_gp(),
+                        src.high_gp(), amount, kScratchReg, kScratchReg2);
+
+    // Place result in destination register.
+    assm->TurboAssembler::Move(dst.high_gp(), tmp.high_gp());
+    assm->TurboAssembler::Move(dst.low_gp(), tmp.low_gp());
+  } else {
+    (assm->*emit_shift)(dst.low_gp(), dst.high_gp(), src.low_gp(),
+                        src.high_gp(), amount, kScratchReg, kScratchReg2);
+  }
+}
+}  // namespace liftoff
+
 void LiftoffAssembler::emit_i64_add(LiftoffRegister dst, LiftoffRegister lhs,
                                     LiftoffRegister rhs) {
   TurboAssembler::AddPair(dst.low_gp(), dst.high_gp(), lhs.low_gp(),
@@ -1360,55 +1407,65 @@ void LiftoffAssembler::emit_i64_sub(LiftoffRegister dst, LiftoffRegister lhs,
 
 void LiftoffAssembler::emit_i64_shl(LiftoffRegister dst, LiftoffRegister src,
                                     Register amount) {
-  TurboAssembler::ShlPair(dst.low_gp(), dst.high_gp(), src.low_gp(),
-                          src.high_gp(), amount, kScratchReg, kScratchReg2);
+  liftoff::Emit64BitShiftOperation(this, dst, src, amount,
+                                   &TurboAssembler::ShlPair);
 }
 
 void LiftoffAssembler::emit_i64_shli(LiftoffRegister dst, LiftoffRegister src,
                                      int amount) {
-  // TODO: (riscv32) check this
-  if (is_uint6(amount)) {
-    slli(dst.gp(), src.gp(), amount);
-  } else {
-    li(kScratchReg, amount);
-    sll(dst.gp(), src.gp(), kScratchReg);
+  UseScratchRegisterScope temps(this);
+  // {src.low_gp()} will still be needed after writing {dst.high_gp()} and
+  // {dst.low_gp()}.
+  Register src_low = liftoff::EnsureNoAlias(this, src.low_gp(), dst, &temps);
+  Register src_high = src.high_gp();
+  // {src.high_gp()} will still be needed after writing {dst.high_gp()}.
+  if (src_high == dst.high_gp()) {
+    mv(kScratchReg, src_high);
+    src_high = kScratchReg;
   }
+  DCHECK_NE(dst.low_gp(), kScratchReg);
+  DCHECK_NE(dst.high_gp(), kScratchReg);
+
+  TurboAssembler::ShlPair(dst.low_gp(), dst.high_gp(), src_low, src_high,
+                          amount, kScratchReg, kScratchReg2);
 }
 
 void LiftoffAssembler::emit_i64_sar(LiftoffRegister dst, LiftoffRegister src,
                                     Register amount) {
-  TurboAssembler::SarPair(dst.low_gp(), dst.high_gp(), src.low_gp(),
-                          src.high_gp(), amount, kScratchReg, kScratchReg2);
+  liftoff::Emit64BitShiftOperation(this, dst, src, amount,
+                                   &TurboAssembler::SarPair);
 }
 
 void LiftoffAssembler::emit_i64_sari(LiftoffRegister dst, LiftoffRegister src,
                                      int amount) {
-  // TODO: (riscv32) check this
+  UseScratchRegisterScope temps(this);
+  // {src.high_gp()} will still be needed after writing {dst.high_gp()} and
+  // {dst.low_gp()}.
+  Register src_high = liftoff::EnsureNoAlias(this, src.high_gp(), dst, &temps);
+  DCHECK_NE(dst.low_gp(), kScratchReg);
+  DCHECK_NE(dst.high_gp(), kScratchReg);
 
-  if (is_uint6(amount)) {
-    srai(dst.gp(), src.gp(), amount);
-  } else {
-    li(kScratchReg, amount);
-    sra(dst.gp(), src.gp(), kScratchReg);
-  }
+  TurboAssembler::SarPair(dst.low_gp(), dst.high_gp(), src.low_gp(), src_high,
+                          amount, kScratchReg, kScratchReg2);
 }
 
 void LiftoffAssembler::emit_i64_shr(LiftoffRegister dst, LiftoffRegister src,
                                     Register amount) {
-  TurboAssembler::ShrPair(dst.low_gp(), dst.high_gp(), src.low_gp(),
-                          src.high_gp(), amount, kScratchReg, kScratchReg2);
+  liftoff::Emit64BitShiftOperation(this, dst, src, amount,
+                                   &TurboAssembler::ShrPair);
 }
 
 void LiftoffAssembler::emit_i64_shri(LiftoffRegister dst, LiftoffRegister src,
                                      int amount) {
-  // TODO: (riscv32) check this
+  UseScratchRegisterScope temps(this);
+  // {src.high_gp()} will still be needed after writing {dst.high_gp()} and
+  // {dst.low_gp()}.
+  Register src_high = liftoff::EnsureNoAlias(this, src.high_gp(), dst, &temps);
+  DCHECK_NE(dst.low_gp(), kScratchReg);
+  DCHECK_NE(dst.high_gp(), kScratchReg);
 
-  if (is_uint6(amount)) {
-    srli(dst.gp(), src.gp(), amount);
-  } else {
-    li(kScratchReg, amount);
-    srl(dst.gp(), src.gp(), kScratchReg);
-  }
+  TurboAssembler::ShrPair(dst.low_gp(), dst.high_gp(), src.low_gp(), src_high,
+                          amount, kScratchReg, kScratchReg2);
 }
 
 void LiftoffAssembler::emit_f32_neg(DoubleRegister dst, DoubleRegister src) {
