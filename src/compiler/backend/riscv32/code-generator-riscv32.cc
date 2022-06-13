@@ -3971,7 +3971,9 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           destination->IsRegister() ? g.ToRegister(destination) : kScratchReg;
       switch (src.type()) {
         case Constant::kInt32:
-          if (src.ToInt32() == 0 && destination->IsStackSlot()) {
+          if (RelocInfo::IsWasmReference(src.rmode())) {
+            __ li(dst, Operand(src.ToInt64(), src.rmode()));
+          } else if (src.ToInt32() == 0 && destination->IsStackSlot()) {
             dst = zero_reg;
           } else {
             __ li(dst, Operand(src.ToInt32()));
