@@ -1564,15 +1564,13 @@ void TurboAssembler::MulPair(Register dst_low, Register dst_high,
   // NOTE: do not move these around, recommended sequence is MULH-MUL
   // LL * RL : higher 32 bits
   mulhu(scratch2, left_low, right_low);
-  // LL * RL : lower 32 bits
-  Mul(dst_low, left_low, right_low);
   Mul(scratch3, left_low, right_high);
-
   // (LL * RH) + (LL * RL : higher 32 bits)
   Add(scratch2, scratch2, scratch3);
   Mul(scratch3, left_high, right_low);
-
   Add(dst_high, scratch2, scratch3);
+  // LL * RL : lower 32 bits
+  Mul(dst_low, left_low, right_low);
 }
 
 void TurboAssembler::ShlPair(Register dst_low, Register dst_high,
@@ -1610,6 +1608,15 @@ void TurboAssembler::ShlPair(Register dst_low, Register dst_high,
   bind(&done);
 }
 
+void TurboAssembler::ShlPair(Register dst_low, Register dst_high,
+                             Register src_low, Register src_high, int32_t shift,
+                             Register scratch1, Register scratch2) {
+  UseScratchRegisterScope temps(this);
+  Register scratch3 = temps.Acquire();
+  li(scratch3, shift);
+  ShlPair(dst_low, dst_high, src_low, src_high, scratch3, scratch1, scratch2);
+}
+
 void TurboAssembler::ShrPair(Register dst_low, Register dst_high,
                              Register src_low, Register src_high,
                              Register shift, Register scratch1,
@@ -1645,6 +1652,15 @@ void TurboAssembler::ShrPair(Register dst_low, Register dst_high,
   bind(&done);
 }
 
+void TurboAssembler::ShrPair(Register dst_low, Register dst_high,
+                             Register src_low, Register src_high, int32_t shift,
+                             Register scratch1, Register scratch2) {
+  UseScratchRegisterScope temps(this);
+  Register scratch3 = temps.Acquire();
+  li(scratch3, shift);
+  ShrPair(dst_low, dst_high, src_low, src_high, scratch3, scratch1, scratch2);
+}
+
 void TurboAssembler::SarPair(Register dst_low, Register dst_high,
                              Register src_low, Register src_high,
                              Register shift, Register scratch1,
@@ -1678,6 +1694,15 @@ void TurboAssembler::SarPair(Register dst_low, Register dst_high,
   Sra(dst_high, dst_high, 31);
 
   bind(&done);
+}
+
+void TurboAssembler::SarPair(Register dst_low, Register dst_high,
+                             Register src_low, Register src_high, int32_t shift,
+                             Register scratch1, Register scratch2) {
+  UseScratchRegisterScope temps(this);
+  Register scratch3 = temps.Acquire();
+  li(scratch3, shift);
+  SarPair(dst_low, dst_high, src_low, src_high, scratch3, scratch1, scratch2);
 }
 
 void TurboAssembler::ExtractBits(Register rt, Register rs, uint16_t pos,

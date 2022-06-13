@@ -571,13 +571,23 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void ShlPair(Register dst_low, Register dst_high, Register src_low,
                Register src_high, Register shift, Register scratch1,
                Register scratch2);
+  void ShlPair(Register dst_low, Register dst_high, Register src_low,
+               Register src_high, int32_t shift, Register scratch1,
+               Register scratch2);
 
   void ShrPair(Register dst_low, Register dst_high, Register src_low,
                Register src_high, Register shift, Register scratch1,
                Register scratch2);
 
+  void ShrPair(Register dst_low, Register dst_high, Register src_low,
+               Register src_high, int32_t shift, Register scratch1,
+               Register scratch2);
+
   void SarPair(Register dst_low, Register dst_high, Register src_low,
                Register src_high, Register shift, Register scratch1,
+               Register scratch2);
+  void SarPair(Register dst_low, Register dst_high, Register src_low,
+               Register src_high, int32_t shift, Register scratch1,
                Register scratch2);
 
   // Bit field starts at bit pos and extending for size bits is extracted from
