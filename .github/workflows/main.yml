@@ -71,7 +71,7 @@ jobs:
         working-directory: ./v8
         run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv64.debug all
 
-      - name: build riscv32
+      - name: build riscv32 debug
         working-directory: ./v8
         run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv32.debug all
 
@@ -79,7 +79,7 @@ jobs:
         working-directory: ./v8
         run: ./out/riscv32.debug/d8 ./temp-test/*.js --allow-natives-syntax
 
-      - name: run nittest
+      - name: run uittest
         working-directory: ./v8
         run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ unittests
 
@@ -87,6 +87,15 @@ jobs:
         working-directory: ./v8
         continue-on-error: true
         run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ cctest
+
+      - name: build riscv32 release
+        working-directory: ./v8
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv32.release all
+
+      - name: run release test
+        working-directory: ./v8
+        continue-on-error: true
+        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.release/
 
 
   format:
