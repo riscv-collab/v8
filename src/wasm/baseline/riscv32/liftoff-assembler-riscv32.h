@@ -1353,7 +1353,6 @@ inline void Emit64BitShiftOperation(
     Register amount,
     void (TurboAssembler::*emit_shift)(Register, Register, Register, Register,
                                        Register, Register, Register)) {
-  Label move, done;
   LiftoffRegList pinned = {dst, src, amount};
 
   // If some of destination registers are in use, get another, unused pair.
