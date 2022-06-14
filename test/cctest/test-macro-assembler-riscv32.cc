@@ -436,41 +436,6 @@ TEST(Cvt_s_uw_Trunc_uw_s) {
   }
 }
 
-TEST(Cvt_s_ul_Trunc_ul_s) {
-  CcTest::InitializeVM();
-  auto fn = [](MacroAssembler& masm) {
-    __ Cvt_s_ul(fa0, a0);
-    __ Trunc_ul_s(a0, fa0);
-  };
-  FOR_UINT32_INPUTS3(i, cvt_trunc_uint32_test_values) {
-    CHECK_EQ(static_cast<uint32_t>(static_cast<float>(i)),
-             GenAndRunTest<uint32_t>(i, fn));
-  }
-}
-
-// TEST(Cvt_d_ul_Trunc_ul_d) {
-//   CcTest::InitializeVM();
-//   auto fn = [](MacroAssembler& masm) {
-//     __ Cvt_d_ul(fa0, a0);
-//     __ Trunc_ul_d(a0, fa0);
-//   };
-//   FOR_UINT32_INPUTS3(i, cvt_trunc_uint32_test_values) {
-//     CHECK_EQ(static_cast<uint32_t>(static_cast<double>(i)),
-//              GenAndRunTest<uint32_t>(i, fn));
-//   }
-// }
-
-// TEST(cvt_d_l_Trunc_l_d) {
-//   CcTest::InitializeVM();
-//   auto fn = [](MacroAssembler& masm) {
-//     __ fcvt_d_l(fa0, a0);
-//     __ Trunc_l_d(a0, fa0);
-//   };
-//   FOR_INT32_INPUTS3(i, cvt_trunc_int32_test_values) {
-//     CHECK_EQ(static_cast<int32_t>(static_cast<double>(i)),
-//              GenAndRunTest<int32_t>(i, fn));
-//   }
-// }
 
 TEST(cvt_d_w_Trunc_w_d) {
   CcTest::InitializeVM();
