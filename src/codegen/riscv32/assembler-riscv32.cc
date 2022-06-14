@@ -2007,24 +2007,6 @@ void Assembler::fmv_w_x(FPURegister rd, Register rs1) {
   GenInstrALUFP_rr(0b1111000, 0b000, rd, rs1, zero_reg);
 }
 
-// RV64F Standard Extension (in addition to RV32F)
-
-void Assembler::fcvt_l_s(Register rd, FPURegister rs1, RoundingMode frm) {
-  GenInstrALUFP_rr(0b1100000, frm, rd, rs1, ToRegister(2));
-}
-
-void Assembler::fcvt_lu_s(Register rd, FPURegister rs1, RoundingMode frm) {
-  GenInstrALUFP_rr(0b1100000, frm, rd, rs1, ToRegister(3));
-}
-
-void Assembler::fcvt_s_l(FPURegister rd, Register rs1, RoundingMode frm) {
-  GenInstrALUFP_rr(0b1101000, frm, rd, rs1, ToRegister(2));
-}
-
-void Assembler::fcvt_s_lu(FPURegister rd, Register rs1, RoundingMode frm) {
-  GenInstrALUFP_rr(0b1101000, frm, rd, rs1, ToRegister(3));
-}
-
 // RV32D Standard Extension
 
 void Assembler::fld(FPURegister rd, Register rs1, int16_t imm12) {
@@ -2137,32 +2119,6 @@ void Assembler::fcvt_d_w(FPURegister rd, Register rs1, RoundingMode frm) {
 
 void Assembler::fcvt_d_wu(FPURegister rd, Register rs1, RoundingMode frm) {
   GenInstrALUFP_rr(0b1101001, frm, rd, rs1, ToRegister(1));
-}
-
-// RV64D Standard Extension (in addition to RV32D)
-
-void Assembler::fcvt_l_d(Register rd, FPURegister rs1, RoundingMode frm) {
-  GenInstrALUFP_rr(0b1100001, frm, rd, rs1, ToRegister(2));
-}
-
-void Assembler::fcvt_lu_d(Register rd, FPURegister rs1, RoundingMode frm) {
-  GenInstrALUFP_rr(0b1100001, frm, rd, rs1, ToRegister(3));
-}
-
-void Assembler::fmv_x_d(Register rd, FPURegister rs1) {
-  GenInstrALUFP_rr(0b1110001, 0b000, rd, rs1, zero_reg);
-}
-
-void Assembler::fcvt_d_l(FPURegister rd, Register rs1, RoundingMode frm) {
-  GenInstrALUFP_rr(0b1101001, frm, rd, rs1, ToRegister(2));
-}
-
-void Assembler::fcvt_d_lu(FPURegister rd, Register rs1, RoundingMode frm) {
-  GenInstrALUFP_rr(0b1101001, frm, rd, rs1, ToRegister(3));
-}
-
-void Assembler::fmv_d_x(FPURegister rd, Register rs1) {
-  GenInstrALUFP_rr(0b1111001, 0b000, rd, rs1, zero_reg);
 }
 
 // RV64C Standard Extension

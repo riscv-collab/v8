@@ -1358,24 +1358,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ Cvt_s_uw(i.OutputDoubleRegister(), i.InputRegister(0));
       break;
     }
-    case kRiscvCvtSL: {
-      __ fcvt_s_l(i.OutputDoubleRegister(), i.InputRegister(0));
-      break;
-    }
-    case kRiscvCvtDL: {
-      __ fcvt_d_l(i.OutputDoubleRegister(), i.InputRegister(0));
-      break;
-    }
     case kRiscvCvtDUw: {
       __ Cvt_d_uw(i.OutputDoubleRegister(), i.InputRegister(0));
-      break;
-    }
-    case kRiscvCvtDUl: {
-      __ Cvt_d_ul(i.OutputDoubleRegister(), i.InputRegister(0));
-      break;
-    }
-    case kRiscvCvtSUl: {
-      __ Cvt_s_ul(i.OutputDoubleRegister(), i.InputRegister(0));
       break;
     }
     case kRiscvFloorWD: {
@@ -1442,24 +1426,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       }
       break;
     }
-    case kRiscvTruncLS: {
-      Register result = instr->OutputCount() > 1 ? i.OutputRegister(1) : no_reg;
-      __ Trunc_l_s(i.OutputRegister(), i.InputDoubleRegister(0), result);
-      break;
-    }
-    case kRiscvTruncLD: {
-      Label done;
-      Register result = instr->OutputCount() > 1 ? i.OutputRegister(1) : no_reg;
-      bool set_overflow_to_min_i64 = MiscField::decode(instr->opcode());
-      __ Trunc_l_d(i.OutputRegister(), i.InputDoubleRegister(0), result);
-      if (set_overflow_to_min_i64) {
-        __ Add(kScratchReg, i.OutputRegister(), 1);
-        __ BranchShort(&done, lt, i.OutputRegister(), Operand(kScratchReg));
-        __ Move(i.OutputRegister(), kScratchReg);
-        __ bind(&done);
-      }
-      break;
-    }
     case kRiscvTruncUwD: {
       Register result = instr->OutputCount() > 1 ? i.OutputRegister(1) : no_reg;
       __ Trunc_uw_d(i.OutputRegister(), i.InputDoubleRegister(0), result);
@@ -1488,22 +1454,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       }
       break;
     }
-    case kRiscvTruncUlS: {
-      Register result = instr->OutputCount() > 1 ? i.OutputRegister(1) : no_reg;
-      __ Trunc_ul_s(i.OutputRegister(), i.InputDoubleRegister(0), result);
-      break;
-    }
-    case kRiscvTruncUlD: {
-      Register result = instr->OutputCount() > 1 ? i.OutputRegister(1) : no_reg;
-      __ Trunc_ul_d(i.OutputRegister(0), i.InputDoubleRegister(0), result);
-      break;
-    }
-    case kRiscvBitcastDL:
-      __ fmv_x_d(i.OutputRegister(), i.InputDoubleRegister(0));
-      break;
-    case kRiscvBitcastLD:
-      __ fmv_d_x(i.OutputDoubleRegister(), i.InputRegister(0));
-      break;
     case kRiscvBitcastInt32ToFloat32:
       __ fmv_w_x(i.OutputDoubleRegister(), i.InputRegister(0));
       break;
@@ -2739,12 +2689,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vfsqrt_v(i.OutputSimd128Register(), i.InputSimd128Register(0));
       break;
     }
-    case kRiscvF64x2Splat: {
-      (__ VU).set(kScratchReg, E64, m1);
-      __ fmv_x_d(kScratchReg, i.InputDoubleRegister(0));
-      __ vmv_vx(i.OutputSimd128Register(), kScratchReg);
-      break;
-    }
     case kRiscvF64x2Abs: {
       __ VU.set(kScratchReg, VSew::E64, Vlmul::m1);
       __ vfabs_vv(i.OutputSimd128Register(), i.InputSimd128Register(0));
@@ -2789,15 +2733,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vmfeq_vv(v0, i.InputSimd128Register(1), i.InputSimd128Register(0));
       __ vmv_vx(i.OutputSimd128Register(), zero_reg);
       __ vmerge_vi(i.OutputSimd128Register(), -1, i.OutputSimd128Register());
-      break;
-    }
-    case kRiscvF64x2ReplaceLane: {
-      __ VU.set(kScratchReg, E64, m1);
-      __ li(kScratchReg, 0x1 << i.InputInt8(1));
-      __ vmv_sx(v0, kScratchReg);
-      __ fmv_x_d(kScratchReg, i.InputSingleRegister(2));
-      __ vmerge_vx(i.OutputSimd128Register(), kScratchReg,
-                   i.InputSimd128Register(0));
       break;
     }
     case kRiscvF64x2Lt: {

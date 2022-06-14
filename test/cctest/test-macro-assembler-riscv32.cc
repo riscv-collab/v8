@@ -436,7 +436,6 @@ TEST(Cvt_s_uw_Trunc_uw_s) {
   }
 }
 
-
 TEST(cvt_d_w_Trunc_w_d) {
   CcTest::InitializeVM();
   auto fn = [](MacroAssembler& masm) {

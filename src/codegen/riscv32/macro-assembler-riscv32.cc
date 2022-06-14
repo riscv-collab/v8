@@ -1756,11 +1756,6 @@ void TurboAssembler::Cvt_d_w(FPURegister fd, Register rs) {
   fcvt_d_w(fd, rs);
 }
 
-void TurboAssembler::Cvt_d_ul(FPURegister fd, Register rs) {
-  // Convert rs to a FP value in fd.
-  fcvt_d_lu(fd, rs);
-}
-
 void TurboAssembler::Cvt_s_uw(FPURegister fd, Register rs) {
   // Convert rs to a FP value in fd.
   fcvt_s_wu(fd, rs);
@@ -1769,11 +1764,6 @@ void TurboAssembler::Cvt_s_uw(FPURegister fd, Register rs) {
 void TurboAssembler::Cvt_s_w(FPURegister fd, Register rs) {
   // Convert rs to a FP value in fd.
   fcvt_s_w(fd, rs);
-}
-
-void TurboAssembler::Cvt_s_ul(FPURegister fd, Register rs) {
-  // Convert rs to a FP value in fd.
-  fcvt_s_lu(fd, rs);
 }
 
 template <typename CvtFunc>
@@ -1847,34 +1837,6 @@ void TurboAssembler::Trunc_w_s(Register rd, FPURegister fs, Register result) {
   RoundFloatingPointToInteger(
       rd, fs, result, [](TurboAssembler* tasm, Register dst, FPURegister src) {
         tasm->fcvt_w_s(dst, src, RTZ);
-      });
-}
-
-void TurboAssembler::Trunc_ul_d(Register rd, FPURegister fs, Register result) {
-  RoundFloatingPointToInteger(
-      rd, fs, result, [](TurboAssembler* tasm, Register dst, FPURegister src) {
-        tasm->fcvt_lu_d(dst, src, RTZ);
-      });
-}
-
-void TurboAssembler::Trunc_l_d(Register rd, FPURegister fs, Register result) {
-  RoundFloatingPointToInteger(
-      rd, fs, result, [](TurboAssembler* tasm, Register dst, FPURegister src) {
-        tasm->fcvt_l_d(dst, src, RTZ);
-      });
-}
-
-void TurboAssembler::Trunc_ul_s(Register rd, FPURegister fs, Register result) {
-  RoundFloatingPointToInteger(
-      rd, fs, result, [](TurboAssembler* tasm, Register dst, FPURegister src) {
-        tasm->fcvt_lu_s(dst, src, RTZ);
-      });
-}
-
-void TurboAssembler::Trunc_l_s(Register rd, FPURegister fs, Register result) {
-  RoundFloatingPointToInteger(
-      rd, fs, result, [](TurboAssembler* tasm, Register dst, FPURegister src) {
-        tasm->fcvt_l_s(dst, src, RTZ);
       });
 }
 

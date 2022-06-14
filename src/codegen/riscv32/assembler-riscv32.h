@@ -552,12 +552,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void fcvt_s_wu(FPURegister rd, Register rs1, RoundingMode frm = RNE);
   void fmv_w_x(FPURegister rd, Register rs1);
 
-  // RV64F Standard Extension (in addition to RV32F)
-  void fcvt_l_s(Register rd, FPURegister rs1, RoundingMode frm = RNE);
-  void fcvt_lu_s(Register rd, FPURegister rs1, RoundingMode frm = RNE);
-  void fcvt_s_l(FPURegister rd, Register rs1, RoundingMode frm = RNE);
-  void fcvt_s_lu(FPURegister rd, Register rs1, RoundingMode frm = RNE);
-
   // RV32D Standard Extension
   void fld(FPURegister rd, Register rs1, int16_t imm12);
   void fsd(FPURegister source, Register base, int16_t imm12);
@@ -593,14 +587,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void fcvt_wu_d(Register rd, FPURegister rs1, RoundingMode frm = RNE);
   void fcvt_d_w(FPURegister rd, Register rs1, RoundingMode frm = RNE);
   void fcvt_d_wu(FPURegister rd, Register rs1, RoundingMode frm = RNE);
-
-  // RV64D Standard Extension (in addition to RV32D)
-  void fcvt_l_d(Register rd, FPURegister rs1, RoundingMode frm = RNE);
-  void fcvt_lu_d(Register rd, FPURegister rs1, RoundingMode frm = RNE);
-  void fmv_x_d(Register rd, FPURegister rs1);
-  void fcvt_d_l(FPURegister rd, Register rs1, RoundingMode frm = RNE);
-  void fcvt_d_lu(FPURegister rd, Register rs1, RoundingMode frm = RNE);
-  void fmv_d_x(FPURegister rd, Register rs1);
 
   // RV64C Standard Extension
   void c_nop();

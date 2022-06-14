@@ -1583,16 +1583,16 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
           Trunc_uw_d(dst.gp(), src.fp(), kScratchReg);
           break;
         case kExprI64SConvertF32:
-          Trunc_l_s(dst.gp(), src.fp(), kScratchReg);
+          bailout(kNonTrappingFloatToInt, "kExprI64SConvertF32");
           break;
         case kExprI64UConvertF32:
-          Trunc_ul_s(dst.gp(), src.fp(), kScratchReg);
+          bailout(kNonTrappingFloatToInt, "kExprI64UConvertF32");
           break;
         case kExprI64SConvertF64:
-          Trunc_l_d(dst.gp(), src.fp(), kScratchReg);
+          bailout(kNonTrappingFloatToInt, "kExprI64SConvertF64");
           break;
         case kExprI64UConvertF64:
-          Trunc_ul_d(dst.gp(), src.fp(), kScratchReg);
+          bailout(kNonTrappingFloatToInt, "kExprI64UConvertF64");
           break;
         case kExprF32ConvertF64:
           fcvt_s_d(dst.fp(), src.fp());
@@ -1621,7 +1621,11 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
       TurboAssembler::Move(dst.high_gp(), zero_reg);
       return true;
     case kExprI64ReinterpretF64:
-      fmv_x_d(dst.gp(), src.fp());
+      Sub(sp, sp, kDoubleSize);
+      StoreDouble(src.fp(), MemOperand(sp, 0));
+      Lw(dst.low_gp(), MemOperand(sp, 0));
+      Lw(dst.high_gp(), MemOperand(sp, 4));
+      Add(sp, sp, kDoubleSize);
       return true;
     case kExprF32SConvertI32: {
       TurboAssembler::Cvt_s_w(dst.fp(), src.gp());
@@ -1644,7 +1648,11 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
       fcvt_d_s(dst.fp(), src.fp());
       return true;
     case kExprF64ReinterpretI64:
-      fmv_d_x(dst.fp(), src.gp());
+      Sub(sp, sp, kDoubleSize);
+      Sw(dst.low_gp(), MemOperand(sp, 0));
+      Sw(dst.high_gp(), MemOperand(sp, 4));
+      LoadDouble(src.fp(), MemOperand(sp, 0));
+      Add(sp, sp, kDoubleSize);
       return true;
     case kExprI32SConvertSatF32: {
       fcvt_w_s(dst.gp(), src.fp(), RTZ);
@@ -1667,23 +1675,19 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
       return true;
     }
     case kExprI64SConvertSatF32: {
-      fcvt_l_s(dst.gp(), src.fp(), RTZ);
-      Clear_if_nan_s(dst.gp(), src.fp());
+      bailout(kNonTrappingFloatToInt, "kExprI64SConvertSatF32");
       return true;
     }
     case kExprI64UConvertSatF32: {
-      fcvt_lu_s(dst.gp(), src.fp(), RTZ);
-      Clear_if_nan_s(dst.gp(), src.fp());
+      bailout(kNonTrappingFloatToInt, "kExprI64UConvertSatF32");
       return true;
     }
     case kExprI64SConvertSatF64: {
-      fcvt_l_d(dst.gp(), src.fp(), RTZ);
-      Clear_if_nan_d(dst.gp(), src.fp());
+      bailout(kNonTrappingFloatToInt, "kExprI64SConvertSatF64");
       return true;
     }
     case kExprI64UConvertSatF64: {
-      fcvt_lu_d(dst.gp(), src.fp(), RTZ);
-      Clear_if_nan_d(dst.gp(), src.fp());
+      bailout(kNonTrappingFloatToInt, "kExprI64UConvertSatF64");
       return true;
     }
     default:
@@ -2107,9 +2111,10 @@ void LiftoffAssembler::emit_f32x4_splat(LiftoffRegister dst,
 
 void LiftoffAssembler::emit_f64x2_splat(LiftoffRegister dst,
                                         LiftoffRegister src) {
-  VU.set(kScratchReg, E64, m1);
-  fmv_x_d(kScratchReg, src.fp());
-  vmv_vx(dst.fp().toV(), kScratchReg);
+  // VU.set(kScratchReg, E64, m1);
+  // fmv_x_d(kScratchReg, src.fp());
+  // vmv_vx(dst.fp().toV(), kScratchReg);
+  bailout(kSimd, "emit_f64x2_splat");
 }
 
 void LiftoffAssembler::emit_i64x2_extmul_low_i32x4_s(LiftoffRegister dst,
@@ -3718,11 +3723,12 @@ void LiftoffAssembler::emit_f64x2_replace_lane(LiftoffRegister dst,
                                                LiftoffRegister src1,
                                                LiftoffRegister src2,
                                                uint8_t imm_lane_idx) {
-  VU.set(kScratchReg, E64, m1);
-  li(kScratchReg, 0x1 << imm_lane_idx);
-  vmv_sx(v0, kScratchReg);
-  fmv_x_d(kScratchReg, src2.fp());
-  vmerge_vx(dst.fp().toV(), kScratchReg, src1.fp().toV());
+  // VU.set(kScratchReg, E64, m1);
+  // li(kScratchReg, 0x1 << imm_lane_idx);
+  // vmv_sx(v0, kScratchReg);
+  // fmv_x_d(kScratchReg, src2.fp());
+  // vmerge_vx(dst.fp().toV(), kScratchReg, src1.fp().toV());
+  bailout(kSimd, "emit_f64x2_replace_lane");
 }
 
 void LiftoffAssembler::emit_s128_set_if_nan(Register dst, LiftoffRegister src,

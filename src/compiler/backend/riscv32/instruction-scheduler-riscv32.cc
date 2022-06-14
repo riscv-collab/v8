@@ -31,8 +31,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvAnd:
     case kRiscvAnd32:
     case kRiscvAssertEqual:
-    case kRiscvBitcastDL:
-    case kRiscvBitcastLD:
     case kRiscvBitcastInt32ToFloat32:
     case kRiscvBitcastFloat32ToInt32:
     case kRiscvByteSwap32:
@@ -44,14 +42,10 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvCmpD:
     case kRiscvCmpS:
     case kRiscvCtz32:
-    case kRiscvCvtDL:
     case kRiscvCvtDS:
-    case kRiscvCvtDUl:
     case kRiscvCvtDUw:
     case kRiscvCvtDW:
     case kRiscvCvtSD:
-    case kRiscvCvtSL:
-    case kRiscvCvtSUl:
     case kRiscvCvtSUw:
     case kRiscvCvtSW:
     case kRiscvMulHighU32:
@@ -330,10 +324,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvSub:
     case kRiscvSubD:
     case kRiscvSubS:
-    case kRiscvTruncLD:
-    case kRiscvTruncLS:
-    case kRiscvTruncUlD:
-    case kRiscvTruncUlS:
     case kRiscvTruncUwD:
     case kRiscvTruncUwS:
     case kRiscvTruncWD:
@@ -1297,18 +1287,8 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
       return Latency::MOVT_FREG + Latency::CVT_S_W;
     case kRiscvCvtSUw:
       return 1 + Latency::MOVT_DREG + Latency::CVT_S_L;
-    case kRiscvCvtSL:
-      return Latency::MOVT_DREG + Latency::CVT_S_L;
-    case kRiscvCvtDL:
-      return Latency::MOVT_DREG + Latency::CVT_D_L;
     case kRiscvCvtDUw:
       return 1 + Latency::MOVT_DREG + Latency::CVT_D_L;
-    case kRiscvCvtDUl:
-      return 2 * Latency::BRANCH + 3 + 2 * Latency::MOVT_DREG +
-             2 * Latency::CVT_D_L + Latency::ADD_D;
-    case kRiscvCvtSUl:
-      return 2 * Latency::BRANCH + 3 + 2 * Latency::MOVT_DREG +
-             2 * Latency::CVT_S_L + Latency::ADD_S;
     case kRiscvFloorWD:
       return Latency::FLOOR_W_D + Latency::MOVF_FREG;
     case kRiscvCeilWD:
@@ -1325,10 +1305,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
       return Latency::ROUND_W_S + Latency::MOVF_FREG;
     case kRiscvTruncWS:
       return Latency::TRUNC_W_S + Latency::MOVF_FREG + 2 + MovnLatency();
-    case kRiscvTruncLS:
-      return TruncLSLatency(instr->OutputCount() > 1);
-    case kRiscvTruncLD:
-      return TruncLDLatency(instr->OutputCount() > 1);
     case kRiscvTruncUwD:
       // Estimated max.
       return CompareF64Latency() + 2 * Latency::BRANCH +
@@ -1340,14 +1316,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
       return CompareF32Latency() + 2 * Latency::BRANCH +
              2 * Latency::TRUNC_W_S + Latency::SUB_S + OrLatency() +
              Latency::MOVT_FREG + 2 * Latency::MOVF_FREG + 2 + MovzLatency();
-    case kRiscvTruncUlS:
-      return TruncUlSLatency();
-    case kRiscvTruncUlD:
-      return TruncUlDLatency();
-    case kRiscvBitcastDL:
-      return Latency::MOVF_HIGH_DREG;
-    case kRiscvBitcastLD:
-      return Latency::MOVT_DREG;
     case kRiscvFloat64ExtractLowWord32:
       return Latency::MOVF_FREG;
     case kRiscvFloat64InsertLowWord32:

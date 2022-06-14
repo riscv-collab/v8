@@ -88,20 +88,12 @@ namespace compiler {
   V(RiscvRoundWS)                           \
   V(RiscvFloorWS)                           \
   V(RiscvCeilWS)                            \
-  V(RiscvTruncLS)                           \
-  V(RiscvTruncLD)                           \
   V(RiscvTruncUwD)                          \
   V(RiscvTruncUwS)                          \
-  V(RiscvTruncUlS)                          \
-  V(RiscvTruncUlD)                          \
   V(RiscvCvtDW)                             \
-  V(RiscvCvtSL)                             \
   V(RiscvCvtSW)                             \
   V(RiscvCvtSUw)                            \
-  V(RiscvCvtSUl)                            \
-  V(RiscvCvtDL)                             \
   V(RiscvCvtDUw)                            \
-  V(RiscvCvtDUl)                            \
   V(RiscvLb)                                \
   V(RiscvLbu)                               \
   V(RiscvSb)                                \
@@ -124,8 +116,6 @@ namespace compiler {
   V(RiscvULoadDouble)                       \
   V(RiscvStoreDouble)                       \
   V(RiscvUStoreDouble)                      \
-  V(RiscvBitcastDL)                         \
-  V(RiscvBitcastLD)                         \
   V(RiscvBitcastInt32ToFloat32)             \
   V(RiscvBitcastFloat32ToInt32)             \
   V(RiscvFloat64ExtractLowWord32)           \

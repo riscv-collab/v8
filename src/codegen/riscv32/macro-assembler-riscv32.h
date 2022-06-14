@@ -712,9 +712,9 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   inline void Move(FPURegister dst, FPURegister src) { MoveDouble(dst, src); }
 
-  inline void Move(Register dst, FPURegister src) { fmv_x_d(dst, src); }
+  inline void Move(Register dst, FPURegister src) { fmv_x_w(dst, src); }
 
-  inline void Move(FPURegister dst, Register src) { fmv_d_x(dst, src); }
+  inline void Move(FPURegister dst, Register src) { fmv_w_x(dst, src); }
 
   // Extract sign-extended word from high-half of FPR to GPR
   inline void ExtractHighWordFromF64(Register dst_high, FPURegister src) {
@@ -809,18 +809,6 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   // Convert single to signed word.
   void Trunc_w_s(Register rd, FPURegister fs, Register result = no_reg);
-
-  // Convert double to unsigned long.
-  void Trunc_ul_d(Register rd, FPURegister fs, Register result = no_reg);
-
-  // Convert singled to signed long.
-  void Trunc_l_d(Register rd, FPURegister fs, Register result = no_reg);
-
-  // Convert single to unsigned long.
-  void Trunc_ul_s(Register rd, FPURegister fs, Register result = no_reg);
-
-  // Convert singled to signed long.
-  void Trunc_l_s(Register rd, FPURegister fs, Register result = no_reg);
 
   // Round single to signed word.
   void Round_w_s(Register rd, FPURegister fs, Register result = no_reg);

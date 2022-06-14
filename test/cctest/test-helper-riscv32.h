@@ -43,7 +43,7 @@ OUTPUT_T GenAndRunTest(INPUT_T input0, Func test_generator) {
   if (std::is_same<float, INPUT_T>::value) {
     assm.fmv_w_x(fa0, a0);
   } else if (std::is_same<double, INPUT_T>::value) {
-    assm.fmv_d_x(fa0, a0);
+    UNIMPLEMENTED();
   }
 
   test_generator(assm);
@@ -52,7 +52,7 @@ OUTPUT_T GenAndRunTest(INPUT_T input0, Func test_generator) {
   if (std::is_same<float, OUTPUT_T>::value) {
     assm.fmv_x_w(a0, fa0);
   } else if (std::is_same<double, OUTPUT_T>::value) {
-    assm.fmv_x_d(a0, fa0);
+    UNIMPLEMENTED();
   }
   assm.jr(ra);
 
@@ -90,8 +90,7 @@ OUTPUT_T GenAndRunTest(INPUT_T input0, INPUT_T input1, Func test_generator) {
     assm.fmv_w_x(fa0, a0);
     assm.fmv_w_x(fa1, a1);
   } else if (std::is_same<double, INPUT_T>::value) {
-    assm.fmv_d_x(fa0, a0);
-    assm.fmv_d_x(fa1, a1);
+    UNIMPLEMENTED();
   }
 
   test_generator(assm);
@@ -100,7 +99,7 @@ OUTPUT_T GenAndRunTest(INPUT_T input0, INPUT_T input1, Func test_generator) {
   if (std::is_same<float, OUTPUT_T>::value) {
     assm.fmv_x_w(a0, fa0);
   } else if (std::is_same<double, OUTPUT_T>::value) {
-    assm.fmv_x_d(a0, fa0);
+    UNIMPLEMENTED();
   }
   assm.jr(ra);
 
@@ -139,9 +138,7 @@ OUTPUT_T GenAndRunTest(INPUT_T input0, INPUT_T input1, INPUT_T input2,
     assm.fmv_w_x(fa1, a1);
     assm.fmv_w_x(fa2, a2);
   } else if (std::is_same<double, INPUT_T>::value) {
-    assm.fmv_d_x(fa0, a0);
-    assm.fmv_d_x(fa1, a1);
-    assm.fmv_d_x(fa2, a2);
+    UNIMPLEMENTED();
   }
 
   test_generator(assm);
@@ -150,7 +147,7 @@ OUTPUT_T GenAndRunTest(INPUT_T input0, INPUT_T input1, INPUT_T input2,
   if (std::is_same<float, OUTPUT_T>::value) {
     assm.fmv_x_w(a0, fa0);
   } else if (std::is_same<double, OUTPUT_T>::value) {
-    assm.fmv_x_d(a0, fa0);
+    UNIMPLEMENTED();
   }
   assm.jr(ra);
 
@@ -186,7 +183,7 @@ void GenAndRunTestForLoadStore(T value, Func test_generator) {
   if (std::is_same<float, T>::value) {
     assm.fmv_w_x(fa0, a1);
   } else if (std::is_same<double, T>::value) {
-    assm.fmv_d_x(fa0, a1);
+    UNIMPLEMENTED();
   }
 
   test_generator(assm);
@@ -194,7 +191,7 @@ void GenAndRunTestForLoadStore(T value, Func test_generator) {
   if (std::is_same<float, T>::value) {
     assm.fmv_x_w(a0, fa0);
   } else if (std::is_same<double, T>::value) {
-    assm.fmv_x_d(a0, fa0);
+    UNIMPLEMENTED();
   }
   assm.jr(ra);
 
@@ -226,7 +223,7 @@ void GenAndRunTestForLRSC(T value, Func test_generator) {
   if (std::is_same<float, T>::value) {
     assm.fmv_w_x(fa0, a1);
   } else if (std::is_same<double, T>::value) {
-    assm.fmv_d_x(fa0, a1);
+    UNIMPLEMENTED();
   }
 
   if (std::is_same<int32_t, T>::value) {
@@ -239,7 +236,7 @@ void GenAndRunTestForLRSC(T value, Func test_generator) {
   if (std::is_same<float, T>::value) {
     assm.fmv_x_w(a0, fa0);
   } else if (std::is_same<double, T>::value) {
-    assm.fmv_x_d(a0, fa0);
+    UNIMPLEMENTED();
   }
   assm.jr(ra);
 
@@ -274,8 +271,7 @@ OUTPUT_T GenAndRunTestForAMO(INPUT_T input0, INPUT_T input1,
     assm.fmv_w_x(fa0, a1);
     assm.fmv_w_x(fa1, a2);
   } else if (std::is_same<double, INPUT_T>::value) {
-    assm.fmv_d_x(fa0, a1);
-    assm.fmv_d_x(fa1, a2);
+    UNIMPLEMENTED();
   }
 
   // store base integer
@@ -292,7 +288,7 @@ OUTPUT_T GenAndRunTestForAMO(INPUT_T input0, INPUT_T input1,
   if (std::is_same<float, OUTPUT_T>::value) {
     assm.fmv_x_w(a0, fa0);
   } else if (std::is_same<double, OUTPUT_T>::value) {
-    assm.fmv_x_d(a0, fa0);
+    UNIMPLEMENTED();
   }
 
   // load written integer
