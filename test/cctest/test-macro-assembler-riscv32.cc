@@ -1047,7 +1047,7 @@ static bool CompareF(T input1, T input2, FPUCondition cond) {
   }
 }
 
-static bool CompareU(uint64_t input1, uint64_t input2, Condition cond) {
+static bool CompareU(uint32_t input1, uint32_t input2, Condition cond) {
   switch (cond) {
     case eq:
       return (input1 == input2);
@@ -1064,13 +1064,13 @@ static bool CompareU(uint64_t input1, uint64_t input2, Condition cond) {
       return (input1 >= input2);
 
     case less:
-      return (static_cast<int64_t>(input1) < static_cast<int64_t>(input2));
+      return (static_cast<int32_t>(input1) < static_cast<int32_t>(input2));
     case less_equal:
-      return (static_cast<int64_t>(input1) <= static_cast<int64_t>(input2));
+      return (static_cast<int32_t>(input1) <= static_cast<int32_t>(input2));
     case greater:
-      return (static_cast<int64_t>(input1) > static_cast<int64_t>(input2));
+      return (static_cast<int32_t>(input1) > static_cast<int32_t>(input2));
     case greater_equal:
-      return (static_cast<int64_t>(input1) >= static_cast<int64_t>(input2));
+      return (static_cast<int32_t>(input1) >= static_cast<int32_t>(input2));
 
     default:
       UNREACHABLE();
