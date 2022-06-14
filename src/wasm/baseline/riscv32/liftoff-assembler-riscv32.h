@@ -1703,21 +1703,18 @@ void LiftoffAssembler::emit_i32_signextend_i16(Register dst, Register src) {
 
 void LiftoffAssembler::emit_i64_signextend_i8(LiftoffRegister dst,
                                               LiftoffRegister src) {
-  // TODO: (riscv32) check
   emit_i32_signextend_i8(dst.low_gp(), src.low_gp());
-  srai(dst.high_gp(), src.low_gp(), 31);
+  srai(dst.high_gp(), dst.low_gp(), 31);
 }
 
 void LiftoffAssembler::emit_i64_signextend_i16(LiftoffRegister dst,
                                                LiftoffRegister src) {
-  // TODO: (riscv32) check
   emit_i32_signextend_i16(dst.low_gp(), src.low_gp());
-  srai(dst.high_gp(), src.low_gp(), 31);
+  srai(dst.high_gp(), dst.low_gp(), 31);
 }
 
 void LiftoffAssembler::emit_i64_signextend_i32(LiftoffRegister dst,
                                                LiftoffRegister src) {
-  // TODO: (riscv32) check
   mv(dst.low_gp(), src.low_gp());
   srai(dst.high_gp(), src.low_gp(), 31);
 }
