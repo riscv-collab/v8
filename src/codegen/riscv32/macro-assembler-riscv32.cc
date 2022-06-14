@@ -1590,7 +1590,7 @@ void TurboAssembler::ShlPair(Register dst_low, Register dst_high,
   Branch(&done, eq, shift, Operand(zero_reg));
 
   // LOW32 >> (32 - shamt)
-  Add(scratch2, zero_reg, 32);
+  li(scratch2, 32);
   Sub(scratch2, scratch2, scratch1);
   srl(scratch1, src_low, scratch2);
 
@@ -1634,7 +1634,7 @@ void TurboAssembler::ShrPair(Register dst_low, Register dst_high,
   Branch(&done, eq, shift, Operand(zero_reg));
 
   // HIGH32 << (32 - shamt)
-  Add(scratch2, zero_reg, 32);
+  li(scratch2, 32);
   Sub(scratch2, scratch2, scratch1);
   sll(scratch1, src_high, scratch2);
 
@@ -1678,7 +1678,7 @@ void TurboAssembler::SarPair(Register dst_low, Register dst_high,
   Branch(&done, eq, shift, Operand(zero_reg));
 
   // HIGH32 << (32 - shamt)
-  Add(scratch2, zero_reg, 32);
+  li(scratch2, 32);
   Sub(scratch2, scratch2, scratch1);
   sll(scratch1, src_high, scratch2);
 

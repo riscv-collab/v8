@@ -2391,16 +2391,51 @@ void InstructionSelector::VisitInt32PairMul(Node* node) {
   VisitInt32PairBinop<4>(this, kRiscvMulPair, kRiscvMul32, node);
 }
 
+// Shared routine for multiple shift operations.
+static void VisitWord32PairShift(InstructionSelector* selector,
+                                 InstructionCode opcode, Node* node) {
+  RiscvOperandGenerator g(selector);
+  Int32Matcher m(node->InputAt(2));
+  InstructionOperand shift_operand;
+  if (m.HasResolvedValue()) {
+    shift_operand = g.UseImmediate(m.node());
+  } else {
+    shift_operand = g.UseUniqueRegister(m.node());
+  }
+
+  // We use UseUniqueRegister here to avoid register sharing with the output
+  // register.
+  InstructionOperand inputs[] = {g.UseUniqueRegister(node->InputAt(0)),
+                                 g.UseUniqueRegister(node->InputAt(1)),
+                                 shift_operand};
+
+  Node* projection1 = NodeProperties::FindProjection(node, 1);
+
+  InstructionOperand outputs[2];
+  InstructionOperand temps[1];
+  int32_t output_count = 0;
+  int32_t temp_count = 0;
+
+  outputs[output_count++] = g.DefineAsRegister(node);
+  if (projection1) {
+    outputs[output_count++] = g.DefineAsRegister(projection1);
+  } else {
+    temps[temp_count++] = g.TempRegister();
+  }
+
+  selector->Emit(opcode, output_count, outputs, 3, inputs, temp_count, temps);
+}
+
 void InstructionSelector::VisitWord32PairShl(Node* node) {
-  VisitInt32PairBinop<3>(this, kRiscvShlPair, kRiscvShl32, node);
+  VisitWord32PairShift(this, kRiscvShlPair, node);
 }
 
 void InstructionSelector::VisitWord32PairShr(Node* node) {
-  VisitInt32PairBinop<3>(this, kRiscvShrPair, kRiscvShr32, node);
+  VisitWord32PairShift(this, kRiscvShrPair, node);
 }
 
 void InstructionSelector::VisitWord32PairSar(Node* node) {
-  VisitInt32PairBinop<3>(this, kRiscvSarPair, kRiscvSar32, node);
+  VisitWord32PairShift(this, kRiscvSarPair, node);
 }
 
 void InstructionSelector::VisitWord32AtomicPairLoad(Node* node) {

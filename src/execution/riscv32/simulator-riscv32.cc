@@ -4669,9 +4669,7 @@ void Simulator::DecodeRVSType() {
 #endif /*V8_TARGET_ARCH_64_BIT*/
     // TODO(riscv): use F Extension macro block
     case RO_FSW: {
-      WriteMem<uint32_t>(rs1() + s_imm12(),
-                         (uint32_t)get_fpu_register_word(rs2_reg()),
-                         instr_.instr());
+      WriteMem<float>(rs1() + s_imm12(), frs2(), instr_.instr());
       break;
     }
     // TODO(riscv): use D Extension macro block

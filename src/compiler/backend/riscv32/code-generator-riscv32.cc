@@ -1210,21 +1210,45 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                  i.InputRegister(1), i.InputRegister(2), i.InputRegister(3),
                  kScratchReg, kScratchReg2);
       break;
-    case kRiscvShlPair:
-      __ ShlPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
-                 i.InputRegister(1), i.InputRegister(2), kScratchReg,
-                 kScratchReg2);
-      break;
-    case kRiscvShrPair:
-      __ ShrPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
-                 i.InputRegister(1), i.InputRegister(2), kScratchReg,
-                 kScratchReg2);
-      break;
-    case kRiscvSarPair:
-      __ SarPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
-                 i.InputRegister(1), i.InputRegister(2), kScratchReg,
-                 kScratchReg2);
-      break;
+    case kRiscvShlPair: {
+      Register second_output =
+          instr->OutputCount() >= 2 ? i.OutputRegister(1) : i.TempRegister(0);
+      if (instr->InputAt(2)->IsRegister()) {
+        __ ShlPair(i.OutputRegister(0), second_output, i.InputRegister(0),
+                   i.InputRegister(1), i.InputRegister(2), kScratchReg,
+                   kScratchReg2);
+      } else {
+        uint32_t imm = i.InputOperand(2).immediate();
+        __ ShlPair(i.OutputRegister(0), second_output, i.InputRegister(0),
+                   i.InputRegister(1), imm, kScratchReg, kScratchReg2);
+      }
+    } break;
+    case kRiscvShrPair: {
+      Register second_output =
+          instr->OutputCount() >= 2 ? i.OutputRegister(1) : i.TempRegister(0);
+      if (instr->InputAt(2)->IsRegister()) {
+        __ ShrPair(i.OutputRegister(0), second_output, i.InputRegister(0),
+                   i.InputRegister(1), i.InputRegister(2), kScratchReg,
+                   kScratchReg2);
+      } else {
+        uint32_t imm = i.InputOperand(2).immediate();
+        __ ShrPair(i.OutputRegister(0), second_output, i.InputRegister(0),
+                   i.InputRegister(1), imm, kScratchReg, kScratchReg2);
+      }
+    } break;
+    case kRiscvSarPair: {
+      Register second_output =
+          instr->OutputCount() >= 2 ? i.OutputRegister(1) : i.TempRegister(0);
+      if (instr->InputAt(2)->IsRegister()) {
+        __ SarPair(i.OutputRegister(0), second_output, i.InputRegister(0),
+                   i.InputRegister(1), i.InputRegister(2), kScratchReg,
+                   kScratchReg2);
+      } else {
+        uint32_t imm = i.InputOperand(2).immediate();
+        __ SarPair(i.OutputRegister(0), second_output, i.InputRegister(0),
+                   i.InputRegister(1), imm, kScratchReg, kScratchReg2);
+      }
+    } break;
     case kRiscvAddD:
       // TODO(plind): add special case: combine mult & add.
       __ fadd_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
