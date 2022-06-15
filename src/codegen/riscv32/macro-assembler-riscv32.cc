@@ -1560,17 +1560,17 @@ void TurboAssembler::MulPair(Register dst_low, Register dst_high,
   UseScratchRegisterScope temps(this);
   Register scratch3 = temps.Acquire();
   BlockTrampolinePoolScope block_trampoline_pool(this);
-
+  DCHECK_NE(dst_low, right_low);
+  Mul(scratch3, left_low, right_high);
   // NOTE: do not move these around, recommended sequence is MULH-MUL
   // LL * RL : higher 32 bits
   mulhu(scratch2, left_low, right_low);
-  Mul(scratch3, left_low, right_high);
+  // LL * RL : lower 32 bits
+  Mul(dst_low, left_low, right_low);
   // (LL * RH) + (LL * RL : higher 32 bits)
   Add(scratch2, scratch2, scratch3);
   Mul(scratch3, left_high, right_low);
   Add(dst_high, scratch2, scratch3);
-  // LL * RL : lower 32 bits
-  Mul(dst_low, left_low, right_low);
 }
 
 void TurboAssembler::ShlPair(Register dst_low, Register dst_high,
@@ -1579,7 +1579,7 @@ void TurboAssembler::ShlPair(Register dst_low, Register dst_high,
                              Register scratch2) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
   Label done;
-
+  DCHECK_NE(dst_low, src_low);
   And(scratch1, shift, 0x1F);
   // LOW32 << shamt
   sll(dst_low, src_low, scratch1);
@@ -1623,7 +1623,7 @@ void TurboAssembler::ShrPair(Register dst_low, Register dst_high,
                              Register scratch2) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
   Label done;
-
+  DCHECK_NE(dst_high, src_high);
   And(scratch1, shift, 0x1F);
   // HIGH32 >> shamt
   srl(dst_high, src_high, scratch1);
@@ -1667,7 +1667,7 @@ void TurboAssembler::SarPair(Register dst_low, Register dst_high,
                              Register scratch2) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
   Label done;
-
+  DCHECK_NE(dst_high, src_high);
   And(scratch1, shift, 0x1F);
   // HIGH32 >> shamt (arithmetic)
   sra(dst_high, src_high, scratch1);
