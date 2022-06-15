@@ -1582,21 +1582,14 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
         case kExprI32UConvertF64:
           Trunc_uw_d(dst.gp(), src.fp(), kScratchReg);
           break;
-        case kExprI64SConvertF32:
-          bailout(kNonTrappingFloatToInt, "kExprI64SConvertF32");
-          break;
-        case kExprI64UConvertF32:
-          bailout(kNonTrappingFloatToInt, "kExprI64UConvertF32");
-          break;
-        case kExprI64SConvertF64:
-          bailout(kNonTrappingFloatToInt, "kExprI64SConvertF64");
-          break;
-        case kExprI64UConvertF64:
-          bailout(kNonTrappingFloatToInt, "kExprI64UConvertF64");
-          break;
         case kExprF32ConvertF64:
           fcvt_s_d(dst.fp(), src.fp());
           break;
+        case kExprI64SConvertF32:
+        case kExprI64UConvertF32:
+        case kExprI64SConvertF64:
+        case kExprI64UConvertF64:
+          return false;
         default:
           UNREACHABLE();
       }
@@ -1674,22 +1667,11 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
       Clear_if_nan_d(dst.gp(), src.fp());
       return true;
     }
-    case kExprI64SConvertSatF32: {
-      bailout(kNonTrappingFloatToInt, "kExprI64SConvertSatF32");
-      return true;
-    }
-    case kExprI64UConvertSatF32: {
-      bailout(kNonTrappingFloatToInt, "kExprI64UConvertSatF32");
-      return true;
-    }
-    case kExprI64SConvertSatF64: {
-      bailout(kNonTrappingFloatToInt, "kExprI64SConvertSatF64");
-      return true;
-    }
-    case kExprI64UConvertSatF64: {
-      bailout(kNonTrappingFloatToInt, "kExprI64UConvertSatF64");
-      return true;
-    }
+    case kExprI64SConvertSatF32:
+    case kExprI64UConvertSatF32:
+    case kExprI64SConvertSatF64:
+    case kExprI64UConvertSatF64:
+      return false;
     default:
       return false;
   }
