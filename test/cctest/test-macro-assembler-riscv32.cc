@@ -841,9 +841,9 @@ TEST(Sltu) {
 
 template <typename T, typename Inputs, typename Results>
 static void GenerateMacroFloat32MinMax(MacroAssembler& masm) {
-  T a = T::from_code(4);  // f4
-  T b = T::from_code(6);  // f6
-  T c = T::from_code(8);  // f8
+  T a = T::from_code(5);  // ft5
+  T b = T::from_code(6);  // ft6
+  T c = T::from_code(7);  // ft7
 
 #define FLOAT_MIN_MAX(fminmax, res, x, y, res_field)        \
   __ LoadFloat(x, MemOperand(a0, offsetof(Inputs, src1_))); \
@@ -936,9 +936,9 @@ TEST(macro_float_minmax_f32) {
 
 template <typename T, typename Inputs, typename Results>
 static void GenerateMacroFloat64MinMax(MacroAssembler& masm) {
-  T a = T::from_code(4);  // f4
-  T b = T::from_code(6);  // f6
-  T c = T::from_code(8);  // f8
+  T a = T::from_code(6);  // ft5
+  T b = T::from_code(6);  // ft6
+  T c = T::from_code(7);  // ft7
 
 #define FLOAT_MIN_MAX(fminmax, res, x, y, res_field)         \
   __ LoadDouble(x, MemOperand(a0, offsetof(Inputs, src1_))); \
