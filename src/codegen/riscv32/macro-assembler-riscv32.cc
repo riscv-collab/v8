@@ -2255,6 +2255,7 @@ void TurboAssembler::InsertLowWordF64(FPURegister dst, Register src_low) {
 }
 
 void TurboAssembler::LoadFPRImmediate(FPURegister dst, uint32_t src) {
+  ASM_CODE_COMMENT(this);
   // Handle special values first.
   if (src == bit_cast<uint32_t>(0.0f) && has_single_zero_reg_set_) {
     if (dst != kDoubleRegZero) fmv_s(dst, kDoubleRegZero);
@@ -2267,15 +2268,20 @@ void TurboAssembler::LoadFPRImmediate(FPURegister dst, uint32_t src) {
       has_single_zero_reg_set_ = true;
       has_double_zero_reg_set_ = false;
     } else {
-      UseScratchRegisterScope temps(this);
-      Register scratch = temps.Acquire();
-      li(scratch, Operand(static_cast<int32_t>(src)));
-      fmv_w_x(dst, scratch);
+      if (src == bit_cast<uint32_t>(0.0f)) {
+        fcvt_s_w(dst, zero_reg);
+      } else {
+        UseScratchRegisterScope temps(this);
+        Register scratch = temps.Acquire();
+        li(scratch, Operand(static_cast<int32_t>(src)));
+        fmv_w_x(dst, scratch);
+      }
     }
   }
 }
 
 void TurboAssembler::LoadFPRImmediate(FPURegister dst, uint64_t src) {
+  ASM_CODE_COMMENT(this);
   // Handle special values first.
   if (src == bit_cast<uint64_t>(0.0) && has_double_zero_reg_set_) {
     if (dst != kDoubleRegZero) fmv_d(dst, kDoubleRegZero);
@@ -2289,17 +2295,21 @@ void TurboAssembler::LoadFPRImmediate(FPURegister dst, uint64_t src) {
       has_single_zero_reg_set_ = false;
     } else {
       // Todo: need to clear the stack content?
-      UseScratchRegisterScope temps(this);
-      Register scratch = temps.Acquire();
-      uint32_t low_32 = src & 0xffffffffull;
-      uint32_t up_32 = src >> 32;
-      Add(sp, sp, Operand(-8));
-      li(scratch, Operand(static_cast<int32_t>(low_32)));
-      Sw(scratch, MemOperand(sp, 0));
-      li(scratch, Operand(static_cast<int32_t>(up_32)));
-      Sw(scratch, MemOperand(sp, 4));
-      LoadDouble(dst, MemOperand(sp, 0));
-      Add(sp, sp, Operand(8));
+      if (src == bit_cast<uint64_t>(0.0)) {
+        fcvt_d_w(dst, zero_reg);
+      } else {
+        UseScratchRegisterScope temps(this);
+        Register scratch = temps.Acquire();
+        uint32_t low_32 = src & 0xffffffffull;
+        uint32_t up_32 = src >> 32;
+        Add(sp, sp, Operand(-8));
+        li(scratch, Operand(static_cast<int32_t>(low_32)));
+        Sw(scratch, MemOperand(sp, 0));
+        li(scratch, Operand(static_cast<int32_t>(up_32)));
+        Sw(scratch, MemOperand(sp, 4));
+        LoadDouble(dst, MemOperand(sp, 0));
+        Add(sp, sp, Operand(8));
+      }
     }
   }
 }
