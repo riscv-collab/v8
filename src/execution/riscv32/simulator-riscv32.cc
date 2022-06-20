@@ -7038,7 +7038,7 @@ void Simulator::CallInternal(Address entry) {
 
   // Set up the callee-saved registers with a known value. To be able to check
   // that they are preserved properly across JS execution.
-  int32_t callee_saved_value = icount_ & ~kSmiTagMask;
+  int32_t callee_saved_value = icount_ != 0 ? icount_ & ~kSmiTagMask : -1;
   set_register(s0, callee_saved_value);
   set_register(s1, callee_saved_value);
   set_register(s2, callee_saved_value);
