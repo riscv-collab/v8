@@ -936,7 +936,7 @@ TEST(macro_float_minmax_f32) {
 
 template <typename T, typename Inputs, typename Results>
 static void GenerateMacroFloat64MinMax(MacroAssembler& masm) {
-  T a = T::from_code(6);  // ft5
+  T a = T::from_code(5);  // ft5
   T b = T::from_code(6);  // ft6
   T c = T::from_code(7);  // ft7
 
