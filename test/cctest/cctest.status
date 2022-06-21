@@ -458,6 +458,14 @@
 }],  # 'arch == riscv64 and simulator_run'
 
 ##############################################################################
+['(arch == riscv32) and simulator_run', {
+
+  # x87 will modify NaN's bit pattern so this test will always fail
+  'test-run-machops/RunBitcastInt32ToFloat32': [SKIP],
+
+}], # 'arch == riscv32 and simulator_run'
+
+##############################################################################
 ['arch == loong64', {
   # The instruction scheduler is disabled on loong64.
   'test-instruction-scheduler/DeoptInMiddleOfBasicBlock': [SKIP],
