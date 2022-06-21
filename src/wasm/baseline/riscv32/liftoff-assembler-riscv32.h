@@ -1189,19 +1189,49 @@ void LiftoffAssembler::FillStackSlotsWithZero(int start, int size) {
 }
 
 void LiftoffAssembler::emit_i64_clz(LiftoffRegister dst, LiftoffRegister src) {
-  // TODO: (riscv32) check
-  bailout(kUnsupportedArchitecture, "emit_i64_clz");
+  // return high == 0 ? 32 + CLZ32(low) : CLZ32(high);
+  Label done;
+  Label high_is_zero;
+  Branch(&high_is_zero, eq, src.high_gp(), Operand(zero_reg));
+
+  Clz32(dst.low_gp(), src.high_gp());
+  jmp(&done);
+
+  bind(&high_is_zero);
+  Clz32(dst.low_gp(), src.low_gp());
+  Add(dst.low_gp(), dst.low_gp(), Operand(32));
+
+  bind(&done);
+  mv(dst.high_gp(), zero_reg);  // High word of result is always 0.
 }
 
 void LiftoffAssembler::emit_i64_ctz(LiftoffRegister dst, LiftoffRegister src) {
-  // TODO: (riscv32) check
-  bailout(kUnsupportedArchitecture, "emit_i64_ctz");
+  // return low == 0 ? 32 + CTZ32(high) : CTZ32(low);
+  Label done;
+  Label low_is_zero;
+  Branch(&low_is_zero, eq, src.low_gp(), Operand(zero_reg));
+
+  Ctz32(dst.low_gp(), src.low_gp());
+  jmp(&done);
+
+  bind(&low_is_zero);
+  Ctz32(dst.low_gp(), src.high_gp());
+  Add(dst.low_gp(), dst.low_gp(), Operand(32));
+
+  bind(&done);
+  mv(dst.high_gp(), zero_reg);  // High word of result is always 0.
 }
 
 bool LiftoffAssembler::emit_i64_popcnt(LiftoffRegister dst,
                                        LiftoffRegister src) {
-  // TODO: (riscv32) check
-  bailout(kUnsupportedArchitecture, "emit_i64_popcnt");
+  // Produce partial popcnts in the two dst registers.
+  Register src1 = src.high_gp() == dst.low_gp() ? src.high_gp() : src.low_gp();
+  Register src2 = src.high_gp() == dst.low_gp() ? src.low_gp() : src.high_gp();
+  TurboAssembler::Popcnt32(dst.low_gp(), src1, kScratchReg);
+  TurboAssembler::Popcnt32(dst.high_gp(), src2, kScratchReg);
+  // Now add the two into the lower dst reg and clear the higher dst reg.
+  Add(dst.low_gp(), dst.low_gp(), dst.high_gp());
+  mv(dst.high_gp(), zero_reg);
   return true;
 }
 
@@ -1754,17 +1784,62 @@ void LiftoffAssembler::emit_i32_set_cond(LiftoffCondition liftoff_cond,
 }
 
 void LiftoffAssembler::emit_i64_eqz(Register dst, LiftoffRegister src) {
-  // TODO: (riscv32) check
-  TurboAssembler::Sltu(dst, src.gp(), 1);
+  Register tmp = GetUnusedRegister(kGpReg, LiftoffRegList{src, dst}).gp();
+  Sltu(tmp, src.low_gp(), 1);
+  Sltu(dst, src.high_gp(), 1);
+  and_(dst, dst, tmp);
 }
+
+namespace liftoff {
+inline LiftoffCondition cond_make_unsigned(LiftoffCondition cond) {
+  switch (cond) {
+    case kSignedLessThan:
+      return kUnsignedLessThan;
+    case kSignedLessEqual:
+      return kUnsignedLessEqual;
+    case kSignedGreaterThan:
+      return kUnsignedGreaterThan;
+    case kSignedGreaterEqual:
+      return kUnsignedGreaterEqual;
+    default:
+      return cond;
+  }
+}
+}  // namespace liftoff
 
 void LiftoffAssembler::emit_i64_set_cond(LiftoffCondition liftoff_cond,
                                          Register dst, LiftoffRegister lhs,
                                          LiftoffRegister rhs) {
-  // TODO: (riscv32) check
-
   Condition cond = liftoff::ToCondition(liftoff_cond);
-  TurboAssembler::CompareI(dst, lhs.gp(), Operand(rhs.gp()), cond);
+  Label low, cont;
+
+  // For signed i64 comparisons, we still need to use unsigned comparison for
+  // the low word (the only bit carrying signedness information is the MSB in
+  // the high word).
+  Condition unsigned_cond =
+      liftoff::ToCondition(liftoff::cond_make_unsigned(liftoff_cond));
+
+  Register tmp = dst;
+  if (liftoff::IsRegInRegPair(lhs, dst) || liftoff::IsRegInRegPair(rhs, dst)) {
+    tmp = GetUnusedRegister(kGpReg, LiftoffRegList{dst, lhs, rhs}).gp();
+  }
+
+  // Write 1 initially in tmp register.
+  TurboAssembler::li(tmp, 1);
+
+  // If high words are equal, then compare low words, else compare high.
+  Branch(&low, eq, lhs.high_gp(), Operand(rhs.high_gp()));
+
+  Branch(&cont, cond, lhs.high_gp(), Operand(rhs.high_gp()));
+  mv(tmp, zero_reg);
+  Branch(&cont);
+
+  bind(&low);
+  Branch(&cont, unsigned_cond, lhs.low_gp(), Operand(rhs.low_gp()));
+  mv(tmp, zero_reg);
+  bind(&cont);
+  // Move result to dst register if needed.
+  TurboAssembler::Move(dst, tmp);
 }
 
 static FPUCondition ConditionToConditionCmpFPU(LiftoffCondition condition) {
