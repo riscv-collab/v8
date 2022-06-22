@@ -1390,7 +1390,7 @@ void VisitAtomicCompareExchange(InstructionSelector* selector, Node* node,
 }
 
 void VisitAtomicBinop(InstructionSelector* selector, Node* node,
-                      ArchOpcode opcode, AtomicWidth width) {
+                      ArchOpcode opcode) {
   RiscvOperandGenerator g(selector);
   Node* base = node->InputAt(0);
   Node* index = node->InputAt(1);
@@ -1409,8 +1409,7 @@ void VisitAtomicBinop(InstructionSelector* selector, Node* node,
   temps[1] = g.TempRegister();
   temps[2] = g.TempRegister();
   temps[3] = g.TempRegister();
-  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode) |
-                         AtomicWidthField::encode(width);
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
   selector->Emit(code, 1, outputs, input_count, inputs, 4, temps);
 }
 
@@ -1809,7 +1808,7 @@ void InstructionSelector::VisitWord32AtomicBinaryOperation(
     UNREACHABLE();
   }
 
-  VisitAtomicBinop(this, node, opcode, AtomicWidth::kWord32);
+  VisitAtomicBinop(this, node, opcode);
 }
 
 #define VISIT_ATOMIC_BINOP(op)                                           \

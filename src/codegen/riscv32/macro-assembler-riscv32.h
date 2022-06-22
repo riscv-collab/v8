@@ -460,6 +460,13 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 #undef DEFINE_INSTRUCTION2
 #undef DEFINE_INSTRUCTION3
 
+  void Amosub_w(bool aq, bool rl, Register rd, Register rs1, Register rs2) {
+    UseScratchRegisterScope temps(this);
+    Register temp = temps.Acquire();
+    sub(temp, zero_reg, rs2);
+    amoadd_w(aq, rl, rd, rs1, temp);
+  }
+
   void SmiUntag(Register dst, const MemOperand& src);
   void SmiUntag(Register dst, Register src) {
     DCHECK(SmiValuesAre31Bits());
@@ -679,9 +686,6 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   void Ll(Register rd, const MemOperand& rs);
   void Sc(Register rd, const MemOperand& rs);
-
-  void Lld(Register rd, const MemOperand& rs);
-  void Scd(Register rd, const MemOperand& rs);
 
   void Float32Max(FPURegister dst, FPURegister src1, FPURegister src2);
   void Float32Min(FPURegister dst, FPURegister src1, FPURegister src2);

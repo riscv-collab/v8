@@ -250,33 +250,6 @@ TEST(RV32A) {
   VERIFY_RUN();
 }
 
-TEST(RV64A) {
-  SET_UP();
-
-  COMPARE(lr_d(true, true, a0, s3), "1609b52f       lr.d.aqrl a0, (s3)");
-  COMPARE(sc_d(false, true, a0, s3, s4), "1b49b52f       sc.d.rl a0, s4, (s3)");
-  COMPARE(amoswap_d(true, false, a0, s3, s4),
-          "0d49b52f       amoswap.d.aq a0, s4, (s3)");
-  COMPARE(amoadd_d(false, false, a0, s3, s4),
-          "0149b52f       amoadd.d a0, s4, (s3)");
-  COMPARE(amoxor_d(true, false, a0, s3, s4),
-          "2549b52f       amoxor.d.aq a0, s4, (s3)");
-  COMPARE(amoand_d(true, true, a0, s3, s4),
-          "6749b52f       amoand.d.aqrl a0, s4, (s3)");
-  COMPARE(amoor_d(false, true, a0, s3, s4),
-          "4349b52f       amoor.d.rl a0, s4, (s3)");
-  COMPARE(amomin_d(true, true, a0, s3, s4),
-          "8749b52f       amomin.d.aqrl a0, s4, (s3)");
-  COMPARE(amomax_d(false, true, a0, s3, s4),
-          "a349b52f       amoswap.d.rl a0, s4, (s3)");
-  COMPARE(amominu_d(true, false, a0, s3, s4),
-          "c549b52f       amominu.d.aq a0, s4, (s3)");
-  COMPARE(amomaxu_d(false, true, a0, s3, s4),
-          "e349b52f       amomaxu.d.rl a0, s4, (s3)");
-
-  VERIFY_RUN();
-}
-
 TEST(RV32F) {
   SET_UP();
   // RV32F Standard Extension

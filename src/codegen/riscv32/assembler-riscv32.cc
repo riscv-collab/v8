@@ -1759,28 +1759,6 @@ void Assembler::remu(Register rd, Register rs1, Register rs2) {
   GenInstrALU_rr(0b0000001, 0b111, rd, rs1, rs2);
 }
 
-// RV64M Standard Extension (in addition to RV32M)
-
-void Assembler::mulw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0000001, 0b000, rd, rs1, rs2);
-}
-
-void Assembler::divw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0000001, 0b100, rd, rs1, rs2);
-}
-
-void Assembler::divuw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0000001, 0b101, rd, rs1, rs2);
-}
-
-void Assembler::remw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0000001, 0b110, rd, rs1, rs2);
-}
-
-void Assembler::remuw(Register rd, Register rs1, Register rs2) {
-  GenInstrALUW_rr(0b0000001, 0b111, rd, rs1, rs2);
-}
-
 // RV32A Standard Extension
 
 void Assembler::lr_w(bool aq, bool rl, Register rd, Register rs1) {
@@ -1835,62 +1813,6 @@ void Assembler::amominu_w(bool aq, bool rl, Register rd, Register rs1,
 void Assembler::amomaxu_w(bool aq, bool rl, Register rd, Register rs1,
                           Register rs2) {
   GenInstrRAtomic(0b11100, aq, rl, 0b010, rd, rs1, rs2);
-}
-
-// RV64A Standard Extension (in addition to RV32A)
-
-void Assembler::lr_d(bool aq, bool rl, Register rd, Register rs1) {
-  GenInstrRAtomic(0b00010, aq, rl, 0b011, rd, rs1, zero_reg);
-}
-
-void Assembler::sc_d(bool aq, bool rl, Register rd, Register rs1,
-                     Register rs2) {
-  GenInstrRAtomic(0b00011, aq, rl, 0b011, rd, rs1, rs2);
-}
-
-void Assembler::amoswap_d(bool aq, bool rl, Register rd, Register rs1,
-                          Register rs2) {
-  GenInstrRAtomic(0b00001, aq, rl, 0b011, rd, rs1, rs2);
-}
-
-void Assembler::amoadd_d(bool aq, bool rl, Register rd, Register rs1,
-                         Register rs2) {
-  GenInstrRAtomic(0b00000, aq, rl, 0b011, rd, rs1, rs2);
-}
-
-void Assembler::amoxor_d(bool aq, bool rl, Register rd, Register rs1,
-                         Register rs2) {
-  GenInstrRAtomic(0b00100, aq, rl, 0b011, rd, rs1, rs2);
-}
-
-void Assembler::amoand_d(bool aq, bool rl, Register rd, Register rs1,
-                         Register rs2) {
-  GenInstrRAtomic(0b01100, aq, rl, 0b011, rd, rs1, rs2);
-}
-
-void Assembler::amoor_d(bool aq, bool rl, Register rd, Register rs1,
-                        Register rs2) {
-  GenInstrRAtomic(0b01000, aq, rl, 0b011, rd, rs1, rs2);
-}
-
-void Assembler::amomin_d(bool aq, bool rl, Register rd, Register rs1,
-                         Register rs2) {
-  GenInstrRAtomic(0b10000, aq, rl, 0b011, rd, rs1, rs2);
-}
-
-void Assembler::amomax_d(bool aq, bool rl, Register rd, Register rs1,
-                         Register rs2) {
-  GenInstrRAtomic(0b10100, aq, rl, 0b011, rd, rs1, rs2);
-}
-
-void Assembler::amominu_d(bool aq, bool rl, Register rd, Register rs1,
-                          Register rs2) {
-  GenInstrRAtomic(0b11000, aq, rl, 0b011, rd, rs1, rs2);
-}
-
-void Assembler::amomaxu_d(bool aq, bool rl, Register rd, Register rs1,
-                          Register rs2) {
-  GenInstrRAtomic(0b11100, aq, rl, 0b011, rd, rs1, rs2);
 }
 
 // RV32F Standard Extension

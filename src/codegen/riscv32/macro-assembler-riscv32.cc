@@ -1244,18 +1244,6 @@ void TurboAssembler::Ll(Register rd, const MemOperand& rs) {
   }
 }
 
-void TurboAssembler::Lld(Register rd, const MemOperand& rs) {
-  bool is_one_instruction = rs.offset() == 0;
-  if (is_one_instruction) {
-    lr_d(false, false, rd, rs.rm());
-  } else {
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-    Add(scratch, rs.rm(), rs.offset());
-    lr_d(false, false, rd, scratch);
-  }
-}
-
 void TurboAssembler::Sc(Register rd, const MemOperand& rs) {
   bool is_one_instruction = rs.offset() == 0;
   if (is_one_instruction) {
@@ -1265,18 +1253,6 @@ void TurboAssembler::Sc(Register rd, const MemOperand& rs) {
     Register scratch = temps.Acquire();
     Add(scratch, rs.rm(), rs.offset());
     sc_w(false, false, rd, scratch, rd);
-  }
-}
-
-void TurboAssembler::Scd(Register rd, const MemOperand& rs) {
-  bool is_one_instruction = rs.offset() == 0;
-  if (is_one_instruction) {
-    sc_d(false, false, rd, rs.rm(), rd);
-  } else {
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-    Add(scratch, rs.rm(), rs.offset());
-    sc_d(false, false, rd, scratch, rd);
   }
 }
 

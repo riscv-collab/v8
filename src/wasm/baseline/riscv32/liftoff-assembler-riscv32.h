@@ -963,6 +963,19 @@ void LiftoffAssembler::AtomicAdd(Register dst_addr, Register offset_reg,
   if (type.value() == StoreType::kI64Store) {
     bailout(kAtomics, "Atomic64");
   }
+  if (type.value() == StoreType::kI32Store ||
+      type.value() == StoreType::kI64Store32) {
+    UseScratchRegisterScope temps(this);
+    Register actual_addr = liftoff::CalculateActualAddress(
+        this, dst_addr, offset_reg, offset_imm, temps.Acquire());
+    if (type.value() == StoreType::kI64Store32) {
+      result = result.low();
+      value = value.low();
+    }
+    amoadd_w(true, true, result.gp(), actual_addr, value.gp());
+    return;
+  }
+
   liftoff::AtomicBinop(this, dst_addr, offset_reg, offset_imm, value, result,
                        type, liftoff::Binop::kAdd);
 }
@@ -972,6 +985,19 @@ void LiftoffAssembler::AtomicSub(Register dst_addr, Register offset_reg,
                                  LiftoffRegister result, StoreType type) {
   if (type.value() == StoreType::kI64Store) {
     bailout(kAtomics, "Atomic64");
+  }
+  if (type.value() == StoreType::kI32Store ||
+      type.value() == StoreType::kI64Store32) {
+    UseScratchRegisterScope temps(this);
+    Register actual_addr = liftoff::CalculateActualAddress(
+        this, dst_addr, offset_reg, offset_imm, temps.Acquire());
+    if (type.value() == StoreType::kI64Store32) {
+      result = result.low();
+      value = value.low();
+    }
+    sub(kScratchReg, zero_reg, value.gp());
+    amoadd_w(true, true, result.gp(), actual_addr, kScratchReg);
+    return;
   }
   liftoff::AtomicBinop(this, dst_addr, offset_reg, offset_imm, value, result,
                        type, liftoff::Binop::kSub);
@@ -983,6 +1009,18 @@ void LiftoffAssembler::AtomicAnd(Register dst_addr, Register offset_reg,
   if (type.value() == StoreType::kI64Store) {
     bailout(kAtomics, "Atomic64");
   }
+  if (type.value() == StoreType::kI32Store ||
+      type.value() == StoreType::kI64Store32) {
+    UseScratchRegisterScope temps(this);
+    Register actual_addr = liftoff::CalculateActualAddress(
+        this, dst_addr, offset_reg, offset_imm, temps.Acquire());
+    if (type.value() == StoreType::kI64Store32) {
+      result = result.low();
+      value = value.low();
+    }
+    amoand_w(true, true, result.gp(), actual_addr, value.gp());
+    return;
+  }
   liftoff::AtomicBinop(this, dst_addr, offset_reg, offset_imm, value, result,
                        type, liftoff::Binop::kAnd);
 }
@@ -993,6 +1031,18 @@ void LiftoffAssembler::AtomicOr(Register dst_addr, Register offset_reg,
   if (type.value() == StoreType::kI64Store) {
     bailout(kAtomics, "Atomic64");
   }
+  if (type.value() == StoreType::kI32Store ||
+      type.value() == StoreType::kI64Store32) {
+    UseScratchRegisterScope temps(this);
+    Register actual_addr = liftoff::CalculateActualAddress(
+        this, dst_addr, offset_reg, offset_imm, temps.Acquire());
+    if (type.value() == StoreType::kI64Store32) {
+      result = result.low();
+      value = value.low();
+    }
+    amoor_w(true, true, result.gp(), actual_addr, value.gp());
+    return;
+  }
   liftoff::AtomicBinop(this, dst_addr, offset_reg, offset_imm, value, result,
                        type, liftoff::Binop::kOr);
 }
@@ -1002,6 +1052,18 @@ void LiftoffAssembler::AtomicXor(Register dst_addr, Register offset_reg,
                                  LiftoffRegister result, StoreType type) {
   if (type.value() == StoreType::kI64Store) {
     bailout(kAtomics, "Atomic64");
+  }
+  if (type.value() == StoreType::kI32Store ||
+      type.value() == StoreType::kI64Store32) {
+    UseScratchRegisterScope temps(this);
+    Register actual_addr = liftoff::CalculateActualAddress(
+        this, dst_addr, offset_reg, offset_imm, temps.Acquire());
+    if (type.value() == StoreType::kI64Store32) {
+      result = result.low();
+      value = value.low();
+    }
+    amoxor_w(true, true, result.gp(), actual_addr, value.gp());
+    return;
   }
   liftoff::AtomicBinop(this, dst_addr, offset_reg, offset_imm, value, result,
                        type, liftoff::Binop::kXor);
@@ -1014,6 +1076,18 @@ void LiftoffAssembler::AtomicExchange(Register dst_addr, Register offset_reg,
   if (type.value() == StoreType::kI64Store) {
     bailout(kAtomics, "Atomic64");
   }
+  if (type.value() == StoreType::kI32Store ||
+      type.value() == StoreType::kI64Store32) {
+    UseScratchRegisterScope temps(this);
+    Register actual_addr = liftoff::CalculateActualAddress(
+        this, dst_addr, offset_reg, offset_imm, temps.Acquire());
+    if (type.value() == StoreType::kI64Store32) {
+      result = result.low();
+      value = value.low();
+    }
+    amoswap_w(true, true, result.gp(), actual_addr, value.gp());
+    return;
+  }
   liftoff::AtomicBinop(this, dst_addr, offset_reg, offset_imm, value, result,
                        type, liftoff::Binop::kExchange);
 }
@@ -1022,64 +1096,88 @@ void LiftoffAssembler::AtomicCompareExchange(
     Register dst_addr, Register offset_reg, uintptr_t offset_imm,
     LiftoffRegister expected, LiftoffRegister new_value, LiftoffRegister result,
     StoreType type) {
-  LiftoffRegList pinned = {dst_addr, offset_reg, expected, new_value};
+  LiftoffRegList pinned = {dst_addr, offset_reg, expected, new_value, result};
 
-  Register result_reg = result.gp();
-  if (pinned.has(result)) {
-    result_reg = GetUnusedRegister(kGpReg, pinned).gp();
+  if (type.value() == StoreType::kI64Store) {
+    Register actual_addr = liftoff::CalculateActualAddress(
+        this, dst_addr, offset_reg, offset_imm, kScratchReg);
+    FrameScope scope(this, StackFrame::MANUAL);
+    PushCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);
+    PrepareCallCFunction(5, 0, kScratchReg);
+    Mv(a0, actual_addr);
+    CallCFunction(ExternalReference::atomic_pair_compare_exchange_function(), 5,
+                  0);
+    PopCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);
+    Mv(result.low_gp(), a0);
+    Mv(result.high_gp(), a1);
+    return;
+  }
+
+  // Make sure that {result} is unique.
+  switch (type.value()) {
+    case StoreType::kI64Store8:
+    case StoreType::kI64Store16:
+    case StoreType::kI64Store32:
+      LoadConstant(result.high(), WasmValue(0));
+      result = result.low();
+      new_value = new_value.low();
+      expected = expected.low();
+      break;
+    case StoreType::kI32Store8:
+    case StoreType::kI32Store16:
+    case StoreType::kI32Store:
+      break;
+    default:
+      UNREACHABLE();
   }
 
   UseScratchRegisterScope temps(this);
-
   Register actual_addr = liftoff::CalculateActualAddress(
-      this, dst_addr, offset_reg, offset_imm, temps.Acquire());
+      this, dst_addr, offset_reg, offset_imm, kScratchReg);
 
-  Register store_result = temps.Acquire();
+  Register temp0 = pinned.set(GetUnusedRegister(kGpReg, pinned)).gp();
+  Register temp1 = pinned.set(GetUnusedRegister(kGpReg, pinned)).gp();
+  Register temp2 = pinned.set(GetUnusedRegister(kGpReg, pinned)).gp();
 
+  if (type.value() != StoreType::kI32Store &&
+      type.value() != StoreType::kI64Store32) {
+    And(temp1, actual_addr, 0x3);
+    Sub(temp0, actual_addr, Operand(temp1));
+    Sll(temp1, temp1, 3);
+  }
   Label retry;
   Label done;
   bind(&retry);
   switch (type.value()) {
     case StoreType::kI64Store8:
     case StoreType::kI32Store8:
-      lbu(result_reg, actual_addr, 0);
-      sync();
-      Branch(&done, ne, result.gp(), Operand(expected.gp()));
-      sync();
-      sb(new_value.gp(), actual_addr, 0);
-      sync();
-      mv(store_result, zero_reg);
+      lr_w(true, true, temp2, temp0);
+      ExtractBits(result.gp(), temp2, temp1, 8, false);
+      ExtractBits(temp2, expected.gp(), zero_reg, 8, false);
+      Branch(&done, ne, temp2, Operand(result.gp()));
+      InsertBits(temp2, new_value.gp(), temp1, 8);
+      sc_w(true, true, temp2, temp0, temp2);
       break;
     case StoreType::kI64Store16:
     case StoreType::kI32Store16:
-      lhu(result_reg, actual_addr, 0);
-      sync();
-      Branch(&done, ne, result.gp(), Operand(expected.gp()));
-      sync();
-      sh(new_value.gp(), actual_addr, 0);
-      sync();
-      mv(store_result, zero_reg);
+      lr_w(true, true, temp2, temp0);
+      ExtractBits(result.gp(), temp2, temp1, 16, false);
+      ExtractBits(temp2, expected.gp(), zero_reg, 16, false);
+      Branch(&done, ne, temp2, Operand(result.gp()));
+      InsertBits(temp2, new_value.gp(), temp1, 16);
+      sc_w(true, true, temp2, temp0, temp2);
       break;
     case StoreType::kI64Store32:
     case StoreType::kI32Store:
-      lr_w(true, true, result_reg, actual_addr);
+      lr_w(true, true, result.gp(), actual_addr);
       Branch(&done, ne, result.gp(), Operand(expected.gp()));
-      sc_w(true, true, store_result, new_value.gp(), actual_addr);
-      break;
-    case StoreType::kI64Store:
-      lr_d(true, true, result_reg, actual_addr);
-      Branch(&done, ne, result.gp(), Operand(expected.gp()));
-      sc_d(true, true, store_result, new_value.gp(), actual_addr);
+      sc_w(true, true, temp2, actual_addr, new_value.gp());
       break;
     default:
       UNREACHABLE();
   }
-  bnez(store_result, &retry);
+  bnez(temp2, &retry);
   bind(&done);
-
-  if (result_reg != result.gp()) {
-    mv(result.gp(), result_reg);
-  }
 }
 
 void LiftoffAssembler::AtomicFence() { sync(); }

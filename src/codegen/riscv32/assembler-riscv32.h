@@ -483,13 +483,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void rem(Register rd, Register rs1, Register rs2);
   void remu(Register rd, Register rs1, Register rs2);
 
-  // RV64M Standard Extension (in addition to RV32M)
-  void mulw(Register rd, Register rs1, Register rs2);
-  void divw(Register rd, Register rs1, Register rs2);
-  void divuw(Register rd, Register rs1, Register rs2);
-  void remw(Register rd, Register rs1, Register rs2);
-  void remuw(Register rd, Register rs1, Register rs2);
-
   // RV32A Standard Extension
   void lr_w(bool aq, bool rl, Register rd, Register rs1);
   void sc_w(bool aq, bool rl, Register rd, Register rs1, Register rs2);
@@ -502,19 +495,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void amomax_w(bool aq, bool rl, Register rd, Register rs1, Register rs2);
   void amominu_w(bool aq, bool rl, Register rd, Register rs1, Register rs2);
   void amomaxu_w(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-
-  // RV64A Standard Extension (in addition to RV32A)
-  void lr_d(bool aq, bool rl, Register rd, Register rs1);
-  void sc_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-  void amoswap_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-  void amoadd_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-  void amoxor_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-  void amoand_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-  void amoor_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-  void amomin_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-  void amomax_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-  void amominu_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
-  void amomaxu_d(bool aq, bool rl, Register rd, Register rs1, Register rs2);
 
   // RV32F Standard Extension
   void flw(FPURegister rd, Register rs1, int16_t imm12);

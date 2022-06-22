@@ -3535,6 +3535,9 @@ void Simulator::DecodeRVRAType() {
     case RO_LR_W: {
       base::MutexGuard lock_guard(&GlobalMonitor::Get()->mutex);
       int32_t addr = rs1();
+      if ((addr & 0x3) != 0) {
+        DieOrDebug();
+      }
       auto val = ReadMem<int32_t>(addr, instr_.instr());
       set_rd(sext32(val), false);
       TraceMemRd(addr, val, get_register(rd_reg()));
@@ -3545,6 +3548,9 @@ void Simulator::DecodeRVRAType() {
     }
     case RO_SC_W: {
       int32_t addr = rs1();
+      if ((addr & 0x3) != 0) {
+        DieOrDebug();
+      }
       base::MutexGuard lock_guard(&GlobalMonitor::Get()->mutex);
       if (local_monitor_.NotifyStoreConditional(addr, TransactionSize::Word) &&
           GlobalMonitor::Get()->NotifyStoreConditional_Locked(
@@ -3559,54 +3565,81 @@ void Simulator::DecodeRVRAType() {
       break;
     }
     case RO_AMOSWAP_W: {
+      if ((rs1() & 0x3) != 0) {
+        DieOrDebug();
+      }
       set_rd(sext32(amo<uint32_t>(
           rs1(), [&](uint32_t lhs) { return (uint32_t)rs2(); }, instr_.instr(),
           WORD)));
       break;
     }
     case RO_AMOADD_W: {
+      if ((rs1() & 0x3) != 0) {
+        DieOrDebug();
+      }
       set_rd(sext32(amo<uint32_t>(
           rs1(), [&](uint32_t lhs) { return lhs + (uint32_t)rs2(); },
           instr_.instr(), WORD)));
       break;
     }
     case RO_AMOXOR_W: {
+      if ((rs1() & 0x3) != 0) {
+        DieOrDebug();
+      }
       set_rd(sext32(amo<uint32_t>(
           rs1(), [&](uint32_t lhs) { return lhs ^ (uint32_t)rs2(); },
           instr_.instr(), WORD)));
       break;
     }
     case RO_AMOAND_W: {
+      if ((rs1() & 0x3) != 0) {
+        DieOrDebug();
+      }
       set_rd(sext32(amo<uint32_t>(
           rs1(), [&](uint32_t lhs) { return lhs & (uint32_t)rs2(); },
           instr_.instr(), WORD)));
       break;
     }
     case RO_AMOOR_W: {
+      if ((rs1() & 0x3) != 0) {
+        DieOrDebug();
+      }
       set_rd(sext32(amo<uint32_t>(
           rs1(), [&](uint32_t lhs) { return lhs | (uint32_t)rs2(); },
           instr_.instr(), WORD)));
       break;
     }
     case RO_AMOMIN_W: {
+      if ((rs1() & 0x3) != 0) {
+        DieOrDebug();
+      }
       set_rd(sext32(amo<int32_t>(
           rs1(), [&](int32_t lhs) { return std::min(lhs, (int32_t)rs2()); },
           instr_.instr(), WORD)));
       break;
     }
     case RO_AMOMAX_W: {
+      if ((rs1() & 0x3) != 0) {
+        DieOrDebug();
+      }
       set_rd(sext32(amo<int32_t>(
           rs1(), [&](int32_t lhs) { return std::max(lhs, (int32_t)rs2()); },
           instr_.instr(), WORD)));
       break;
     }
     case RO_AMOMINU_W: {
+      if ((rs1() & 0x3) != 0) {
+        DieOrDebug();
+      }
       set_rd(sext32(amo<uint32_t>(
           rs1(), [&](uint32_t lhs) { return std::min(lhs, (uint32_t)rs2()); },
           instr_.instr(), WORD)));
       break;
     }
     case RO_AMOMAXU_W: {
+      if ((rs1() & 0x3) != 0) {
+        DieOrDebug();
+      }
       set_rd(sext32(amo<uint32_t>(
           rs1(), [&](uint32_t lhs) { return std::max(lhs, (uint32_t)rs2()); },
           instr_.instr(), WORD)));
