@@ -3022,9 +3022,8 @@ void Simulator::HandleStop(uint32_t code) {
   // Stop if it is enabled, otherwise go on jumping over the stop
   // and the message address.
   if (IsEnabledStop(code)) {
-    RiscvDebugger dbg(this);
     PrintF("Simulator hit stop (%" PRId32 ")\n", code);
-    dbg.Debug();
+    DieOrDebug();
   }
 }
 
@@ -4770,8 +4769,7 @@ void Simulator::DecodeCRType() {
       break;
     case 0b1001:
       if (instr_.RvcRs1Value() == 0 && instr_.RvcRs2Value() == 0) {  // c.ebreak
-        RiscvDebugger dbg(this);
-        dbg.Debug();
+        DieOrDebug();
       } else if (instr_.RvcRdValue() != 0 &&
                  instr_.RvcRs2Value() == 0) {  // c.jalr
         set_register(ra, get_pc() + kShortInstrSize);
