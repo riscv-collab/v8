@@ -1081,13 +1081,6 @@ TEST(RVC_CI) {
     CHECK_EQ(LARGE_INT_UNDER_32_BIT - 15, res);
   }
 
-  // Test c.addiw
-  {
-    auto fn = [](MacroAssembler& assm) { __ c_addiw(a0, -20); };
-    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
-    CHECK_EQ(LARGE_INT_UNDER_32_BIT - 20, res);
-  }
-
   // Test c.addi16sp
   {
     auto fn = [](MacroAssembler& assm) {
@@ -1200,26 +1193,6 @@ TEST(RVC_CA) {
     auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
     CHECK_EQ(LARGE_INT_UNDER_32_BIT & MIN_VAL_IMM12, res);
   }
-
-  // Test c.subw
-  {
-    auto fn = [](MacroAssembler& assm) {
-      __ RV_li(a1, MIN_VAL_IMM12);
-      __ c_subw(a0, a1);
-    };
-    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
-    CHECK_EQ(LARGE_INT_UNDER_32_BIT - MIN_VAL_IMM12, res);
-  }
-
-  // Test c.addw
-  {
-    auto fn = [](MacroAssembler& assm) {
-      __ RV_li(a1, MIN_VAL_IMM12);
-      __ c_addw(a0, a1);
-    };
-    auto res = GenAndRunTest<int32_t>(LARGE_INT_UNDER_32_BIT, fn);
-    CHECK_EQ(LARGE_INT_UNDER_32_BIT + MIN_VAL_IMM12, res);
-  }
 }
 
 TEST(RVC_LOAD_STORE_SP) {
@@ -1254,32 +1227,6 @@ TEST(RVC_LOAD_STORE_COMPRESSED) {
   Isolate* isolate = CcTest::i_isolate();
   HandleScope scope(isolate);
 
-  struct T {
-    double a;
-    double b;
-    double c;
-  } t;
-
-  // c.fld
-  {
-    auto fn = [](MacroAssembler& assm) {
-      __ c_fld(fa0, a0, offsetof(T, a));
-      __ c_fld(fa1, a0, offsetof(T, b));
-      __ fadd_d(fa2, fa1, fa0);
-      __ c_fsd(fa2, a0, offsetof(T, c));  // c = a + b.
-    };
-    auto f = AssembleCode<F3>(fn);
-
-    t.a = 1.5e14;
-    t.b = 1.5e14;
-    t.c = 3.0e14;
-    f.Call(&t, 0, 0, 0, 0);
-    // Expected double results.
-    CHECK_EQ(1.5e14, t.a);
-    CHECK_EQ(1.5e14, t.b);
-    CHECK_EQ(3.0e14, t.c);
-  }
-
   struct S {
     int32_t a;
     int32_t b;
@@ -1302,30 +1249,6 @@ TEST(RVC_LOAD_STORE_COMPRESSED) {
     CHECK_EQ(1, s.a);
     CHECK_EQ(2, s.b);
     CHECK_EQ(3, s.c);
-  }
-
-  struct U {
-    int64_t a;
-    int64_t b;
-    int64_t c;
-  } u;
-  // c.ld
-  {
-    auto fn = [](MacroAssembler& assm) {
-      __ c_ld(a1, a0, offsetof(U, a));
-      __ c_ld(a2, a0, offsetof(U, b));
-      __ add(a3, a1, a2);
-      __ c_sd(a3, a0, offsetof(U, c));  // c = a + b.
-    };
-    auto f = AssembleCode<F3>(fn);
-
-    u.a = 1;
-    u.b = 2;
-    u.c = 3;
-    f.Call(&u, 0, 0, 0, 0);
-    CHECK_EQ(1, u.a);
-    CHECK_EQ(2, u.b);
-    CHECK_EQ(3, u.c);
   }
 }
 
