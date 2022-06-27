@@ -4047,7 +4047,7 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
           __ vmv_vv(dst, temp);
         }
       }
-      return;
+      break;
     case MoveType::kRegisterToStack: {
       MemOperand dst = g.ToMemOperand(destination);
       if (source->IsRegister()) {
@@ -4085,8 +4085,7 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
           __ vs(temp, dst_v, 0, E8);
         }
       }
-      return;
-    }
+    } break;
     case MoveType::kStackToStack: {
       MemOperand src = g.ToMemOperand(source);
       MemOperand dst = g.ToMemOperand(destination);
@@ -4106,6 +4105,30 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
         __ vl(kSimd128ScratchReg2, dst_v, 0, E8);
         __ vs(kSimd128ScratchReg, dst_v, 0, E8);
         __ vs(kSimd128ScratchReg2, src_v, 0, E8);
+      } else if (source->IsFPStackSlot()) {
+        DCHECK(destination->IsFPStackSlot());
+        MachineRepresentation rep =
+            LocationOperand::cast(source)->representation();
+        if (rep == MachineRepresentation::kFloat64) {
+          FPURegister temp_double = kScratchDoubleReg;
+          Register temp_word32 = kScratchReg;
+          MemOperand src_hi(src.rm(), src.offset() + kSystemPointerSize);
+          MemOperand dst_hi(dst.rm(), dst.offset() + kSystemPointerSize);
+          __ LoadDouble(temp_double, src);
+          __ Lw(temp_word32, dst);
+          __ Sw(temp_word32, src);
+          __ Lw(temp_word32, dst_hi);
+          __ Sw(temp_word32, src_hi);
+          __ StoreDouble(temp_double, dst);
+        } else {
+          UseScratchRegisterScope scope(tasm());
+          Register temp_0 = kScratchReg;
+          Register temp_1 = kScratchReg2;
+          __ Lw(temp_0, src);
+          __ Lw(temp_1, dst);
+          __ Sw(temp_0, dst);
+          __ Sw(temp_1, src);
+        }
       } else {
         UseScratchRegisterScope scope(tasm());
         Register temp_0 = kScratchReg;
@@ -4115,11 +4138,11 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
         __ Sw(temp_0, dst);
         __ Sw(temp_1, src);
       }
-      return;
-    }
+    } break;
     default:
       UNREACHABLE();
   }
+  return;
 }
 
 void CodeGenerator::AssembleJumpTable(Label** targets, size_t target_count) {
