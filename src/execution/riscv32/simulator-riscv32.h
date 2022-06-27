@@ -561,8 +561,10 @@ class Simulator : public SimulatorBase {
   void TraceMemWr(int32_t addr, int32_t value, TraceType t);
   template <typename T>
   void TraceMemRd(int32_t addr, T value, int32_t reg_value);
+  void TraceMemRdDouble(int32_t addr, double value, int64_t reg_value);
   template <typename T>
   void TraceMemWr(int32_t addr, T value);
+  void TraceMemWrDouble(int32_t addr, double value);
 
   SimInstruction instr_;
 

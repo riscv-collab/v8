@@ -2608,18 +2608,22 @@ void Simulator::TraceMemRd(int32_t addr, T value, int32_t reg_value) {
                "%016" PRIx32 "    (%" PRId64 ")    flt:%e <-- [addr: %" PRIx32
                "]",
                reg_value, icount_, static_cast<float>(value), addr);
-    } else if (std::is_same<double, T>::value) {
-      SNPrintF(trace_buf_,
-               "%016" PRIx32 "    (%" PRId64 ")    dbl:%e <-- [addr: %" PRIx32
-               "]",
-               reg_value, icount_, static_cast<double>(value), addr);
     } else {
       UNREACHABLE();
     }
   }
 }
 
-// RV32G todo need to port for compatialbility of sf&df
+void Simulator::TraceMemRdDouble(int32_t addr, double value,
+                                 int64_t reg_value) {
+  if (::v8::internal::FLAG_trace_sim) {
+    SNPrintF(trace_buf_,
+             "%016" PRIx64 "    (%" PRId64 ")    dbl:%e <-- [addr: %" PRIx32
+             "]",
+             reg_value, icount_, static_cast<double>(value), addr);
+  }
+}
+
 template <typename T>
 void Simulator::TraceMemWr(int32_t addr, T value) {
   if (::v8::internal::FLAG_trace_sim) {
@@ -2652,22 +2656,20 @@ void Simulator::TraceMemWr(int32_t addr, T value) {
                    icount_, static_cast<float>(value), addr);
         }
         break;
-      case 8:
-        if (std::is_integral<T>::value) {
-          UNREACHABLE();
-        } else {
-          SNPrintF(trace_buf_,
-                   "                    (%" PRIu64
-                   ")    dbl:%e --> [addr: %" PRIx32 "]",
-                   icount_, static_cast<double>(value), addr);
-        }
-        break;
       default:
         UNREACHABLE();
     }
   }
 }
 
+void Simulator::TraceMemWrDouble(int32_t addr, double value) {
+  if (::v8::internal::FLAG_trace_sim) {
+    SNPrintF(trace_buf_,
+             "                    (%" PRIu64 ")    dbl:%e --> [addr: %" PRIx32
+             "]",
+             icount_, value, addr);
+  }
+}
 // RISCV Memory Read/Write functions
 
 // TODO(RISCV): check whether the specific board supports unaligned load/store
@@ -2713,10 +2715,11 @@ void Simulator::WriteMem(int32_t addr, T value, Instruction* instr) {
   }
 #endif
   T* ptr = reinterpret_cast<T*>(addr);
-  TraceMemWr(addr, value);
-  // PrintF("Unaligned read at 0x%08" PRIx32 " , pc=0x%08" PRId64 "\n",
-  // (int32_t)ptr,
-  //        (int32_t)value);
+  if (!std::is_same<double, T>::value) {
+    TraceMemWr(addr, value);
+  } else {
+    TraceMemWrDouble(addr, value);
+  }
   *ptr = value;
 }
 
@@ -4669,7 +4672,7 @@ void Simulator::DecodeRVIType() {
       int32_t addr = rs1() + imm12();
       double val = ReadMem<double>(addr, instr_.instr());
       set_drd(val, false);
-      TraceMemRd(addr, val, get_fpu_register(frd_reg()));
+      TraceMemRdDouble(addr, val, get_fpu_register(frd_reg()));
       break;
     }
     default: {
