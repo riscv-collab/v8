@@ -24,7 +24,7 @@ class EntryFrameConstants : public AllStatic {
 class WasmCompileLazyFrameConstants : public TypedFrameConstants {
  public:
   static constexpr int kNumberOfSavedGpParamRegs =
-      arraysize(wasm::kGpParamRegisters) + 1;
+      arraysize(wasm::kGpParamRegisters);
   static constexpr int kNumberOfSavedFpParamRegs =
       arraysize(wasm::kFpParamRegisters);
   static constexpr int kNumberOfSavedAllParamRegs =
@@ -32,8 +32,8 @@ class WasmCompileLazyFrameConstants : public TypedFrameConstants {
 
   // FP-relative.
   // See Generate_WasmCompileLazy in builtins-mips64.cc.
-  static constexpr int kWasmInstanceOffset =
-      TYPED_FRAME_PUSHED_VALUE_OFFSET(kNumberOfSavedAllParamRegs);
+  static constexpr int kWasmInstanceOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(
+      kNumberOfSavedGpParamRegs + kNumberOfSavedFpParamRegs * 2);
   static constexpr int kFixedFrameSizeFromFp =
       TypedFrameConstants::kFixedFrameSizeFromFp +
       kNumberOfSavedGpParamRegs * kSystemPointerSize +

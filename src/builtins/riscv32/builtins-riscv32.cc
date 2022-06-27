@@ -2714,19 +2714,13 @@ void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
     for (Register gp_param_reg : wasm::kGpParamRegisters) {
       gp_regs.set(gp_param_reg);
     }
-    // Also push a1, because we must push multiples of 16 bytes (see
-    // {TurboAssembler::PushCPURegList}.
-    CHECK_EQ(1, gp_regs.Count() % 2);
-    gp_regs.set(a1);
-    // Ensure that A1 will not be repeated.
-    CHECK_EQ(0, gp_regs.Count() % 2);
 
     DoubleRegList fp_regs;
     for (DoubleRegister fp_param_reg : wasm::kFpParamRegisters) {
       fp_regs.set(fp_param_reg);
     }
 
-    CHECK_EQ(gp_regs.Count(), arraysize(wasm::kGpParamRegisters) + 1);
+    CHECK_EQ(gp_regs.Count(), arraysize(wasm::kGpParamRegisters));
     CHECK_EQ(fp_regs.Count(), arraysize(wasm::kFpParamRegisters));
     CHECK_EQ(WasmCompileLazyFrameConstants::kNumberOfSavedGpParamRegs,
              gp_regs.Count());
