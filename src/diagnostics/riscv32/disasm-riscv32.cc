@@ -958,10 +958,10 @@ void Decoder::DecodeRAType(Instruction* instr) {
   // Memory address lock or other synchronizaiton behaviors.
   switch (instr->InstructionBits() & kRATypeMask) {
     case RO_LR_W:
-      Format(instr, "lr.w'a 'rd, ('rs1)");
+      Format(instr, "lr.w'a    'rd, ('rs1)");
       break;
     case RO_SC_W:
-      Format(instr, "sc.w'a 'rd, 'rs2, ('rs1)");
+      Format(instr, "sc.w'a    'rd, 'rs2, ('rs1)");
       break;
     case RO_AMOSWAP_W:
       Format(instr, "amoswap.w'a 'rd, 'rs2, ('rs1)");
