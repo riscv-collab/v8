@@ -1567,7 +1567,8 @@ inline void Emit64BitShiftOperation(
   if (liftoff::IsRegInRegPair(dst, amount) || dst.overlaps(src)) {
     // Do the actual shift.
     (assm->*emit_shift)(tmp.low_gp(), tmp.high_gp(), src.low_gp(),
-                        src.high_gp(), amount, kScratchReg, kScratchReg2);
+                        src.high_gp(), amount, kScratchReg,
+                        kScratchReg2);
 
     // Place result in destination register.
     assm->TurboAssembler::Move(dst.high_gp(), tmp.high_gp());
@@ -1588,7 +1589,8 @@ void LiftoffAssembler::emit_i64_add(LiftoffRegister dst, LiftoffRegister lhs,
 
 void LiftoffAssembler::emit_i64_addi(LiftoffRegister dst, LiftoffRegister lhs,
                                      int64_t imm) {
-  LiftoffRegister imm_reg = GetUnusedRegister(kFpReg, LiftoffRegList{dst, lhs});
+  LiftoffRegister imm_reg =
+      GetUnusedRegister(kGpRegPair, LiftoffRegList{dst, lhs});
   int32_t imm_low_word = static_cast<int32_t>(imm);
   int32_t imm_high_word = static_cast<int32_t>(imm >> 32);
 
@@ -1610,22 +1612,22 @@ void LiftoffAssembler::emit_i64_sub(LiftoffRegister dst, LiftoffRegister lhs,
 
 void LiftoffAssembler::emit_i64_shl(LiftoffRegister dst, LiftoffRegister src,
                                     Register amount) {
+  ASM_CODE_COMMENT(this);
   liftoff::Emit64BitShiftOperation(this, dst, src, amount,
                                    &TurboAssembler::ShlPair);
 }
 
 void LiftoffAssembler::emit_i64_shli(LiftoffRegister dst, LiftoffRegister src,
                                      int amount) {
+  ASM_CODE_COMMENT(this);
   UseScratchRegisterScope temps(this);
+  LiftoffRegister temp = GetUnusedRegister(kGpReg, LiftoffRegList{dst, src});
+  temps.Include(temp.gp());
   // {src.low_gp()} will still be needed after writing {dst.high_gp()} and
   // {dst.low_gp()}.
   Register src_low = liftoff::EnsureNoAlias(this, src.low_gp(), dst, &temps);
-  Register src_high = src.high_gp();
+  Register src_high = liftoff::EnsureNoAlias(this, src.high_gp(), dst, &temps);
   // {src.high_gp()} will still be needed after writing {dst.high_gp()}.
-  if (src_high == dst.high_gp()) {
-    mv(kScratchReg, src_high);
-    src_high = kScratchReg;
-  }
   DCHECK_NE(dst.low_gp(), kScratchReg);
   DCHECK_NE(dst.high_gp(), kScratchReg);
 
@@ -1641,14 +1643,18 @@ void LiftoffAssembler::emit_i64_sar(LiftoffRegister dst, LiftoffRegister src,
 
 void LiftoffAssembler::emit_i64_sari(LiftoffRegister dst, LiftoffRegister src,
                                      int amount) {
+  ASM_CODE_COMMENT(this);
   UseScratchRegisterScope temps(this);
-  // {src.high_gp()} will still be needed after writing {dst.high_gp()} and
+  LiftoffRegister temp = GetUnusedRegister(kGpReg, LiftoffRegList{dst, src});
+  temps.Include(temp.gp());
+  // {src.low_gp()} will still be needed after writing {dst.high_gp()} and
   // {dst.low_gp()}.
+  Register src_low = liftoff::EnsureNoAlias(this, src.low_gp(), dst, &temps);
   Register src_high = liftoff::EnsureNoAlias(this, src.high_gp(), dst, &temps);
   DCHECK_NE(dst.low_gp(), kScratchReg);
   DCHECK_NE(dst.high_gp(), kScratchReg);
 
-  TurboAssembler::SarPair(dst.low_gp(), dst.high_gp(), src.low_gp(), src_high,
+  TurboAssembler::SarPair(dst.low_gp(), dst.high_gp(), src_low, src_high,
                           amount, kScratchReg, kScratchReg2);
 }
 
@@ -1660,14 +1666,18 @@ void LiftoffAssembler::emit_i64_shr(LiftoffRegister dst, LiftoffRegister src,
 
 void LiftoffAssembler::emit_i64_shri(LiftoffRegister dst, LiftoffRegister src,
                                      int amount) {
+  ASM_CODE_COMMENT(this);
   UseScratchRegisterScope temps(this);
-  // {src.high_gp()} will still be needed after writing {dst.high_gp()} and
+  LiftoffRegister temp = GetUnusedRegister(kGpReg, LiftoffRegList{dst, src});
+  temps.Include(temp.gp());
+  // {src.low_gp()} will still be needed after writing {dst.high_gp()} and
   // {dst.low_gp()}.
+  Register src_low = liftoff::EnsureNoAlias(this, src.low_gp(), dst, &temps);
   Register src_high = liftoff::EnsureNoAlias(this, src.high_gp(), dst, &temps);
   DCHECK_NE(dst.low_gp(), kScratchReg);
   DCHECK_NE(dst.high_gp(), kScratchReg);
 
-  TurboAssembler::ShrPair(dst.low_gp(), dst.high_gp(), src.low_gp(), src_high,
+  TurboAssembler::ShrPair(dst.low_gp(), dst.high_gp(), src_low, src_high,
                           amount, kScratchReg, kScratchReg2);
 }
 
@@ -1921,10 +1931,10 @@ void LiftoffAssembler::emit_cond_jump(LiftoffCondition liftoff_cond,
                                       Register lhs, Register rhs) {
   Condition cond = liftoff::ToCondition(liftoff_cond);
   if (rhs == no_reg) {
-    DCHECK(kind == kI32 || kind == kI64);
+    DCHECK(kind == kI32);
     TurboAssembler::Branch(label, cond, lhs, Operand(zero_reg));
   } else {
-    DCHECK((kind == kI32 || kind == kI64) ||
+    DCHECK((kind == kI32) ||
            (is_reference(kind) &&
             (liftoff_cond == kEqual || liftoff_cond == kUnequal)));
     TurboAssembler::Branch(label, cond, lhs, Operand(rhs));
@@ -1983,6 +1993,7 @@ inline LiftoffCondition cond_make_unsigned(LiftoffCondition cond) {
 void LiftoffAssembler::emit_i64_set_cond(LiftoffCondition liftoff_cond,
                                          Register dst, LiftoffRegister lhs,
                                          LiftoffRegister rhs) {
+  ASM_CODE_COMMENT(this);
   Condition cond = liftoff::ToCondition(liftoff_cond);
   Label low, cont;
 
@@ -2008,8 +2019,21 @@ void LiftoffAssembler::emit_i64_set_cond(LiftoffCondition liftoff_cond,
   Branch(&cont);
 
   bind(&low);
-  Branch(&cont, unsigned_cond, lhs.low_gp(), Operand(rhs.low_gp()));
-  mv(tmp, zero_reg);
+  if (unsigned_cond == cond) {
+    Branch(&cont, cond, lhs.low_gp(), Operand(rhs.low_gp()));
+    mv(tmp, zero_reg);
+  } else {
+    Label lt_zero;
+    Branch(&lt_zero, lt, lhs.high_gp(), Operand(zero_reg));
+    Branch(&cont, unsigned_cond, lhs.low_gp(), Operand(rhs.low_gp()));
+    mv(tmp, zero_reg);
+    Branch(&cont);
+    bind(&lt_zero);
+    Branch(&cont, NegateCondition(unsigned_cond), lhs.low_gp(),
+           Operand(rhs.low_gp()));
+    mv(tmp, zero_reg);
+    Branch(&cont);
+  }
   bind(&cont);
   // Move result to dst register if needed.
   TurboAssembler::Move(dst, tmp);
