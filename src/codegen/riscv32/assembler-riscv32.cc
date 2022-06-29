@@ -1592,11 +1592,6 @@ void Assembler::sw(Register source, Register base, int16_t imm12) {
 // Arithmetic with immediate
 
 void Assembler::addi(Register rd, Register rs1, int16_t imm12) {
-  if (rd == s3 && rs1 == t1 && imm12 == 0 &&
-      FLAG_riscv_trap_to_simulator_debugger) {
-    std::cout << "mv        s3, t1" << std::endl;
-    UNREACHABLE();
-  }
   GenInstrALU_ri(0b000, rd, rs1, imm12);
 }
 

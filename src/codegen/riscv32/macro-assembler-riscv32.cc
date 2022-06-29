@@ -1559,6 +1559,7 @@ void TurboAssembler::ShlPair(Register dst_low, Register dst_high,
                              Register src_low, Register src_high,
                              Register shift, Register scratch1,
                              Register scratch2) {
+  ASM_CODE_COMMENT(this);
   BlockTrampolinePoolScope block_trampoline_pool(this);
   Label done;
   UseScratchRegisterScope temps(this);

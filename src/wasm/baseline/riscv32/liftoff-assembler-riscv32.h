@@ -1562,12 +1562,14 @@ inline void Emit64BitShiftOperation(
   // That way we prevent overwriting some input registers while shifting.
   // Do this before any branch so that the cache state will be correct for
   // all conditions.
-  LiftoffRegister tmp = assm->GetUnusedRegister(kGpRegPair, pinned);
-
+  Register amount_capped =
+      pinned.set(assm->GetUnusedRegister(kGpReg, pinned).gp());
+  assm->And(amount_capped, amount, Operand(63));
   if (liftoff::IsRegInRegPair(dst, amount) || dst.overlaps(src)) {
     // Do the actual shift.
+    LiftoffRegister tmp = assm->GetUnusedRegister(kGpRegPair, pinned);
     (assm->*emit_shift)(tmp.low_gp(), tmp.high_gp(), src.low_gp(),
-                        src.high_gp(), amount, kScratchReg,
+                        src.high_gp(), amount_capped, kScratchReg,
                         kScratchReg2);
 
     // Place result in destination register.
@@ -1575,7 +1577,8 @@ inline void Emit64BitShiftOperation(
     assm->TurboAssembler::Move(dst.low_gp(), tmp.low_gp());
   } else {
     (assm->*emit_shift)(dst.low_gp(), dst.high_gp(), src.low_gp(),
-                        src.high_gp(), amount, kScratchReg, kScratchReg2);
+                        src.high_gp(), amount_capped, kScratchReg,
+                        kScratchReg2);
   }
 }
 }  // namespace liftoff
@@ -2029,8 +2032,8 @@ void LiftoffAssembler::emit_i64_set_cond(LiftoffCondition liftoff_cond,
     mv(tmp, zero_reg);
     Branch(&cont);
     bind(&lt_zero);
-    Branch(&cont, NegateCondition(unsigned_cond), lhs.low_gp(),
-           Operand(rhs.low_gp()));
+    Branch(&cont, unsigned_cond, rhs.low_gp(),
+           Operand(lhs.low_gp()));
     mv(tmp, zero_reg);
     Branch(&cont);
   }

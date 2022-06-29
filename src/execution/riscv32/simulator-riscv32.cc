@@ -1893,6 +1893,9 @@ void RiscvDebugger::Debug() {
         PrintF("relinquishing control to gdb\n");
         v8::base::OS::DebugBreak();
         PrintF("regaining control from gdb\n");
+      } else if (strcmp(cmd, "trace") == 0) {
+        PrintF("enable traxe sim\n");
+        FLAG_trace_sim = true;
       } else if (strcmp(cmd, "break") == 0 || strcmp(cmd, "b") == 0 ||
                  strcmp(cmd, "tbreak") == 0) {
         bool is_tbreak = strcmp(cmd, "tbreak") == 0;
