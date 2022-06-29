@@ -569,7 +569,7 @@ void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
       Lbu(dst.gp(), src_op);
       break;
     case LoadType::kI64Load8U:
-      Lbu(dst.gp(), src_op);
+      Lbu(dst.low_gp(), src_op);
       TurboAssembler::mv(dst.high_gp(), zero_reg);
       break;
     case LoadType::kI32Load8S:
@@ -669,16 +669,22 @@ void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
 
   switch (type.value()) {
     case StoreType::kI32Store8:
-    case StoreType::kI64Store8:
       Sb(src.gp(), dst_op);
       break;
+    case StoreType::kI64Store8:
+      Sb(src.low_gp(), dst_op);
+      break;
     case StoreType::kI32Store16:
-    case StoreType::kI64Store16:
       TurboAssembler::Sh(src.gp(), dst_op);
       break;
+    case StoreType::kI64Store16:
+      TurboAssembler::Sh(src.low_gp(), dst_op);
+      break;
     case StoreType::kI32Store:
-    case StoreType::kI64Store32:
       TurboAssembler::Sw(src.gp(), dst_op);
+      break;
+    case StoreType::kI64Store32:
+      TurboAssembler::Sw(src.low_gp(), dst_op);
       break;
     case StoreType::kI64Store: {
       MemOperand dst_op_lower(dst_op.rm(),
