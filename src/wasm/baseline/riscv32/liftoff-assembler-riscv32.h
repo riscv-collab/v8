@@ -641,22 +641,10 @@ void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
                              uintptr_t offset_imm, LiftoffRegister src,
                              StoreType type, LiftoffRegList pinned,
                              uint32_t* protected_store_pc, bool is_store_mem) {
-  // Register dst = no_reg;
-  // MemOperand dst_op = MemOperand(dst_addr, offset_imm);
-  // if (offset_reg != no_reg) {
-  //   if (is_store_mem) {
-  //     pinned.set(src);
-  //   }
-  //   dst = GetUnusedRegister(kGpReg, pinned).gp();
-  //   emit_ptrsize_add(dst, dst_addr, offset_reg);
-  //   dst_op = MemOperand(dst, offset_imm);
-  // }
-
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
   MemOperand dst_op =
       liftoff::GetMemOp(this, dst_addr, offset_reg, offset_imm, scratch);
-
 
 #if defined(V8_TARGET_BIG_ENDIAN)
   if (is_store_mem) {
@@ -1867,9 +1855,9 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
       return true;
     case kExprF64ReinterpretI64:
       Sub(sp, sp, kDoubleSize);
-      Sw(dst.low_gp(), MemOperand(sp, 0));
-      Sw(dst.high_gp(), MemOperand(sp, 4));
-      LoadDouble(src.fp(), MemOperand(sp, 0));
+      Sw(src.low_gp(), MemOperand(sp, 0));
+      Sw(src.high_gp(), MemOperand(sp, 4));
+      LoadDouble(dst.fp(), MemOperand(sp, 0));
       Add(sp, sp, kDoubleSize);
       return true;
     case kExprI32SConvertSatF32: {
