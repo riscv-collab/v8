@@ -641,16 +641,22 @@ void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
                              uintptr_t offset_imm, LiftoffRegister src,
                              StoreType type, LiftoffRegList pinned,
                              uint32_t* protected_store_pc, bool is_store_mem) {
-  Register dst = no_reg;
-  MemOperand dst_op = MemOperand(dst_addr, offset_imm);
-  if (offset_reg != no_reg) {
-    if (is_store_mem) {
-      pinned.set(src);
-    }
-    dst = GetUnusedRegister(kGpReg, pinned).gp();
-    emit_ptrsize_add(dst, dst_addr, offset_reg);
-    dst_op = MemOperand(dst, offset_imm);
-  }
+  // Register dst = no_reg;
+  // MemOperand dst_op = MemOperand(dst_addr, offset_imm);
+  // if (offset_reg != no_reg) {
+  //   if (is_store_mem) {
+  //     pinned.set(src);
+  //   }
+  //   dst = GetUnusedRegister(kGpReg, pinned).gp();
+  //   emit_ptrsize_add(dst, dst_addr, offset_reg);
+  //   dst_op = MemOperand(dst, offset_imm);
+  // }
+
+  UseScratchRegisterScope temps(this);
+  Register scratch = temps.Acquire();
+  MemOperand dst_op =
+      liftoff::GetMemOp(this, dst_addr, offset_reg, offset_imm, scratch);
+
 
 #if defined(V8_TARGET_BIG_ENDIAN)
   if (is_store_mem) {
@@ -687,12 +693,10 @@ void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
       TurboAssembler::Sw(src.low_gp(), dst_op);
       break;
     case StoreType::kI64Store: {
-      MemOperand dst_op_lower(dst_op.rm(),
-                              offset_imm + liftoff::kLowWordOffset);
-      MemOperand dst_op_upper(dst_op.rm(),
-                              offset_imm + liftoff::kHighWordOffset);
-      TurboAssembler::Sw(src.low_gp(), dst_op_lower);
-      TurboAssembler::Sw(src.high_gp(), dst_op_upper);
+      TurboAssembler::Sw(src.low_gp(), dst_op);
+      dst_op = liftoff::GetMemOp(this, dst_addr, offset_reg,
+                                 offset_imm + kSystemPointerSize, scratch);
+      TurboAssembler::Sw(src.high_gp(), dst_op);
       break;
     }
     case StoreType::kF32Store:
