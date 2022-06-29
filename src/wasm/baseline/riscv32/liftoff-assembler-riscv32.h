@@ -605,12 +605,10 @@ void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
       TurboAssembler::Lw(dst.gp(), src_op);
       break;
     case LoadType::kI64Load: {
-      MemOperand src_op_low = liftoff::GetMemOp(
-          this, src_addr, offset_reg, +liftoff::kLowWordOffset, scratch);
-      MemOperand src_op_upper = liftoff::GetMemOp(
-          this, src_addr, offset_reg, +liftoff::kHighWordOffset, scratch);
-      Lw(dst.low_gp(), src_op_low);
-      Lw(dst.high_gp(), src_op_upper);
+      Lw(dst.low_gp(), src_op);
+      src_op = liftoff::GetMemOp(this, src_addr, offset_reg,
+                                 offset_imm + kSystemPointerSize, scratch);
+      Lw(dst.high_gp(), src_op);
     } break;
     case LoadType::kF32Load:
       TurboAssembler::LoadFloat(dst.fp(), src_op);
