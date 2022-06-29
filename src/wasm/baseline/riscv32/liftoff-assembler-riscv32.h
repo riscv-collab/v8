@@ -1339,6 +1339,7 @@ void LiftoffAssembler::FillStackSlotsWithZero(int start, int size) {
     uint32_t remainder = size;
     for (; remainder >= kStackSlotSize; remainder -= kStackSlotSize) {
       Sw(zero_reg, liftoff::GetStackSlot(start + remainder));
+      Sw(zero_reg, liftoff::GetStackSlot(start + remainder - 4));
     }
     DCHECK(remainder == 4 || remainder == 0);
     if (remainder) {
@@ -2032,8 +2033,7 @@ void LiftoffAssembler::emit_i64_set_cond(LiftoffCondition liftoff_cond,
     mv(tmp, zero_reg);
     Branch(&cont);
     bind(&lt_zero);
-    Branch(&cont, unsigned_cond, rhs.low_gp(),
-           Operand(lhs.low_gp()));
+    Branch(&cont, unsigned_cond, rhs.low_gp(), Operand(lhs.low_gp()));
     mv(tmp, zero_reg);
     Branch(&cont);
   }
