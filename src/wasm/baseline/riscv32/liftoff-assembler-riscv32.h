@@ -2088,6 +2088,15 @@ void LiftoffAssembler::emit_smi_check(Register obj, Label* target,
   Branch(target, condition, scratch, Operand(zero_reg));
 }
 
+void LiftoffAssembler::IncrementSmi(LiftoffRegister dst, int offset) {
+  UseScratchRegisterScope temps(this);
+  Register scratch = temps.Acquire();
+  SmiUntag(scratch, MemOperand(dst.gp(), offset));
+  Add(scratch, scratch, Operand(1));
+  SmiTag(scratch);
+  Sw(scratch, MemOperand(dst.gp(), offset));
+}
+
 void LiftoffAssembler::LoadTransform(LiftoffRegister dst, Register src_addr,
                                      Register offset_reg, uintptr_t offset_imm,
                                      LoadType type,
@@ -2823,8 +2832,8 @@ void LiftoffAssembler::emit_s128_and_not(LiftoffRegister dst,
                                          LiftoffRegister lhs,
                                          LiftoffRegister rhs) {
   VU.set(kScratchReg, E8, m1);
-  vnot_vv(dst.fp().toV(), rhs.fp().toV());
-  vand_vv(dst.fp().toV(), lhs.fp().toV(), dst.fp().toV());
+  vnot_vv(kSimd128ScratchReg, rhs.fp().toV());
+  vand_vv(dst.fp().toV(), lhs.fp().toV(), kSimd128ScratchReg);
 }
 
 void LiftoffAssembler::emit_s128_select(LiftoffRegister dst,
