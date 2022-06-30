@@ -4683,6 +4683,7 @@ void Simulator::DecodeRVIType() {
       if (!DecodeRvvVL()) {
         UNSUPPORTED();
       }
+      break;
 #endif
       UNSUPPORTED();
     }
@@ -4720,6 +4721,7 @@ void Simulator::DecodeRVSType() {
       if (!DecodeRvvVS()) {
         UNSUPPORTED();
       }
+      break;
 #else
       UNSUPPORTED();
 #endif

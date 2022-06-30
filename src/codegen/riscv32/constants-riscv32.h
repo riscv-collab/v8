@@ -1201,7 +1201,7 @@ enum FFlagsMask {
   kInexact = 0b1                // NX:  Inexact
 };
 
-enum RoundingMode {
+enum FPURoundingMode {
   RNE = 0b000,  // Round to Nearest, ties to Even
   RTZ = 0b001,  // Round towards Zero
   RDN = 0b010,  // Round Down (towards -infinity)
