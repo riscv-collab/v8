@@ -350,6 +350,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvS128Load64ExtendU:
     case kRiscvS128Load64ExtendS:
     case kRiscvS128LoadLane:
+    case kRiscvWord32AtomicPairLoad:
       return kIsLoadOperation;
 
     case kRiscvModD:
@@ -368,8 +369,14 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kRiscvUsw:
     case kRiscvUStoreFloat:
     case kRiscvSync:
-    case kRiscvWord32AtomicPairLoad:
     case kRiscvWord32AtomicPairStore:
+    case kRiscvWord32AtomicPairAdd:
+    case kRiscvWord32AtomicPairSub:
+    case kRiscvWord32AtomicPairAnd:
+    case kRiscvWord32AtomicPairOr:
+    case kRiscvWord32AtomicPairXor:
+    case kRiscvWord32AtomicPairExchange:
+    case kRiscvWord32AtomicPairCompareExchange:
     case kRiscvS128StoreLane:
       return kHasSideEffect;
 

@@ -364,7 +364,14 @@ namespace compiler {
   V(RiscvVrgather)                 \
   V(RiscvVslidedown)               \
   V(RiscvWord32AtomicPairLoad)     \
-  V(RiscvWord32AtomicPairStore)
+  V(RiscvWord32AtomicPairStore)    \
+  V(RiscvWord32AtomicPairAdd)       \
+  V(RiscvWord32AtomicPairSub)       \
+  V(RiscvWord32AtomicPairAnd)       \
+  V(RiscvWord32AtomicPairOr)        \
+  V(RiscvWord32AtomicPairXor)       \
+  V(RiscvWord32AtomicPairExchange)  \
+  V(RiscvWord32AtomicPairCompareExchange)
 
 // Addressing modes represent the "shape" of inputs to an instruction.
 // Many instructions support multiple addressing modes. Addressing modes

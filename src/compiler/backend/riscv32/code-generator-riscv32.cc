@@ -319,6 +319,26 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool* predicate,
     __ sync();                                                                 \
   } while (0)
 
+#define ASSEMBLE_ATOMIC64_LOGIC_BINOP(bin_instr, external) \
+  do {                                                     \
+    FrameScope scope(tasm(), StackFrame::MANUAL);          \
+    __ Add(a0, i.InputRegister(0), i.InputRegister(1));   \
+    __ PushCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);   \
+    __ PrepareCallCFunction(3, 0, kScratchReg);            \
+    __ CallCFunction(ExternalReference::external(), 3, 0); \
+    __ PopCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);    \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC64_ARITH_BINOP(bin_instr, external) \
+  do {                                                     \
+    FrameScope scope(tasm(), StackFrame::MANUAL);          \
+    __ Add(a0, i.InputRegister(0), i.InputRegister(1));   \
+    __ PushCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);   \
+    __ PrepareCallCFunction(3, 0, kScratchReg);            \
+    __ CallCFunction(ExternalReference::external(), 3, 0); \
+    __ PopCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);    \
+  } while (0)
+
 #define ASSEMBLE_ATOMIC_BINOP_EXT(load_linked, store_conditional, sign_extend, \
                                   size, bin_instr, representation)             \
   do {                                                                         \
@@ -1675,8 +1695,42 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ PopCallerSaved(SaveFPRegsMode::kIgnore);
       break;
     }
+#define ATOMIC64_BINOP_ARITH_CASE(op, instr, external) \
+  case kRiscvWord32AtomicPair##op:                      \
+    ASSEMBLE_ATOMIC64_ARITH_BINOP(instr, external);    \
+    break;
+      ATOMIC64_BINOP_ARITH_CASE(Add, AddPair, atomic_pair_add_function)
+      ATOMIC64_BINOP_ARITH_CASE(Sub, SubPair, atomic_pair_sub_function)
+#undef ATOMIC64_BINOP_ARITH_CASE
+#define ATOMIC64_BINOP_LOGIC_CASE(op, instr, external) \
+  case kRiscvWord32AtomicPair##op:                      \
+    ASSEMBLE_ATOMIC64_LOGIC_BINOP(instr, external);    \
+    break;
+      ATOMIC64_BINOP_LOGIC_CASE(And, AndPair, atomic_pair_and_function)
+      ATOMIC64_BINOP_LOGIC_CASE(Or, OrPair, atomic_pair_or_function)
+      ATOMIC64_BINOP_LOGIC_CASE(Xor, XorPair, atomic_pair_xor_function)
+    case kRiscvWord32AtomicPairExchange: {
+        FrameScope scope(tasm(), StackFrame::MANUAL);
+        __ PushCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);
+        __ PrepareCallCFunction(3, 0, kScratchReg);
+        __ Add(a0, i.InputRegister(0), i.InputRegister(1));
+        __ CallCFunction(ExternalReference::atomic_pair_exchange_function(), 3,
+                         0);
+        __ PopCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);
+      break;
+    }
+    case kRiscvWord32AtomicPairCompareExchange: {
+        FrameScope scope(tasm(), StackFrame::MANUAL);
+        __ PushCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);
+        __ PrepareCallCFunction(5, 0, kScratchReg);
+        __ add(a0, i.InputRegister(0), i.InputRegister(1));
+        __ Sw(i.InputRegister(5), MemOperand(sp, 16));
+        __ CallCFunction(
+            ExternalReference::atomic_pair_compare_exchange_function(), 5, 0);
+        __ PopCallerSaved(SaveFPRegsMode::kIgnore, a0, a1);
+      break;
+    }
     case kAtomicExchangeInt8:
-
       ASSEMBLE_ATOMIC_EXCHANGE_INTEGER_EXT(Ll, Sc, true, 8, 32);
       break;
     case kAtomicExchangeUint8:

@@ -2482,41 +2482,92 @@ void InstructionSelector::VisitWord32AtomicPairStore(Node* node) {
        nullptr, arraysize(inputs), inputs, arraysize(temps), temps);
 }
 
-// RV32Gtodo to be implemented
+static void VisitPairAtomicBinop(InstructionSelector* selector, Node* node,
+                                 ArchOpcode opcode) {
+  RiscvOperandGenerator g(selector);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  Node* value = node->InputAt(2);
+  Node* value_high = node->InputAt(3);
+  AddressingMode addressing_mode = kMode_None;
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
+  InstructionOperand inputs[] = {g.UseRegister(base), g.UseRegister(index),
+                                 g.UseFixed(value, a1),
+                                 g.UseFixed(value_high, a2)};
+  InstructionOperand outputs[2];
+  size_t output_count = 0;
+  InstructionOperand temps[3];
+  size_t temp_count = 0;
+  temps[temp_count++] = g.TempRegister(t0);
+
+  Node* projection0 = NodeProperties::FindProjection(node, 0);
+  Node* projection1 = NodeProperties::FindProjection(node, 1);
+  if (projection0) {
+    outputs[output_count++] = g.DefineAsFixed(projection0, a0);
+  } else {
+    temps[temp_count++] = g.TempRegister(a0);
+  }
+  if (projection1) {
+    outputs[output_count++] = g.DefineAsFixed(projection1, a1);
+  } else {
+    temps[temp_count++] = g.TempRegister(a1);
+  }
+  selector->Emit(code, output_count, outputs, arraysize(inputs), inputs,
+                 temp_count, temps);
+}
+
 void InstructionSelector::VisitWord32AtomicPairAdd(Node* node) {
-  UNIMPLEMENTED();
+  VisitPairAtomicBinop(this, node,kRiscvWord32AtomicPairAdd);
 }
 
-// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairSub(Node* node) {
-  UNIMPLEMENTED();
+  VisitPairAtomicBinop(this, node,kRiscvWord32AtomicPairSub);
 }
 
-// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairAnd(Node* node) {
-  UNIMPLEMENTED();
+  VisitPairAtomicBinop(this, node,kRiscvWord32AtomicPairAnd);
 }
 
-// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairOr(Node* node) {
-  UNIMPLEMENTED();
+  VisitPairAtomicBinop(this, node,kRiscvWord32AtomicPairOr);
 }
 
-// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairXor(Node* node) {
-  UNIMPLEMENTED();
+  VisitPairAtomicBinop(this, node,kRiscvWord32AtomicPairXor);
 }
 
-// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairExchange(Node* node) {
-  UNIMPLEMENTED();
+  VisitPairAtomicBinop(this, node,kRiscvWord32AtomicPairExchange);
 }
-
-// RV32Gtodo to be implemented
 void InstructionSelector::VisitWord32AtomicPairCompareExchange(Node* node) {
-  UNIMPLEMENTED();
-}
+  RiscvOperandGenerator g(this);
+  InstructionOperand inputs[] = {
+      g.UseRegister(node->InputAt(0)),  g.UseRegister(node->InputAt(1)),
+      g.UseFixed(node->InputAt(2), a1), g.UseFixed(node->InputAt(3), a2),
+      g.UseFixed(node->InputAt(4), a3), g.UseUniqueRegister(node->InputAt(5))};
 
+  InstructionCode code = kRiscvWord32AtomicPairCompareExchange |
+                         AddressingModeField::encode(kMode_MRI);
+  Node* projection0 = NodeProperties::FindProjection(node, 0);
+  Node* projection1 = NodeProperties::FindProjection(node, 1);
+  InstructionOperand outputs[2];
+  size_t output_count = 0;
+  InstructionOperand temps[3];
+  size_t temp_count = 0;
+  temps[temp_count++] = g.TempRegister(t0);
+  if (projection0) {
+    outputs[output_count++] = g.DefineAsFixed(projection0, a0);
+  } else {
+    temps[temp_count++] = g.TempRegister(a0);
+  }
+  if (projection1) {
+    outputs[output_count++] = g.DefineAsFixed(projection1, a1);
+  } else {
+    temps[temp_count++] = g.TempRegister(a1);
+  }
+  Emit(code, output_count, outputs, arraysize(inputs), inputs, temp_count,
+       temps);
+}
 void InstructionSelector::AddOutputToSelectContinuation(OperandGenerator* g,
                                                         int first_input_index,
                                                         Node* node) {
