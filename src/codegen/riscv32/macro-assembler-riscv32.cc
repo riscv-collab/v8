@@ -142,7 +142,6 @@ int MacroAssembler::SafepointRegisterStackIndex(int reg_code) {
 void MacroAssembler::RecordWriteField(Register object, int offset,
                                       Register value, RAStatus ra_status,
                                       SaveFPRegsMode save_fp,
-                                      RememberedSetAction remembered_set_action,
                                       SmiCheck smi_check) {
   DCHECK(!AreAliased(object, value));
   // First, check if a write barrier is even needed. The tests below
@@ -211,7 +210,7 @@ void TurboAssembler::CallEphemeronKeyBarrier(Register object,
 
 void TurboAssembler::CallRecordWriteStubSaveRegisters(
     Register object, Register slot_address,
-    RememberedSetAction remembered_set_action, SaveFPRegsMode fp_mode,
+     SaveFPRegsMode fp_mode,
     StubCallMode mode) {
   DCHECK(!AreAliased(object, slot_address));
   RegList registers =
@@ -228,25 +227,24 @@ void TurboAssembler::CallRecordWriteStubSaveRegisters(
   Pop(object_parameter);
 
   CallRecordWriteStub(object_parameter, slot_address_parameter,
-                      remembered_set_action, fp_mode, mode);
+                      fp_mode, mode);
 
   MaybeRestoreRegisters(registers);
 }
 
 void TurboAssembler::CallRecordWriteStub(
     Register object, Register slot_address,
-    RememberedSetAction remembered_set_action, SaveFPRegsMode fp_mode,
+    SaveFPRegsMode fp_mode,
     StubCallMode mode) {
   // Use CallRecordWriteStubSaveRegisters if the object and slot registers
   // need to be caller saved.
   DCHECK_EQ(WriteBarrierDescriptor::ObjectRegister(), object);
   DCHECK_EQ(WriteBarrierDescriptor::SlotAddressRegister(), slot_address);
   if (mode == StubCallMode::kCallWasmRuntimeStub) {
-    auto wasm_target =
-        wasm::WasmCode::GetRecordWriteStub(remembered_set_action, fp_mode);
+    auto wasm_target = wasm::WasmCode::GetRecordWriteStub(fp_mode);
     Call(wasm_target, RelocInfo::WASM_STUB_CALL);
   } else {
-    auto builtin = Builtins::GetRecordWriteStub(remembered_set_action, fp_mode);
+    auto builtin = Builtins::GetRecordWriteStub(fp_mode);
     if (options().inline_offheap_trampolines) {
       // Inline the trampoline. //qj
       RecordCommentForOffHeapTrampoline(builtin);
@@ -270,7 +268,6 @@ void TurboAssembler::CallRecordWriteStub(
 void MacroAssembler::RecordWrite(Register object, Operand offset,
                                  Register value, RAStatus ra_status,
                                  SaveFPRegsMode fp_mode,
-                                 RememberedSetAction remembered_set_action,
                                  SmiCheck smi_check) {
   DCHECK(!AreAliased(object, value));
 
@@ -284,9 +281,7 @@ void MacroAssembler::RecordWrite(Register object, Operand offset,
            Operand(value));
   }
 
-  if ((remembered_set_action == RememberedSetAction::kOmit &&
-       !FLAG_incremental_marking) ||
-      FLAG_disable_write_barriers) {
+  if ( FLAG_disable_write_barriers) {
     return;
   }
 
@@ -325,7 +320,7 @@ void MacroAssembler::RecordWrite(Register object, Operand offset,
   // TODO(cbruni): Turn offset into int.
   DCHECK(offset.IsImmediate());
   Add(slot_address, object, offset);
-  CallRecordWriteStub(object, slot_address, remembered_set_action, fp_mode);
+  CallRecordWriteStub(object, slot_address, fp_mode);
   if (ra_status == kRAHasNotBeenSaved) {
     pop(ra);
   }
@@ -1898,7 +1893,7 @@ void TurboAssembler::Floor_w_d(Register rd, FPURegister fs, Register result) {
 // round out-of-range values to the nearest max or min value), therefore special
 // handling is needed by NaN, +/-Infinity, +/-0
 void TurboAssembler::RoundFloat(FPURegister dst, FPURegister src,
-                                FPURegister fpu_scratch, RoundingMode frm) {
+                                FPURegister fpu_scratch, FPURoundingMode frm) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
   UseScratchRegisterScope temps(this);
   Register scratch2 = temps.Acquire();
@@ -1991,7 +1986,7 @@ void TurboAssembler::RoundFloat(FPURegister dst, FPURegister src,
 // handling is needed by NaN, +/-Infinity, +/-0
 template <typename F>
 void TurboAssembler::RoundHelper(VRegister dst, VRegister src, Register scratch,
-                                 VRegister v_scratch, RoundingMode frm) {
+                                 VRegister v_scratch, FPURoundingMode frm) {
   VU.set(scratch, std::is_same<F, float>::value ? E32 : E64, m1);
   // if src is NaN/+-Infinity/+-Zero or if the exponent is larger than # of bits
   // in mantissa, the result is the same as src, so move src to dest  (to avoid
@@ -3017,8 +3012,7 @@ void TurboAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
              target_is_isolate_independent_builtin) {
     // Inline the trampoline.
     RecordCommentForOffHeapTrampoline(builtin);
-    li(t6, Operand(BuiltinEntry(builtin), RelocInfo::OFF_HEAP_TARGET));
-    Jump(t6, cond, rs, rt);
+    Jump(BuiltinEntry(builtin), cond, rs, rt);
     RecordComment("]");
     return;
   }
@@ -3097,8 +3091,7 @@ void TurboAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
              target_is_isolate_independent_builtin) {
     // Inline the trampoline.
     RecordCommentForOffHeapTrampoline(builtin);
-    li(t6, Operand(BuiltinEntry(builtin), RelocInfo::OFF_HEAP_TARGET));
-    Call(t6, cond, rs, rt);
+    Call(BuiltinEntry(builtin), cond, rs, rt);
     RecordComment("]");
     return;
   }

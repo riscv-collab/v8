@@ -340,11 +340,11 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
 
   void CallRecordWriteStubSaveRegisters(
       Register object, Register slot_address,
-      RememberedSetAction remembered_set_action, SaveFPRegsMode fp_mode,
+      SaveFPRegsMode fp_mode,
       StubCallMode mode = StubCallMode::kCallBuiltinPointer);
   void CallRecordWriteStub(
       Register object, Register slot_address,
-      RememberedSetAction remembered_set_action, SaveFPRegsMode fp_mode,
+      SaveFPRegsMode fp_mode,
       StubCallMode mode = StubCallMode::kCallBuiltinPointer);
 
   // Push multiple registers on the stack.
@@ -957,14 +957,14 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void BranchAndLinkLong(Label* L);
 
   void RoundDouble(FPURegister dst, FPURegister src, FPURegister fpu_scratch,
-                   RoundingMode mode);
+                   FPURoundingMode mode);
 
   void RoundFloat(FPURegister dst, FPURegister src, FPURegister fpu_scratch,
-                  RoundingMode mode);
+                  FPURoundingMode mode);
 
   template <typename F>
   void RoundHelper(VRegister dst, VRegister src, Register scratch,
-                   VRegister v_scratch, RoundingMode frm);
+                   VRegister v_scratch, FPURoundingMode frm);
 
   template <typename TruncFunc>
   void RoundFloatingPointToInteger(Register rd, FPURegister fs, Register result,
@@ -1036,7 +1036,6 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
   void RecordWriteField(
       Register object, int offset, Register value, RAStatus ra_status,
       SaveFPRegsMode save_fp,
-      RememberedSetAction remembered_set_action = RememberedSetAction::kEmit,
       SmiCheck smi_check = SmiCheck::kInline);
 
   // For a given |object| notify the garbage collector that the slot |address|
@@ -1045,7 +1044,6 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
   void RecordWrite(
       Register object, Operand offset, Register value, RAStatus ra_status,
       SaveFPRegsMode save_fp,
-      RememberedSetAction remembered_set_action = RememberedSetAction::kEmit,
       SmiCheck smi_check = SmiCheck::kInline);
 
   // void Pref(int32_t hint, const MemOperand& rs);
@@ -1297,6 +1295,13 @@ void TurboAssembler::GenerateSwitchTable(Register index, size_t case_count,
     dd(GetLabelFunction(index));
   }
 }
+
+struct MoveCycleState {
+  // Whether a move in the cycle needs the scratch or double scratch register.
+  bool pending_scratch_register_use = false;
+  bool pending_double_scratch_register_use = false;
+};
+
 
 #define ACCESS_MASM(masm) masm->
 

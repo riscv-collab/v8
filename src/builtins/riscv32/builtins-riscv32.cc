@@ -833,7 +833,7 @@ static void ReplaceClosureCodeWithOptimizedCode(MacroAssembler* masm,
   __ Move(scratch1, optimized_code);  // Write barrier clobbers scratch1 below.
   __ RecordWriteField(closure, JSFunction::kCodeOffset, scratch1,
                       kRAHasNotBeenSaved, SaveFPRegsMode::kIgnore,
-                      RememberedSetAction::kOmit, SmiCheck::kOmit);
+                      SmiCheck::kOmit);
 }
 
 static void LeaveInterpreterFrame(MacroAssembler* masm, Register scratch1,
@@ -1081,7 +1081,6 @@ static void MaybeOptimizeCodeOrTailCallOptimizedCodeSlot(
 
 namespace {
 void ResetBytecodeAge(MacroAssembler* masm, Register bytecode_array) {
-  STATIC_ASSERT(BytecodeArray::kNoAgeBytecodeAge == 0);
   __ Sh(zero_reg,
         FieldMemOperand(bytecode_array, BytecodeArray::kBytecodeAgeOffset));
 }
@@ -3076,6 +3075,11 @@ void Builtins::Generate_WasmSuspend(MacroAssembler* masm) {
 }
 
 void Builtins::Generate_WasmResume(MacroAssembler* masm) {
+  // TODO(v8:12191): Implement for this platform.
+  __ Trap();
+}
+
+void Builtins::Generate_WasmReject(MacroAssembler* masm) {
   // TODO(v8:12191): Implement for this platform.
   __ Trap();
 }
