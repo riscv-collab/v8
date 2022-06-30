@@ -741,10 +741,10 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void InsertLowWordF64(FPURegister dst, Register src_low);
 
   void LoadFPRImmediate(FPURegister dst, float imm) {
-    LoadFPRImmediate(dst, bit_cast<uint32_t>(imm));
+    LoadFPRImmediate(dst, base::bit_cast<uint32_t>(imm));
   }
   void LoadFPRImmediate(FPURegister dst, double imm) {
-    LoadFPRImmediate(dst, bit_cast<uint64_t>(imm));
+    LoadFPRImmediate(dst, base::bit_cast<uint64_t>(imm));
   }
   void LoadFPRImmediate(FPURegister dst, uint32_t src);
   void LoadFPRImmediate(FPURegister dst, uint64_t src);
@@ -856,6 +856,18 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
                VRegister v_scratch);
   void Round_d(VRegister dst, VRegister src, Register scratch,
                VRegister v_scratch);
+  // -------------------------------------------------------------------------
+  // Smi utilities.
+
+  void SmiTag(Register dst, Register src) {
+    static_assert(kSmiTag == 0);
+    DCHECK(SmiValuesAre31Bits());
+    // Smi is shifted left by 1
+    slli(dst, src, kSmiShift);
+  }
+
+  void SmiTag(Register reg) { SmiTag(reg, reg); }
+
   // Jump the register contains a smi.
   void JumpIfSmi(Register value, Label* smi_label);
 
@@ -1181,18 +1193,6 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
   void StackOverflowCheck(Register num_args, Register scratch1,
                           Register scratch2, Label* stack_overflow,
                           Label* done = nullptr);
-
-  // -------------------------------------------------------------------------
-  // Smi utilities.
-
-  void SmiTag(Register dst, Register src) {
-    STATIC_ASSERT(kSmiTag == 0);
-    DCHECK(SmiValuesAre31Bits());
-    // Smi is shifted left by 1
-    slli(dst, src, kSmiShift);
-  }
-
-  void SmiTag(Register reg) { SmiTag(reg, reg); }
 
   // Left-shifted from int32 equivalent of Smi.
   void SmiScale(Register dst, Register src, int scale) {

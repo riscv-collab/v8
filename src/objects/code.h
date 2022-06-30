@@ -695,7 +695,7 @@ class Code : public HeapObject {
   // static constexpr int kHeaderPaddingSize = (COMPRESS_POINTERS_BOOL ? 12 :
   // 24); static constexpr int kHeaderPaddingSize = (COMPRESS_POINTERS_BOOL ? 8
   // : 20)；
-  static constexpr int kHeaderPaddingSize = 12;  // RV32Gtodo
+  static constexpr int kHeaderPaddingSize = 8;  // RV32Gtodo
 #else
 #error Unknown architecture.
 #endif

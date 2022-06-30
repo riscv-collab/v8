@@ -1137,7 +1137,7 @@ TEST_F(InstructionSelectorTest, ExternalReferenceLoad1) {
   const int32_t kOffsets[] = {0, 1, 4, INT32_MIN, INT32_MAX};
   TRACED_FOREACH(int64_t, offset, kOffsets) {
     StreamBuilder m(this, MachineType::Int32());
-    ExternalReference reference = bit_cast<ExternalReference>(
+    ExternalReference reference = base::bit_cast<ExternalReference>(
         (int32_t)(isolate()->isolate_root() + offset));
     Node* const value =
         m.Load(MachineType::Int32(), m.ExternalConstant(reference));

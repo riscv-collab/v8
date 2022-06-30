@@ -356,8 +356,8 @@ void BaselineAssembler::LoadWord16FieldZeroExtend(Register output,
                                                   Register source, int offset) {
   __ Lhu(output, FieldMemOperand(source, offset));
 }
-void BaselineAssembler::LoadByteField(Register output, Register source,
-                                      int offset) {
+void BaselineAssembler::LoadWord8Field(Register output, Register source,
+                                       int offset) {
   __ Lb(output, FieldMemOperand(source, offset));
 }
 void BaselineAssembler::StoreTaggedSignedField(Register target, int offset,

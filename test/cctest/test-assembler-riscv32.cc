@@ -1037,7 +1037,7 @@ TEST(NAN_BOX) {
   {
     auto fn = [](MacroAssembler& assm) { __ fmv_x_w(a0, fa0); };
     auto res = GenAndRunTest<uint32_t>(1234.56f, fn);
-    CHECK_EQ((uint32_t)bit_cast<uint32_t>(1234.56f), res);
+    CHECK_EQ((uint32_t)base::bit_cast<uint32_t>(1234.56f), res);
   }
 
   // Test FLW and FSW
@@ -1065,8 +1065,8 @@ TEST(NAN_BOX) {
   t.res = 0;
   f.Call(&t, 0, 0, 0, 0);
 
-  CHECK_EQ(0xFFFFFFFF00000000 | bit_cast<int32_t>(t.a), t.box);
-  CHECK_EQ((uint64_t)bit_cast<uint32_t>(t.a), t.res);
+  CHECK_EQ(0xFFFFFFFF00000000 | base::bit_cast<int32_t>(t.a), t.box);
+  CHECK_EQ((uint64_t)base::bit_cast<uint32_t>(t.a), t.res);
 }
 
 TEST(RVC_CI) {

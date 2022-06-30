@@ -34,7 +34,7 @@ class RiscvOperandGenerator final : public OperandGenerator {
   InstructionOperand UseRegisterOrImmediateZero(Node* node) {
     if ((IsIntegerConstant(node) && (GetIntegerConstantValue(node) == 0)) ||
         (IsFloatConstant(node) &&
-         (bit_cast<int64_t>(GetFloatConstantValue(node)) == 0))) {
+         (base::bit_cast<int64_t>(GetFloatConstantValue(node)) == 0))) {
       return UseImmediate(node);
     }
     return UseRegister(node);
@@ -441,7 +441,7 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kMapWord:  // Fall through.
     case MachineRepresentation::kWord64:
     case MachineRepresentation::kNone:
-
+    case MachineRepresentation::kSimd256:      // Fall through.
       UNREACHABLE();
   }
 
@@ -511,6 +511,7 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kMapWord:  // Fall through.
       case MachineRepresentation::kNone:
       case MachineRepresentation::kWord64:
+      case MachineRepresentation::kSimd256:           // Fall through.
         UNREACHABLE();
     }
 
@@ -1007,6 +1008,11 @@ void InstructionSelector::VisitFloat64Ieee754Unop(Node* node,
       ->MarkAsCall();
 }
 
+void InstructionSelector::EmitMoveParamToFPR(Node* node, int index) {}
+
+void InstructionSelector::EmitMoveFPRToParam(InstructionOperand* op,
+                                             LinkageLocation location) {}
+
 void InstructionSelector::EmitPrepareArguments(
     ZoneVector<PushParameter>* arguments, const CallDescriptor* call_descriptor,
     Node* node) {
@@ -1095,6 +1101,7 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) {
     case MachineRepresentation::kSimd128:
       opcode = kRiscvRvvLd;
       break;
+    case MachineRepresentation::kSimd256:            // Fall through.
     case MachineRepresentation::kBit:                // Fall through.
     case MachineRepresentation::kCompressedPointer:  // Fall through.
     case MachineRepresentation::kCompressed:         // Fall through.
@@ -1148,6 +1155,7 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
     case MachineRepresentation::kSimd128:
       opcode = kRiscvRvvSt;
       break;
+    case MachineRepresentation::kSimd256:            // Fall through.
     case MachineRepresentation::kBit:                // Fall through.
     case MachineRepresentation::kCompressedPointer:  // Fall through.
     case MachineRepresentation::kCompressed:         // Fall through.
@@ -1858,8 +1866,6 @@ void InstructionSelector::VisitInt64AbsWithOverflow(Node* node) {
   V(F32x4Abs, kRiscvF32x4Abs)                                   \
   V(F32x4Neg, kRiscvF32x4Neg)                                   \
   V(F32x4Sqrt, kRiscvF32x4Sqrt)                                 \
-  V(F32x4RecipApprox, kRiscvF32x4RecipApprox)                   \
-  V(F32x4RecipSqrtApprox, kRiscvF32x4RecipSqrtApprox)           \
   V(F32x4DemoteF64x2Zero, kRiscvF32x4DemoteF64x2Zero)           \
   V(F32x4Ceil, kRiscvF32x4Ceil)                                 \
   V(F32x4Floor, kRiscvF32x4Floor)                               \
