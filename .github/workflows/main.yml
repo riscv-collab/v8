@@ -1,0 +1,155 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the rv32-dev branch
+  push:
+    branches: [ RV32G ]
+  pull_request:
+    branches: [ RV32G ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    # The type of runner that the job will run on
+    runs-on: self-hosted
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: "Check depot_tools existence"
+        id: check_depot_tools
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "depot_tools"
+
+      - name: git clone depot_tools
+        if: steps.check_depot_tools.outputs.files_exists == 'false'
+        run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+      - name: "Check v8 existence"
+        id: check_v8
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "v8"
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: fetch v8
+        if: steps.check_v8.outputs.files_exists == 'false'
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools fetch v8
+
+      - name: sync v8
+        if: steps.check_v8.outputs.files_exists == 'true'
+        working-directory: ./v8
+        run: git fetch origin && PATH=$PATH:$GITHUB_WORKSPACE/depot_tools gclient sync
+
+      - working-directory: ./v8
+        if: steps.check_v8.outputs.files_exists == 'false'
+        run: git remote add riscv https://github.com/riscv-collab/v8.git
+      
+      - working-directory: ./v8
+        if: steps.check_v8.outputs.files_exists == 'true'
+        run: git fetch riscv && git checkout riscv/RV32G && git branch -D LocalCI
+      
+      - working-directory: ./v8
+        run: git fetch riscv $GITHUB_SHA:LocalCI
+ 
+      - working-directory: ./v8
+        run: git checkout LocalCI
+
+      - working-directory: ./v8
+        run: echo $GITHUB_REF && echo $GITHUB_SHA &&  git log -10
+
+      - name: clean
+        working-directory: ./v8
+        run: rm -rf ./out/*
+
+      - name: build riscv64
+        working-directory: ./v8
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv64.debug all
+
+      - name: build riscv32 debug
+        working-directory: ./v8
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv32.debug all
+
+      - name: run test
+        working-directory: ./v8
+        run: ./out/riscv32.debug/d8 ./temp-test/*.js --allow-natives-syntax
+
+      - name: run uittest
+        working-directory: ./v8
+        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ unittests -j16
+
+      - name: run cctest
+        working-directory: ./v8
+        continue-on-error: true
+        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ cctest -j16
+
+      - name: build riscv32 release
+        working-directory: ./v8
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools ./tools/dev/gm.py riscv32.release all
+
+      - name: run release test
+        working-directory: ./v8
+        continue-on-error: true
+        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.release/ -j16
+
+
+  format:
+    
+    runs-on: ubuntu-latest
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: "Check depot_tools existence"
+        id: check_depot_tools
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "depot_tools"
+
+      - name: git clone depot_tools
+        if: steps.check_depot_tools.outputs.files_exists == 'false'
+        run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+      - name: "Check v8 existence"
+        id: check_v8
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "v8"
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: fetch v8
+        if: steps.check_v8.outputs.files_exists == 'false'
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools fetch v8
+
+      - name: sync v8
+        if: steps.check_v8.outputs.files_exists == 'true'
+        working-directory: ./v8
+        run: git fetch origin && PATH=$PATH:$GITHUB_WORKSPACE/depot_tools gclient sync
+
+      - working-directory: ./v8
+        if: steps.check_v8.outputs.files_exists == 'false'
+        run: git remote add riscv https://github.com/riscv-collab/v8.git
+      
+      - working-directory: ./v8
+        if: steps.check_v8.outputs.files_exists == 'true'
+        run: git fetch riscv && git checkout riscv/RV32G && git branch -D LocalCI
+      
+      - working-directory: ./v8
+        run: git fetch riscv $GITHUB_SHA:LocalCI
+ 
+      - working-directory: ./v8
+        run: git checkout LocalCI
+
+      - working-directory: ./v8
+        run: echo $GITHUB_REF && echo $GITHUB_SHA &&  git log -10
+
+      - name: presubmit diff
+        working-directory: ./v8
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools git cl for --diff --no-python
+
+      - name: presubmit
+        working-directory: ./v8
+        run: PATH=$PATH:$GITHUB_WORKSPACE/depot_tools git cl for --dry-run --no-python

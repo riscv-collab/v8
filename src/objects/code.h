@@ -691,6 +691,11 @@ class Code : public HeapObject {
   static constexpr int kHeaderPaddingSize = COMPRESS_POINTERS_BOOL ? 8 : 20;
 #elif V8_TARGET_ARCH_RISCV64
   static constexpr int kHeaderPaddingSize = (COMPRESS_POINTERS_BOOL ? 8 : 20);
+#elif V8_TARGET_ARCH_RISCV32
+  // static constexpr int kHeaderPaddingSize = (COMPRESS_POINTERS_BOOL ? 12 :
+  // 24); static constexpr int kHeaderPaddingSize = (COMPRESS_POINTERS_BOOL ? 8
+  // : 20)；
+  static constexpr int kHeaderPaddingSize = 12;  // RV32Gtodo
 #else
 #error Unknown architecture.
 #endif

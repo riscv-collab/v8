@@ -25,6 +25,8 @@
 #include "src/codegen/s390/reglist-s390.h"
 #elif V8_TARGET_ARCH_RISCV64
 #include "src/codegen/riscv64/reglist-riscv64.h"
+#elif V8_TARGET_ARCH_RISCV32
+#include "src/codegen/riscv32/reglist-riscv32.h"
 #else
 #error Unknown architecture.
 #endif

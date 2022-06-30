@@ -137,7 +137,7 @@
 }],
 
 ################################################################################
-['is_clang == False and arch == riscv64',{
+['is_clang == False and (arch == riscv64 or arch == riscv32)',{
   'LoggingTest.SourceLocation':[SKIP]  # issue-174
 }],
 

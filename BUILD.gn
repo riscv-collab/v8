@@ -630,7 +630,7 @@ config("internal_config") {
     defines += [ "BUILDING_V8_SHARED" ]
   }
 
-  if (v8_current_cpu == "riscv64") {
+  if (v8_current_cpu == "riscv64" || v8_current_cpu == "riscv32") {
     libs = [ "atomic" ]
   }
 }
@@ -702,7 +702,7 @@ config("external_config") {
     defines += [ "USING_V8_SHARED" ]
   }
 
-  if (current_cpu == "riscv64") {
+  if (current_cpu == "riscv64" || current_cpu == "riscv32") {
     libs = [ "atomic" ]
   }
 }
@@ -1219,6 +1219,22 @@ config("toolchain") {
     if (target_is_simulator) {
       defines += [ "CAN_USE_RVV_INSTRUCTIONS" ]
     }
+  }
+
+  if (v8_current_cpu == "riscv32") {
+    defines += [ "V8_TARGET_ARCH_RISCV32" ]
+    defines += [ "__riscv_xlen=32" ]
+
+    #FIXME: Temporarily use MIPS macro for the building.
+    defines += [ "CAN_USE_FPU_INSTRUCTIONS" ]
+  }
+
+  if (v8_current_cpu == "riscv32") {
+    defines += [ "V8_TARGET_ARCH_RISCV32" ]
+    defines += [ "__riscv_xlen=32" ]
+
+    #FIXME: Temporarily use MIPS macro for the building.
+    defines += [ "CAN_USE_FPU_INSTRUCTIONS" ]
   }
 
   if (v8_current_cpu == "x86") {
@@ -2505,6 +2521,11 @@ v8_source_set("v8_initializers") {
     sources += [
       ### gcmole(arch:riscv64) ###
       "src/builtins/riscv64/builtins-riscv64.cc",
+    ]
+  } else if (v8_current_cpu == "riscv32") {
+    sources += [
+      ### gcmole(arch:riscv64) ###
+      "src/builtins/riscv32/builtins-riscv32.cc",
     ]
   }
 
@@ -3947,6 +3968,22 @@ v8_header_set("v8_internal_headers") {
       "src/regexp/riscv64/regexp-macro-assembler-riscv64.h",
       "src/wasm/baseline/riscv64/liftoff-assembler-riscv64.h",
     ]
+  } else if (v8_current_cpu == "riscv32") {
+    sources += [  ### gcmole(arch:riscv32) ###
+      "src/baseline/riscv32/baseline-assembler-riscv32-inl.h",
+      "src/baseline/riscv32/baseline-compiler-riscv32-inl.h",
+      "src/codegen/riscv32/assembler-riscv32-inl.h",
+      "src/codegen/riscv32/assembler-riscv32.h",
+      "src/codegen/riscv32/constants-riscv32.h",
+      "src/codegen/riscv32/macro-assembler-riscv32.h",
+      "src/codegen/riscv32/register-riscv32.h",
+      "src/codegen/riscv32/reglist-riscv32.h",
+      "src/compiler/backend/riscv32/instruction-codes-riscv32.h",
+      "src/execution/riscv32/frame-constants-riscv32.h",
+      "src/execution/riscv32/simulator-riscv32.h",
+      "src/regexp/riscv32/regexp-macro-assembler-riscv32.h",
+      "src/wasm/baseline/riscv32/liftoff-assembler-riscv32.h",
+    ]
   }
 
   public_deps = [
@@ -4992,6 +5029,26 @@ v8_source_set("v8_base_without_compiler") {
       "src/execution/riscv64/simulator-riscv64.cc",
       "src/regexp/riscv64/regexp-macro-assembler-riscv64.cc",
     ]
+  } else if (v8_current_cpu == "riscv32") {
+    sources += [  ### gcmole(arch:riscv32) ###
+      "src/baseline/riscv32/baseline-assembler-riscv32-inl.h",
+      "src/baseline/riscv32/baseline-compiler-riscv32-inl.h",
+      "src/codegen/riscv32/assembler-riscv32-inl.h",
+      "src/codegen/riscv32/assembler-riscv32.cc",
+      "src/codegen/riscv32/constants-riscv32.cc",
+      "src/codegen/riscv32/cpu-riscv32.cc",
+      "src/codegen/riscv32/interface-descriptors-riscv32-inl.h",
+      "src/codegen/riscv32/macro-assembler-riscv32.cc",
+      "src/compiler/backend/riscv32/code-generator-riscv32.cc",
+      "src/compiler/backend/riscv32/instruction-scheduler-riscv32.cc",
+      "src/compiler/backend/riscv32/instruction-selector-riscv32.cc",
+      "src/deoptimizer/riscv32/deoptimizer-riscv32.cc",
+      "src/diagnostics/riscv32/disasm-riscv32.cc",
+      "src/diagnostics/riscv32/unwinder-riscv32.cc",
+      "src/execution/riscv32/frame-constants-riscv32.cc",
+      "src/execution/riscv32/simulator-riscv32.cc",
+      "src/regexp/riscv32/regexp-macro-assembler-riscv32.cc",
+    ]
   }
 
   # Architecture independent but platform-specific sources
@@ -5080,7 +5137,7 @@ v8_source_set("v8_base_without_compiler") {
       v8_current_cpu == "mips64" || v8_current_cpu == "mips64el" ||
       v8_current_cpu == "ppc" || v8_current_cpu == "ppc64" ||
       v8_current_cpu == "s390" || v8_current_cpu == "s390x" ||
-      v8_current_cpu == "riscv64") {
+      v8_current_cpu == "riscv64" || v8_current_cpu == "riscv32") {
     libs += [ "atomic" ]
   }
 
@@ -5478,7 +5535,7 @@ v8_component("v8_libbase") {
     sources += [ "src/base/ubsan.cc" ]
   }
 
-  if (v8_current_cpu == "riscv64") {
+  if (v8_current_cpu == "riscv64" || v8_current_cpu == "riscv32") {
     libs += [ "atomic" ]
   }
 
@@ -5567,7 +5624,7 @@ v8_component("v8_libplatform") {
     }
   }
 
-  if (v8_current_cpu == "riscv64") {
+  if (v8_current_cpu == "riscv64" || v8_current_cpu == "riscv32") {
     libs = [ "atomic" ]
   }
 }
@@ -5661,6 +5718,8 @@ v8_source_set("v8_heap_base") {
       sources += [ "src/heap/base/asm/loong64/push_registers_asm.cc" ]
     } else if (current_cpu == "riscv64") {
       sources += [ "src/heap/base/asm/riscv64/push_registers_asm.cc" ]
+    } else if (current_cpu == "riscv32") {
+      sources += [ "src/heap/base/asm/riscv32/push_registers_asm.cc" ]
     }
   } else if (is_win) {
     if (current_cpu == "x64") {
@@ -6473,7 +6532,7 @@ if (want_v8_shell) {
 v8_executable("cppgc_hello_world") {
   sources = [ "samples/cppgc/hello-world.cc" ]
 
-  if (v8_current_cpu == "riscv64") {
+  if (v8_current_cpu == "riscv64" || v8_current_cpu == "riscv32") {
     libs = [ "atomic" ]
   }
 

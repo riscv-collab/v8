@@ -34,6 +34,8 @@
 #include "src/baseline/s390/baseline-assembler-s390-inl.h"
 #elif V8_TARGET_ARCH_RISCV64
 #include "src/baseline/riscv64/baseline-assembler-riscv64-inl.h"
+#elif V8_TARGET_ARCH_RISCV32
+#include "src/baseline/riscv32/baseline-assembler-riscv32-inl.h"
 #elif V8_TARGET_ARCH_MIPS64
 #include "src/baseline/mips64/baseline-assembler-mips64-inl.h"
 #elif V8_TARGET_ARCH_MIPS

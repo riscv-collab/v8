@@ -88,16 +88,8 @@ TEST_MAP = {
 
 # Increase the timeout for these:
 SLOW_ARCHS = [
-  "arm",
-  "arm64",
-  "mips",
-  "mipsel",
-  "mips64",
-  "mips64el",
-  "s390",
-  "s390x",
-  "riscv64",
-  "loong64"
+    "arm", "arm64", "mips", "mipsel", "mips64", "mips64el", "s390", "s390x",
+    "riscv64", "riscv32", "loong64"
 ]
 
 
@@ -353,9 +345,12 @@ class BaseTestRunner(object):
                       help="Path to a file for storing json results.")
     parser.add_option('--slow-tests-cutoff', type="int", default=100,
                       help='Collect N slowest tests')
-    parser.add_option("--exit-after-n-failures", type="int", default=100,
-                      help="Exit after the first N failures instead of "
-                           "running all tests. Pass 0 to disable this feature.")
+    parser.add_option(
+        "--exit-after-n-failures",
+        type="int",
+        default=100000,
+        help="Exit after the first N failures instead of "
+        "running all tests. Pass 0 to disable this feature.")
     parser.add_option("--ci-test-completion",
                       help="Path to a file for logging test completion in the "
                            "context of CI progress indicator. Ignored if "
@@ -675,6 +670,9 @@ class BaseTestRunner(object):
     if self.build_config.arch == 'ppc64' and \
        not self.build_config.simulator_run and \
        utils.GuessPowerProcessorVersion() < 9:
+      no_simd_hardware = True
+
+    if self.build_config.arch == 'riscv32':
       no_simd_hardware = True
 
     return {
