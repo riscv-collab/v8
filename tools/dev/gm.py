@@ -360,9 +360,9 @@ class Config(object):
     # The implementation of mksnapshot failure detection relies on
     # the "pty" module and GDB presence, so skip it on non-Linux.
     if not USE_PTY:
-      return _Call("autoninja -C %s %s" % (path, targets))
+      return _Call("autoninja -j32 -C %s %s" % (path, targets))
 
-    return_code, output = _CallWithOutput("autoninja -C %s %s" %
+    return_code, output = _CallWithOutput("autoninja -j32 -C %s %s" %
                                           (path, targets))
     if return_code != 0 and "FAILED:" in output and "snapshot_blob" in output:
       csa_trap = re.compile("Specify option( --csa-trap-on-node=[^ ]*)")

@@ -81,12 +81,12 @@ jobs:
 
       - name: run uittest
         working-directory: ./v8
-        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ unittests
+        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ unittests -j16
 
       - name: run cctest
         working-directory: ./v8
         continue-on-error: true
-        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ cctest
+        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.debug/ cctest -j16
 
       - name: build riscv32 release
         working-directory: ./v8
@@ -95,7 +95,7 @@ jobs:
       - name: run release test
         working-directory: ./v8
         continue-on-error: true
-        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.release/
+        run : python3 ./tools/run-tests.py --outdir=./out/riscv32.release/ -j16
 
 
   format:
