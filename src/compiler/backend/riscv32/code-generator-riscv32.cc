@@ -3211,7 +3211,7 @@ void AssembleBranchToLabels(CodeGenerator* gen, TurboAssembler* tasm,
 #define __ tasm->
   RiscvOperandConverter i(gen, instr);
 
-  Condition cc = kNoCondition;
+  
   // RISC-V does not have condition code flags, so compare and branch are
   // implemented differently than on the other arch's. The compare operations
   // emit riscv64 pseudo-instructions, which are handled here by branch
@@ -3220,10 +3220,11 @@ void AssembleBranchToLabels(CodeGenerator* gen, TurboAssembler* tasm,
   // they are tested here.
 
   if (instr->arch_opcode() == kRiscvTst) {
-    cc = FlagsConditionToConditionTst(condition);
+    Condition cc = FlagsConditionToConditionTst(condition);
     __ Branch(tlabel, cc, kScratchReg, Operand(zero_reg));
   } else if (instr->arch_opcode() == kRiscvAddOvf ||
              instr->arch_opcode() == kRiscvSubOvf) {
+            Condition cc = FlagsConditionToConditionOvf(condition);
     switch (condition) {
       // Overflow occurs if overflow register is negative
       case kOverflow:
@@ -3248,9 +3249,11 @@ void AssembleBranchToLabels(CodeGenerator* gen, TurboAssembler* tasm,
         UNSUPPORTED_COND(kRiscvMulOvf32, condition);
     }
   } else if (instr->arch_opcode() == kRiscvCmp) {
+    Condition cc = FlagsConditionToConditionCmp(condition);
     cc = FlagsConditionToConditionCmp(condition);
     __ Branch(tlabel, cc, i.InputRegister(0), i.InputOperand(1));
   } else if (instr->arch_opcode() == kRiscvCmpZero) {
+        Condition cc = FlagsConditionToConditionCmp(condition);
     cc = FlagsConditionToConditionCmp(condition);
     if (i.InputOrZeroRegister(0) == zero_reg && IsInludeEqual(cc)) {
       __ Branch(tlabel);
@@ -3258,7 +3261,7 @@ void AssembleBranchToLabels(CodeGenerator* gen, TurboAssembler* tasm,
       __ Branch(tlabel, cc, i.InputRegister(0), Operand(zero_reg));
     }
   } else if (instr->arch_opcode() == kArchStackPointerGreaterThan) {
-    cc = FlagsConditionToConditionCmp(condition);
+    Condition cc = FlagsConditionToConditionCmp(condition);
     Register lhs_register = sp;
     uint32_t offset;
     if (gen->ShouldApplyOffsetToStackCheck(instr, &offset)) {

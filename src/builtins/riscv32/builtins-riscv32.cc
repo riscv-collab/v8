@@ -192,11 +192,6 @@ void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
         static_cast<uint32_t>(FunctionKind::kDefaultDerivedConstructor),
         static_cast<uint32_t>(FunctionKind::kDerivedConstructor),
         &not_create_implicit_receiver);
-    Register scratch = func_info;
-    Register scratch2 = temps.Acquire();
-    // If not derived class constructor: Allocate the new receiver object.
-    __ IncrementCounter(masm->isolate()->counters()->constructed_objects(), 1,
-                        scratch, scratch2);
     __ Call(BUILTIN_CODE(masm->isolate(), FastNewObject),
             RelocInfo::CODE_TARGET);
     __ BranchShort(&post_instantiation_deopt_entry);
