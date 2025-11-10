@@ -1,0 +1,13 @@
+diff --git a/src/codegen/riscv/assembler-riscv.cc b/src/codegen/riscv/assembler-riscv.cc
+index 9e282acf045..cf1cc873075 100644
+--- a/src/codegen/riscv/assembler-riscv.cc
++++ b/src/codegen/riscv/assembler-riscv.cc
+@@ -83,7 +83,7 @@ static unsigned SimulatorFeatures() {
+   unsigned answer = 0;
+   answer |= 1u << RISCV_SIMD;
+   answer |= 1u << ZBA;
+-  answer |= 1u << ZBB;
++  //answer |= 1u << ZBB;
+   answer |= 1u << ZBS;
+   answer |= 1u << ZICOND;
+   answer |= 1u << ZICFISS;
